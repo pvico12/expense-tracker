@@ -12,6 +12,9 @@ jobs:
       REGISTRY: ghcr.io
       REPO_OWNER: pvico12
     steps:
+    - name: Check user
+      run: whoami
+
     - name: Checkout code
       uses: actions/checkout@v2
     
