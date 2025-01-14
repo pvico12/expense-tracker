@@ -25,6 +25,6 @@ jobs:
     - name: Build and Push Docker image
       run: |
         cd backend
-        docker ps -a
-        docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest .
-        docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest
+        sudo docker ps -a
+        sudo docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest .
+        sudo docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest
