@@ -18,6 +18,12 @@ spec:
         image: ghcr.io/pvico12/expense-tracker-backend:latest
         ports:
         - containerPort: 8000
+        env:
+        - name: DATABASE_URI
+          valueFrom:
+            secretKeyRef:
+              name: db-access
+              key: DEV_URL
       imagePullSecrets:
       - name: ghcr-creds-secret
 ---
