@@ -8,3 +8,4 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-01-15,1,0,0,0,0,0,Set up dev/prod Postgres database
 2025-01-15,1,0,0,0,0,0,Set up backend database connection
 2025-01-15,3,0,0,0,0,0,Set up automated deployments for both dev and prod backend
+2025-01-15,1,0,0,0,0,0,Documentation for general use case and backend stuff
