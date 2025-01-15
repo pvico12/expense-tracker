@@ -28,6 +28,6 @@ jobs:
     - name: Deploy Backend
       run: |
         cd devops/k8s
-        kubectl delete -f backend/deployment.yml
+        kubectl delete -f backend/deployment.yml || true
         kubectl apply -f backend/deployment.yml
     
