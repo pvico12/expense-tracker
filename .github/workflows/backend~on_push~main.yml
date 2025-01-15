@@ -7,6 +7,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: pvico-csc
+    permissions:
+      contents: read
+      packages: write
     env:
       IMAGE_NAME: expense-tracker-backend
       REGISTRY: ghcr.io
