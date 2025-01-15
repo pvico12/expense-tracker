@@ -22,4 +22,4 @@ RUN pip install -r requirements.txt
 EXPOSE 8000
 
 # Run app.py when the container launches
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000", "--preload", "app:app"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000", "--preload"]
