@@ -23,8 +23,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Build and Push Docker image
-      run: |
-        cd backend
-        sudo docker ps -a
-        sudo docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME} .
-        sudo docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}
+      uses: docker/build-push-action@v6
+        with:
+          context: "{{defaultContext}}:backend"
+          push: true
+          tags: latest
