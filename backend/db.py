@@ -13,16 +13,18 @@ db_session = scoped_session(sessionmaker(autocommit=False,
 Base = declarative_base()
 Base.query = db_session.query_property()
 
-def init_db():
-    # Delete all tables in the database
-    print("DB CLEANUP: Dropping all tables")
-    Base.metadata.drop_all(bind=engine)
+def init_tables(reset=True):
+    # Delete all tables in the database (if reset is True)
+    if reset:
+        print("DB CLEANUP: Dropping all tables")
+        Base.metadata.drop_all(bind=engine)
     
     # Create all tables defined in models.py
     print("DB SETUP: Creating all tables")
     import models
     Base.metadata.create_all(bind=engine)
     
+def fill_tables():
     # Create a admin user if it does not exist
     print("DB SETUP: Populating user table")
     from models import User
@@ -32,3 +34,8 @@ def init_db():
         user = User(name='admin')
         db_session.add(user)
         db_session.commit()
+
+def init_db():
+    init_tables()
+    fill_tables()
+    
