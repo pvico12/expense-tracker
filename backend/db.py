@@ -15,13 +15,16 @@ Base.query = db_session.query_property()
 
 def init_db():
     # Delete all tables in the database
+    print("DB CLEANUP: Dropping all tables")
     Base.metadata.drop_all(bind=engine)
     
     # Create all tables defined in models.py
+    print("DB SETUP: Creating all tables")
     import models
     Base.metadata.create_all(bind=engine)
     
     # Create a admin user if it does not exist
+    print("DB SETUP: Populating user table")
     from models import User
     user = User.query.filter_by(name='admin').first()
     if not user:
