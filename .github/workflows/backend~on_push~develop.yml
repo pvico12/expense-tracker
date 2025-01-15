@@ -1,0 +1,35 @@
+name: Backend CI/CD On Push
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'backend/**'
+        
+jobs:
+  build-and-deploy:
+    runs-on: pvico-csc
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: expense-tracker-backend
+      REGISTRY: ghcr.io
+      REPO_OWNER: pvico12
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Build and Push Docker image
+      run: |
+        cd backend
+        sudo docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+        sudo docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:develop .
+        sudo docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:develop
+
+    - name: Deploy Backend
+      run: |
+        cd devops/k8s
+        kubectl delete -f backend/deployment-dev.yml || true
+        kubectl apply -f backend/deployment-dev.yml
+    
