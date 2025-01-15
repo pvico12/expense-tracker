@@ -18,13 +18,13 @@ jobs:
     - name: Login to GHCR
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ env.REPO_OWNER }}
+        registry: ghcr.io
+        username: pvico12
         password: ${{ secrets.REGISTRY_TOKEN }}
     
     - name: Build and Push Docker image
       run: |
         cd backend
         sudo docker ps -a
-        sudo docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest .
-        sudo docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest
+        sudo docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME} .
+        sudo docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}
