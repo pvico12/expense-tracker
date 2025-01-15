@@ -6,5 +6,4 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-01-14,2,0,0,0,0,0,set up Kubernetes system for dev/prod deployment environments
 2025-01-14,3,0,0,0,0,0,Set up automated deployments for backend to K8S infrastructure
 2025-01-15,1,0,0,0,0,0,Set up dev/prod Postgres database
-
-
+2025-01-15,1,0,0,0,0,0,Set up backend database connection
