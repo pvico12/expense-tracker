@@ -2,20 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: expense-tracker-backend
+  name: expense-tracker-backend-dev
 spec:
   selector:
     matchLabels:
-      app: expense-tracker-backend
+      app: expense-tracker-backend-dev
   replicas: 2
   template:
     metadata:
       labels:
-        app: expense-tracker-backend
+        app: expense-tracker-backend-dev
     spec:
       containers:
-      - name: expense-tracker-backend
-        image: ghcr.io/pvico12/expense-tracker-backend:latest
+      - name: expense-tracker-backend-dev
+        image: ghcr.io/pvico12/expense-tracker-backend:develop
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
@@ -30,10 +31,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: expense-tracker-backend
+  name: expense-tracker-backend-dev
 spec:
   selector:
-    app: expense-tracker-backend
+    app: expense-tracker-backend-dev
   ports:
     - protocol: TCP
       port: 80

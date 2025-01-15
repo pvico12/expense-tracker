@@ -1,0 +1,41 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expense-tracker-backend-prod
+spec:
+  selector:
+    matchLabels:
+      app: expense-tracker-backend-prod
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: expense-tracker-backend-prod
+    spec:
+      containers:
+      - name: expense-tracker-backend-prod
+        image: ghcr.io/pvico12/expense-tracker-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URI
+          valueFrom:
+            secretKeyRef:
+              name: db-access
+              key: PROD_URL
+      imagePullSecrets:
+      - name: ghcr-creds-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: expense-tracker-backend-prod
+spec:
+  selector:
+    app: expense-tracker-backend-prod
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
