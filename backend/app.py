@@ -30,7 +30,7 @@ def healthcheck():
 def shutdown_session(exception=None):
     db_session.remove()
 
+init_db()
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
