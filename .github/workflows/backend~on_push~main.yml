@@ -24,12 +24,12 @@ jobs:
       run: |
         cd backend
         sudo docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-        sudo docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME} .
-        sudo docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}
+        sudo docker build -t ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest .
+        sudo docker push ${REGISTRY}/${REPO_OWNER}/${IMAGE_NAME}:latest
 
     - name: Deploy Backend
       run: |
         cd devops/k8s
-        kubectl delete -f backend/deployment.yml || true
-        kubectl apply -f backend/deployment.yml
+        kubectl delete -f backend/deployment-prod.yml || true
+        kubectl apply -f backend/deployment-prod.yml
     
