@@ -6,13 +6,23 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - host: expense-tracker-backend-pvico.k8s.csclub.cloud
+  - host: expense-tracker-backend-dev-pvico.k8s.csclub.cloud
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: expense-tracker-backend
+            name: expense-tracker-backend-dev
+            port:
+              number: 80
+  - host: expense-tracker-backend-prod-pvico.k8s.csclub.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: expense-tracker-backend-prod
             port:
               number: 80
