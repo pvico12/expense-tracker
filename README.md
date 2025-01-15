@@ -45,6 +45,13 @@ This application aims to provide a user-friendly interface and powerful features
 
 ### Contribution
 
+#### Branching
+We will be using `main` as our production-ready branch.
+We will be using `develop` as our development branch.
+All new branches should be created from the `develop` branch.
+All PRs should therefore target the `develop` branch.
+Once the changes to develop are tested, the changes are merged into the main branch which is deployed to production.
+
 #### Frontend
 TODO: Setup frontend Android project (Kotlin + JetPack Compose)
 For more information about setting up your machine for frontend development, please refer to [this file](frontend/README.md).
