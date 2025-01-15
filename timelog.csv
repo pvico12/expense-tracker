@@ -1,2 +1,10 @@
 date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
+2025-01-12,1,1,1,1,1,1,meet and discuss general project requirements
+2025-01-13,1,1,1,1,1,1,meet and discuss general project requirements again
 2025-01-14,1,0,0,0,0,0,setup GitHub repo
+2025-01-14,2,0,0,0,0,0,init Flask backend project
+2025-01-14,2,0,0,0,0,0,set up Kubernetes system for dev/prod deployment environments
+2025-01-14,3,0,0,0,0,0,Set up automated deployments for backend to K8S infrastructure
+2025-01-15,1,0,0,0,0,0,Set up dev/prod Postgres database
+
+
