@@ -9,34 +9,35 @@
 
 ### Team Members
 
-1. **Name:** Ariful Islam  
-   **Quest ID:** a46islam  
-   **Student ID:** 20900179  
-   **GitHub Username:** islamariful
-
-2. **Name:** Jia Hu  
-   **Quest ID:** j349hu  
-   **Student ID:** 20882990  
-   **GitHub Username:** jiahujiahu
-
-3. **Name:** Jennifer Wu  
-   **Quest ID:** jw8wu  
-   **Student ID:** 20949150  
-   **GitHub Username:** wjeni
-4. **Name:** Nicole Planeta  
-   **Quest ID:** nplaneta  
-   **Student ID:** 20887785  
-   **GitHub Username:** Eternalon03
-
-5. **Name:** Petar Vico  
+1. **Name:** Petar Vico  
    **Quest ID:** pvico  
    **Student ID:** 20883442  
    **GitHub Username:** pvico12  
 
-6. **Name:** PuYuan Li  
+2. **Name:** Nicole Planeta  
+   **Quest ID:** nplaneta  
+   **Student ID:** 20887785  
+   **GitHub Username:** Eternalon03  
+
+3. **Name:** Jennifer Wu  
+   **Quest ID:** jw8wu  
+   **Student ID:** 20949150  
+   **GitHub Username:** wjeni  
+
+4. **Name:** Jia Hu  
+   **Quest ID:** j349hu  
+   **Student ID:** 20882990  
+   **GitHub Username:** jiahujiahu  
+
+5. **Name:** PuYuan Li  
    **Quest ID:** p259li  
    **Student ID:** 20890562  
    **GitHub Username:** Jack727L  
+
+6. **Name:** Ariful Islam  
+   **Quest ID:** a46islam  
+   **Student ID:** 20900179  
+   **GitHub Username:** islamariful  
 
 ---
 
