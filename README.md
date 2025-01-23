@@ -1,41 +1,46 @@
 # Expense Tracker
 
-### Team Number: 10
+---
 
-## Team Members
+## Team Information
+
+### Team Name: The Debuggers  
+### Team Number: 10  
+
+### Team Members
 
 1. **Name:** Ariful Islam  
    **Quest ID:** a46islam  
    **Student ID:** 20900179  
-   **GitHub Username(s):** islamariful  
+   **GitHub Username:** islamariful
 
 2. **Name:** Jia Hu  
    **Quest ID:** j349hu  
    **Student ID:** 20882990  
-   **GitHub Username(s):** jiahujiahu  
+   **GitHub Username:** jiahujiahu
 
 3. **Name:** Jennifer Wu  
    **Quest ID:** jw8wu  
    **Student ID:** 20949150  
-   **GitHub Username(s):** wjeni  
-
+   **GitHub Username:** wjeni
 4. **Name:** Nicole Planeta  
    **Quest ID:** nplaneta  
    **Student ID:** 20887785  
-   **GitHub Username(s):** Eternalon03  
+   **GitHub Username:** Eternalon03
 
 5. **Name:** Petar Vico  
    **Quest ID:** pvico  
    **Student ID:** 20883442  
-   **GitHub Username(s):** pvico12  
+   **GitHub Username:** pvico12  
 
 6. **Name:** PuYuan Li  
    **Quest ID:** p259li  
    **Student ID:** 20890562  
-   **GitHub Username(s):** Jack727L   
+   **GitHub Username:** Jack727L  
+
+---
 
 ## Project Description
-
 
 The **Expense Tracker** mobile app is designed to help users efficiently manage their personal finances. With this app, users can:
 
@@ -44,11 +49,13 @@ The **Expense Tracker** mobile app is designed to help users efficiently manage 
 - View financial summaries with visualizations and insights.
 - Access their data across multiple devices.
 
-This application aims to provide a user-friendly interface and powerful features to help users take control of their financial well-being.
+This application aims to provide a user-friendly interface and powerful features that help users manage their financial well-being.
+
+---
 
 ## Contribution Guidelines
 
-### Branching
+### Branching Strategy
 
 - **`main`**: The production-ready branch.  
 - **`develop`**: The active development branch.  
@@ -58,21 +65,27 @@ This application aims to provide a user-friendly interface and powerful features
 
 ### Frontend
 
-TODO: Setup frontend Android project (Kotlin + JetPack Compose)
-For more information about setting up your machine for frontend development, please refer to [this file](frontend/README.md).
+- **Technology**: Android (Kotlin + Jetpack Compose)  
+- **Task**: Set up frontend Android project.  
+  - Refer to the [frontend README](frontend/README.md) for instructions on setting up your machine for frontend development.
 
 ### Backend
 
-For this application, we are using Python with the Flask framework to build out the API.
-For more information about setting up your machine for backend development, please refer to [this file](backend/README.md).
+- **Technology**: Python (Flask Framework)  
+- **Task**: Build and maintain the API.  
+  - Refer to the [backend README](backend/README.md) for instructions on setting up your machine for backend development.
 
 ### Database
 
-For this application, we are using a PostGres SQL database.
-To set up a database connection from the Flask backend you have 2 options.
-1. Local Postgres Database
-2. Remote Development Database
-For more information on how to set up either of these 2 connections please refer to [this file](backend/README.md).
+- **Technology**: PostgreSQL  
+- **Task**: Set up and maintain the database.  
+  - **Options for database connection**:  
+    1. Local PostgreSQL Database  
+    2. Remote Development Database  
+
+  - Refer to the [backend README](backend/README.md) for setup details for both options.
+
+---
 
 ## Future Updates
 
