@@ -1,4 +1,6 @@
 name: App CI/CD On Push - Main
+
+on:
   push:
     branches:
       - main
