@@ -1,0 +1,17 @@
+name: App CI/CD On Push - Main
+  push:
+    branches:
+      - main
+    
+
+jobs:
+  build-and-deploy:
+    runs-on:
+      - ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Test
+      run: |
+        echo test
