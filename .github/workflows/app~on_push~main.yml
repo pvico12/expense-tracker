@@ -31,7 +31,7 @@ jobs:
     
     - name: Create key.properties
       run: |
-        cat <<EOF > key.properties
+        cat <<EOF > ExpenseTracker/key.properties
         storePassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
         keyPassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
         keyAlias=release
@@ -43,3 +43,10 @@ jobs:
         ls -la
         cd ExpenseTracker
         ls -la
+    
+    - uses: maierj/fastlane-action@v3.1.0
+        with:
+        lane: 'deploy'
+        subdirectory: ExpenseTracker
+      env:
+        APP_PACKAGE_NAME: 'com.cs446.expensetracker'
