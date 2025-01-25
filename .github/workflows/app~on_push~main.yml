@@ -19,4 +19,4 @@ jobs:
       with:
         ruby-version: '3.3.7'
         bundler-cache: true
-        working-directory: 'android'
+        working-directory: 'app/android'
