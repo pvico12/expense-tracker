@@ -23,11 +23,11 @@ jobs:
     
     - name: Create google_service_account.json
       run: |
-        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > google_service_account.json
+        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > ExpenseTracker/google_service_account.json
 
     - name: Create key.jks
       run: |
-        echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > key.jks
+        echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > ExpenseTracker/key.jks
     
     - name: Create key.properties
       run: |
@@ -35,9 +35,11 @@ jobs:
         storePassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
         keyPassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
         keyAlias=release
-        storeFile=../key.jks
+        storeFile=key.jks
         EOF
     
     - name: List out files
       run: |
+        ls -la
+        cd ExpenseTracker
         ls -la
