@@ -48,7 +48,7 @@ platform :android do
 end
 
 def google_service_account_json_path
-  return "C:\\Users\\pvico\\Development\\school\\rational-autumn-448920-m3-50127d1f652f.json"
+  return "google_service_account.json"
 end
 
 def get_build_number(store)
