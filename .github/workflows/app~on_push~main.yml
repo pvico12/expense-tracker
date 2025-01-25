@@ -20,3 +20,24 @@ jobs:
         ruby-version: '3.3.7'
         bundler-cache: true
         working-directory: 'ExpenseTracker'
+    
+    - name: Create google_service_account.json
+      run: |
+        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > google_service_account.json
+
+    - name: Create key.jks
+      run: |
+        echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > key.jks
+    
+    - name: Create key.properties
+      run: |
+        cat <<EOF > key.properties
+        storePassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+        keyPassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+        keyAlias=release
+        storeFile=../key.jks
+        EOF
+    
+    - name: List out files
+      run: |
+        ls -la
