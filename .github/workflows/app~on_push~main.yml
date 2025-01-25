@@ -46,7 +46,7 @@ jobs:
     
     - name: Deploy App To Play Store
       uses: maierj/fastlane-action@v3.1.0
-        with:
+      with:
         lane: 'deploy'
         subdirectory: ExpenseTracker
       env:
