@@ -19,4 +19,4 @@ jobs:
       with:
         ruby-version: '3.3.7'
         bundler-cache: true
-        working-directory: 'app/android'
+        working-directory: 'ExpenseTracker/app'
