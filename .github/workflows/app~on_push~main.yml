@@ -34,14 +34,14 @@ jobs:
         cat <<EOF > ExpenseTracker/key.properties
         storePassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
         keyPassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
-        keyAlias=release
+        keyAlias=key0
         storeFile=../key.jks
         EOF
     
     - name: Setup Gradle Cache
       uses: gradle/gradle-build-action@v2
       with:
-          gradle-home-cache-cleanup: true
+        gradle-home-cache-cleanup: true
     
     - name: Deploy App To Play Store
       uses: maierj/fastlane-action@v3.1.0
