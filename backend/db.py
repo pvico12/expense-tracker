@@ -31,7 +31,7 @@ def fill_tables():
     user = User.query.filter_by(name='admin').first()
     if not user:
         print("Creating admin user")
-        user = User(name='admin')
+        user = User(username='admin', password='admin', firstname='Admin', lastname='User', role='admin')
         db_session.add(user)
         db_session.commit()
 
