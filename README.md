@@ -1,69 +1,97 @@
 # Expense Tracker
 
-### Team Number: 10
+---
 
-### Member Information:
-- **Petar Vico**
-GitHub: pvico12
-QuestID: pvico 
-Student #: 20883442
+## Team Information
 
-- **Nicole Planeta**
-GitHub: Eternalon03
-QuestID: nplaneta
-Student #: 20887785
+### Team Name: The Debuggers  
+### Team Number: 10  
 
-- **Jennifer Wu**
-GitHub: wjeni
-QuestID: jw8wu
-Student #: 20949150
+### Team Members
 
-- **Jia Hu**
-GitHub: jiahujiahu
-QuestID: j349hu
-Student #: 20882990
+1. **Name:** Petar Vico  
+   **Quest ID:** pvico  
+   **Student ID:** 20883442  
+   **GitHub Username:** pvico12  
 
-- **PuYuan Li**
-GitHub: Jack727L
-QuestID: p259li
-Student #: 20890562
+2. **Name:** Nicole Planeta  
+   **Quest ID:** nplaneta  
+   **Student ID:** 20887785  
+   **GitHub Username:** Eternalon03  
 
-- **Ariful Islam**
-GitHub: islamariful
-QuestID: a46islam
-Student#: 20900179
+3. **Name:** Jennifer Wu  
+   **Quest ID:** jw8wu  
+   **Student ID:** 20949150  
+   **GitHub Username:** wjeni  
 
+4. **Name:** Jia Hu  
+   **Quest ID:** j349hu  
+   **Student ID:** 20882990  
+   **GitHub Username:** jiahujiahu  
 
-### Description
+5. **Name:** PuYuan Li  
+   **Quest ID:** p259li  
+   **Student ID:** 20890562  
+   **GitHub Username:** Jack727L  
 
-The Expense Tracker mobile app is designed to help users manage their personal finances efficiently. With this app, users can:
+6. **Name:** Ariful Islam  
+   **Quest ID:** a46islam  
+   **Student ID:** 20900179  
+   **GitHub Username:** islamariful  
 
-- ...
+---
 
-This application aims to provide a user-friendly interface and powerful features to help users take control of their financial well-being.
+## Project Description
 
+The **Expense Tracker** mobile app is designed to help users efficiently manage their personal finances. With this app, users can:
 
-### Contribution
+- Log and categorize their expenses.
+- Set and monitor budgets for specific categories.
+- View financial summaries with visualizations and insights.
+- Access their data across multiple devices.
 
-#### Branching
-We will be using `main` as our production-ready branch.
-We will be using `develop` as our development branch.
-All new branches should be created from the `develop` branch.
-All PRs should therefore target the `develop` branch.
-Once the changes to develop are tested, the changes are merged into the main branch which is deployed to production.
+This application aims to provide a user-friendly interface and powerful features that help users manage their financial well-being.
 
-#### Frontend
-TODO: Setup frontend Android project (Kotlin + JetPack Compose)
-For more information about setting up your machine for frontend development, please refer to [this file](frontend/README.md).
+---
 
-#### Backend
-For this application, we are using Python with the Flask framework to build out the API.
-For more information about setting up your machine for backend development, please refer to [this file](backend/README.md).
+## Contribution Guidelines
 
-#### Database
-For this application, we are using a PostGres SQL database.
-To set up a database connection from the Flask backend you have 2 options.
-1. Local Postgres Database
-2. Remote Development Database
+### Branching Strategy
 
-For more information on how to set up either of these 2 connections please refer to [this file](backend/README.md).
+- **`main`**: The production-ready branch.  
+- **`develop`**: The active development branch.  
+  - All feature branches should be created from `develop`.  
+  - Pull Requests (PRs) must target the `develop` branch.  
+  - Changes in `develop` will be tested before being merged into `main` for production deployment.  
+
+### Frontend
+
+- **Technology**: Android (Kotlin + Jetpack Compose)  
+- **Task**: Set up frontend Android project.  
+  - Refer to the [frontend README](frontend/README.md) for instructions on setting up your machine for frontend development.
+
+### Backend
+
+- **Technology**: Python (Flask Framework)  
+- **Task**: Build and maintain the API.  
+  - Refer to the [backend README](backend/README.md) for instructions on setting up your machine for backend development.
+
+### Database
+
+- **Technology**: PostgreSQL  
+- **Task**: Set up and maintain the database.  
+  - **Options for database connection**:  
+    1. Local PostgreSQL Database  
+    2. Remote Development Database  
+
+  - Refer to the [backend README](backend/README.md) for setup details for both options.
+
+---
+
+## Future Updates
+
+As the project progresses, this file will be updated to include additional details, such as:
+
+- Feature roadmap and updates.
+- Installation and setup instructions.
+- Links to project documentation and notes.

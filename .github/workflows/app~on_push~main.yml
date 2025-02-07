@@ -1,0 +1,54 @@
+name: App CI/CD On Push - Main
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ExpenseTracker/**'
+    
+
+jobs:
+  build-and-deploy:
+    runs-on:
+      - ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.7'
+        bundler-cache: true
+        working-directory: 'ExpenseTracker'
+    
+    - name: Create google_service_account.json
+      run: |
+        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > ExpenseTracker/google_service_account.json
+
+    - name: Create key.jks
+      run: |
+        echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > ExpenseTracker/key.jks
+    
+    - name: Create key.properties
+      run: |
+        cat <<EOF > ExpenseTracker/key.properties
+        storePassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+        keyPassword=${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+        keyAlias=key0
+        storeFile=../key.jks
+        EOF
+    
+    - name: Setup Gradle Cache
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-home-cache-cleanup: true
+    
+    - name: Deploy App To Play Store
+      uses: maierj/fastlane-action@v3.1.0
+      with:
+        lane: 'deploy'
+        subdirectory: ExpenseTracker
+      env:
+        APP_PACKAGE_NAME: 'com.cs446.expensetracker'

@@ -1,0 +1,59 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+opt_out_usage
+
+default_platform(:android)
+
+platform :android do
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Deploy a new version to the Google Play"
+  lane :deploy do
+    version_code = get_build_number("internal")
+    increment_version_code(
+      gradle_file_path: "app/build.gradle.kts",
+      version_code: version_code
+    )
+    gradle(
+      task: "bundleRelease",
+      properties: {
+        "versionName" => version_code,
+        "versionCode" => version_code
+      }
+    )
+    supply(
+      track: "internal",
+      skip_upload_apk: true, # Upload the aab instead of apk
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end
+
+def google_service_account_json_path
+  return "google_service_account.json"
+end
+
+def get_build_number(store)
+  return get_new_build_number(
+    package_name: "com.cs446.expensetracker",
+    google_play_json_key_path: google_service_account_json_path
+  ).to_s
+end
