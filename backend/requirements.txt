@@ -1,5 +1,7 @@
 blinker==1.9.0
+cffi==1.17.1
 click==8.1.8
+cryptography==44.0.0
 Flask==3.1.0
 greenlet==3.1.1
 gunicorn==23.0.0
@@ -10,6 +12,8 @@ marshmallow==3.26.1
 marshmallow-sqlalchemy==1.4.0
 packaging==24.2
 psycopg2-binary==2.9.10
+pycparser==2.22
+PyJWT==2.10.1
 python-dotenv==1.0.1
 SQLAlchemy==2.0.37
 typing_extensions==4.12.2

@@ -9,3 +9,6 @@ class RegistrationRequest(Schema):
     password = fields.Str(required=True, validate=validate.Length(min=1))
     firstname = fields.Str(required=True, validate=validate.Length(min=1))
     lastname = fields.Str(required=True, validate=validate.Length(min=1))
+    
+class TokenRefreshRequest(Schema):
+    refresh_token = fields.Str(required=True, validate=validate.Length(min=1))
