@@ -10,11 +10,12 @@ class User(Base):
     firstname = Column(String(50), nullable=False)
     lastname = Column(String(50), nullable=False)
 
-    def __init__(self, username=None, password=None, firstname=None, lastname=None):
+    def __init__(self, username=None, password=None, firstname=None, lastname=None, role=None):
         self.username = username
         self.password = password
         self.firstname = firstname
         self.lastname = lastname
+        self.role = role
 
     def __repr__(self):
         return f'<User {self.username!r}>'

@@ -60,7 +60,7 @@ CREATE DATABASE "expense-tracker";
 4. Grant user access to database
 ```
 GRANT ALL PRIVILEGES ON DATABASE "expense-tracker" TO expense_tracker_admin;
-\c expense-tracker postgres
+\c "expense-tracker";
 GRANT ALL ON SCHEMA public TO expense_tracker_admin;
 ```
 
