@@ -12,3 +12,4 @@ class RegistrationRequest(Schema):
     
 class TokenRefreshRequest(Schema):
     refresh_token = fields.Str(required=True, validate=validate.Length(min=1))
+    

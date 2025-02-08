@@ -19,3 +19,11 @@ class User(Base):
 
     def __repr__(self):
         return f'<User {self.username!r}>'
+    
+    def getProfileInfo(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'firstname': self.firstname,
+            'lastname': self.lastname
+        }

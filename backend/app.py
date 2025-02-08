@@ -10,9 +10,11 @@ app = Flask(__name__)
 routes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'routes')
 sys.path.append(routes_dir)
 from routes.auth import authRouter
+from routes.user import userRouter
 
 # Register Blueprint Routes
 app.register_blueprint(authRouter, url_prefix='/auth')
+app.register_blueprint(userRouter, url_prefix='/user')
 
 
 # =============== Routes ===============
