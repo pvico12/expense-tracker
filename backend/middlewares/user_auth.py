@@ -1,7 +1,6 @@
 import os
 import jwt
-from flask import request, jsonify
-from functools import wraps
+from fastapi import Request, HTTPException, Depends
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,41 +9,43 @@ JWT_ACCESS_TOKEN_SECRET = os.getenv('JWT_ACCESS_TOKEN_SECRET')
 if not JWT_ACCESS_TOKEN_SECRET:
     raise Exception("JWT_ACCESS_TOKEN_SECRET not found in .env file")
 
-def authenticate_user_token(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if os.getenv('FLASK_ENV') == 'development':
-            return func(*args, **kwargs)
+def authenticate_user_token(request: Request):
+    """
+    Dependency that verifies the JWT access token.
+    In development mode, authentication is skipped.
+    """
+    # Skip authentication in development mode.
+    if os.getenv('FLASK_ENV') == 'development':
+        return {"user_id": 0}  # dummy payload
 
-        # Check if auth Bearer token header is present
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Unauthorized"}), 401
-        
-        # Extract the token after 'Bearer'
-        token = auth_header.split("Bearer ")[1]
-        if not token:
-            return jsonify({"error": "Unauthorized"}), 401
+    # Retrieve the Authorization header.
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    token = auth_header.split("Bearer ")[1]
+    if not token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        decoded_token = jwt.decode(token, JWT_ACCESS_TOKEN_SECRET, algorithms=["HS256"])
+        print("Decoded JWT:", decoded_token)
+        if 'user_id' not in decoded_token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        return decoded_token
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-        try:
-            # Decode and verify the JWT
-            decoded_token = jwt.decode(token, JWT_ACCESS_TOKEN_SECRET, algorithms=["HS256"])
-            print("Decoded JWT:", decoded_token)
-            
-            # check if the user_id exists in the token
-            if 'user_id' not in decoded_token:
-                return jsonify({"error": "Unauthorized"}), 401
-            
-            # Check if decoded_token user_id matches the user_id in the endpoint
-            user_id = kwargs.get('user_id')
-            if not user_id or decoded_token['user_id'] != user_id:
-                return jsonify({"error": "Unauthorized"}), 401
+def verify_user(user_id: int, token_data: dict = Depends(authenticate_user_token)):
+    """
+    Dependency that checks if the user_id from the route matches the user_id in the token.
+    """
+    if os.getenv('FLASK_ENV') == 'development':
+        return token_data
 
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired"}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token"}), 401
-        
-        # continue with the route function if token is valid
-        return func(*args, **kwargs)
-    return wrapper
+    if token_data.get('user_id') != user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    return token_data
