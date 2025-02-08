@@ -1,16 +1,20 @@
-from flask import Blueprint, request, jsonify
-from middlewares.user_auth import authenticate_user_token
-from db import db_session
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from db import get_db
 from models import User
+from middlewares.user_auth import verify_user
 
-userRouter = Blueprint('user', __name__)
+router = APIRouter(prefix="/user", tags=["user"])
 
-@userRouter.route('/profile/<int:user_id>', methods=['GET'])
-@authenticate_user_token
-def profile_info(user_id):
-    user = db_session.query(User).filter_by(id=user_id).first()
+@router.get("/profile/{user_id}")
+def profile_info(
+    user_id: int,
+    token_data: dict = Depends(verify_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter_by(id=user_id).first()
     if user:
-        return jsonify(user.getProfileInfo()), 200
+        return user.getProfileInfo()
     else:
-        return jsonify({'error': 'User not found'}), 404
-
+        raise HTTPException(status_code=404, detail="User not found")

@@ -1,9 +1,10 @@
+# models.py
 from sqlalchemy import Column, Integer, String
 from db import Base
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     role = Column(String(50), nullable=False, default='user')
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
@@ -15,7 +16,7 @@ class User(Base):
         self.password = password
         self.firstname = firstname
         self.lastname = lastname
-        self.role = role
+        self.role = role if role is not None else 'user'
 
     def __repr__(self):
         return f'<User {self.username!r}>'
