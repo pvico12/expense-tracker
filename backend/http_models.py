@@ -1,15 +1,14 @@
-from marshmallow import Schema, fields, validate
+from pydantic import BaseModel, Field
 
-class LoginRequest(Schema):
-    username = fields.Str(required=True, validate=validate.Length(min=1))
-    password = fields.Str(required=True, validate=validate.Length(min=1))
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
 
-class RegistrationRequest(Schema):
-    username = fields.Str(required=True, validate=validate.Length(min=1))
-    password = fields.Str(required=True, validate=validate.Length(min=1))
-    firstname = fields.Str(required=True, validate=validate.Length(min=1))
-    lastname = fields.Str(required=True, validate=validate.Length(min=1))
+class RegistrationRequest(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+    firstname: str = Field(..., min_length=1)
+    lastname: str = Field(..., min_length=1)
     
-class TokenRefreshRequest(Schema):
-    refresh_token = fields.Str(required=True, validate=validate.Length(min=1))
-    
+class TokenRefreshRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=1)

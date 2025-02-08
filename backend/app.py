@@ -1,39 +1,26 @@
-import sys
-import os
-from db import db_session, init_db, test_connection
-from flask import Flask, request, jsonify
+from fastapi import FastAPI
+from routes import auth, user
+from db import test_connection, init_db
+import uvicorn
 
-# Create Flask app
-app = Flask(__name__)
+app = FastAPI()
 
-# Import Blueprint Routes
-routes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'routes')
-sys.path.append(routes_dir)
-from routes.auth import authRouter
-from routes.user import userRouter
+app.include_router(auth.router)
+app.include_router(user.router)
 
-# Register Blueprint Routes
-app.register_blueprint(authRouter, url_prefix='/auth')
-app.register_blueprint(userRouter, url_prefix='/user')
-
-
-# =============== Routes ===============
-@app.route('/')
-def home():    
+@app.get("/")
+def home():
     return "Hello, World!!!"
 
-@app.route('/healthcheck')
-def healthcheck():    
-    return jsonify({"status": "healthy"}), 200
+@app.get("/healthcheck")
+def healthcheck():
+    return {"status": "healthy"}
 
-
-# kill databse connection on app teardown
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    db_session.remove()
-
-test_connection()
-init_db()
+@app.on_event("startup")
+def startup():
+    if not test_connection():
+        print("Database connection failed!")
+    init_db()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
