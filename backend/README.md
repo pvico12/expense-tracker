@@ -97,3 +97,4 @@ More specifically:
 
 ##### Database Connection
 Now that you are within UW networks, contact Petar for the database connection string, and replace your DATABASE_URL variable in the .env file you created with the one Petar provides you.
+
