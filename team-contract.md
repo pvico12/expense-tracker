@@ -2,26 +2,59 @@
 
 ## Roles
 
-- XXX is our team lead, and is responsible for coordinating the project.
-- XXX is responsible for merging code into main branch and producing product releases.
-- XXX is responsible for the front-end design and features.
-- XXX is responsible for the database and backend design.
+- **Team Lead / Project Manager**: Jennifer  
+  Oversees team coordination, tracks progress, and manages deliverables.  
+
+- **Tech Lead / DevOps Lead / Database Admin**: Petar  
+  Handles technical oversight, CI/CD pipelines, and database management.  
+
+- **Design Lead**: Jia  
+  Leads UI/UX design and ensures visual consistency.  
+
+- **Frontend Lead**: Nicole   
+  Guides front-end development and ensures proper implementation of the design.  
+
+- **Frontend Engineers**: Judie, Nicole, Arif   
+  Develop and maintain the app's front-end features.  
+
+- **Backend Lead**: PuYuan  
+  Oversees back-end development and API implementation.  
+
+- **Backend Engineers**: PuYuan, Petar, Arif  
+  Build and maintain server-side logic and APIs.
+
+---
 
 ## Communication and Meetings
 
-- Our team will use Discord/Slack/Teams group chat to communicate project-related matters.
-- Our team will meet every Mon and Wed during class.
-- All members will attend these meetings or notify the team in advance of anticipated absences. We all agree that absences should be rare.
-- All group members will come to the meetings prepared by:
-  - reading the assigned material (as much as possible), and
-  - coming with ideas pretaining to the tasks and decisions to be made.
-- Members will not work on other assignments during meetings and will be engaged.
-- Decisions can be made during meetings even some members are absent.
-- Each member will take turns listening as well as talking, and active listening will be a strategy for all group discussions.
+- **Primary Communication Tool**: Discord group chat for all project-related discussions.  
+- **Meeting Schedule**: Every Wednesday during class.  
+- **Attendance Policy**:  
+  - All members are expected to attend meetings.  
+  - If a member anticipates an absence, they must notify the team in advance.  
+  - Absences should be rare and only occur for valid reasons.  
 
-- XXX will post the agenda for the week in our group chat before Mon class.
-- XXX will take notes during all meetings and post them on GitHub Wiki within 1 day.
+- **Meeting Preparation**:  
+  - All members will come prepared by reviewing assigned materials and tasks.  
+  - Members are expected to contribute ideas relevant to the discussion topics and project tasks.  
+
+- **Engagement Policy**:  
+  - Members will focus solely on project-related tasks during meetings.  
+  - Active listening and participation are required from all members.  
+
+- **Decision-Making**:  
+  - Decisions can be made during meetings, even if some members are absent, provided a majority is present and the absent members are informed.  
+
+- **Agenda and Notes**:  
+  - Jennifer will prepare and post the agenda in the Discord group chat prior to each meeting.  
+  - Jennifer will also take notes during meetings and share them on the Discord server within 24 hours.  
+
+---
 
 ## Conduct
 
-- Everyone agrees to the code of conduct outlined in the course policies.
+- All team members agree to abide by the **code of conduct** outlined in the course policies.  
+- Team members are expected to:  
+  - Treat each other with respect and professionalism.  
+  - Communicate clearly and constructively.  
+  - Address conflicts collaboratively, aiming for solutions that benefit the entire team.  

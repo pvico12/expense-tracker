@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="fastlane.lanes">
+    
+    
+    
+      
+      <testcase classname="fastlane.lanes" name="0: opt_out_usage" time="0.0012735">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="1: default_platform" time="0.0004373">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="2: get_new_build_number" time="3.3918827">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="3: increment_version_code" time="0.0059576">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="4: bundleRelease" time="1.3566541">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="5: supply" time="24.4839106">
+        
+      </testcase>
+    
+  </testsuite>
+</testsuites>

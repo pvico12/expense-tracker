@@ -8,4 +8,9 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-01-15,1,0,0,0,0,0,Set up dev/prod Postgres database
 2025-01-15,1,0,0,0,0,0,Set up backend database connection
 2025-01-15,3,0,0,0,0,0,Set up automated deployments for both dev and prod backend
-2025-02-07,3,0,0,0,0,0,Setup authentication - backend - pt.1
+2025-01-15,1,0,0,0,0,0,Documentation for general use case and backend stuff
+2025-01-22,0.5,0.5,0.5,0.5,0,0,Meet and discuss app requirements and specifications 
+2025-01-23,0.5,0.5,1,1,0.5,0.5,Revise and finalize the team contract 
+2025-01-24,5,0,0,0,0,0,init Android App with backend connection healthcheck admin page
+2025-01-25,5,0,0,0,0,0,set up automated deployments to Play Store with fastlane + firebase
+2025-02-07,5,0,0,0,0,0,Setup authentication - backend - pt.1
