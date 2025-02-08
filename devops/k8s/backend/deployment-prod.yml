@@ -25,6 +25,16 @@ spec:
             secretKeyRef:
               name: db-access
               key: PROD_URL
+        - name: JWT_ACCESS_TOKEN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-token-secrets
+              key: JWT_ACCESS_TOKEN_SECRET
+        - name: JWT_REFRESH_TOKEN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-token-secrets
+              key: JWT_REFRESH_TOKEN_SECRET
       imagePullSecrets:
       - name: ghcr-creds-secret
 ---
