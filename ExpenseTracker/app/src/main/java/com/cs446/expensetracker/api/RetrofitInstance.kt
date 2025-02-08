@@ -32,19 +32,19 @@ object RetrofitInstance {
     }
 
 
-    val apiService: ExpenseTrackerAPIService by lazy {
+    val apiService: BaseAPIService by lazy {
         when (EnvironmentConstants.TARGET_BACKEND_ENV) {
-            TargetBackendEnvironment.PROD -> retrofitProd.create(ExpenseTrackerAPIService::class.java)
-            TargetBackendEnvironment.DEV -> retrofitDev.create(ExpenseTrackerAPIService::class.java)
-            else -> retrofitProd.create(ExpenseTrackerAPIService::class.java)
+            TargetBackendEnvironment.PROD -> retrofitProd.create(BaseAPIService::class.java)
+            TargetBackendEnvironment.DEV -> retrofitDev.create(BaseAPIService::class.java)
+            else -> retrofitProd.create(BaseAPIService::class.java)
         }
     }
 
-    val apiService2: ExpenseTrackerAPIService by lazy {
+    val apiService2: BaseAPIService by lazy {
         when (EnvironmentConstants.TARGET_BACKEND_ENV) {
-            TargetBackendEnvironment.PROD -> retrofitDev.create(ExpenseTrackerAPIService::class.java)
-            TargetBackendEnvironment.DEV -> retrofitProd.create(ExpenseTrackerAPIService::class.java)
-            else -> retrofitDev.create(ExpenseTrackerAPIService::class.java)
+            TargetBackendEnvironment.PROD -> retrofitDev.create(BaseAPIService::class.java)
+            TargetBackendEnvironment.DEV -> retrofitProd.create(BaseAPIService::class.java)
+            else -> retrofitDev.create(BaseAPIService::class.java)
         }
     }
 }
