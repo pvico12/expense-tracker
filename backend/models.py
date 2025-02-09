@@ -1,7 +1,55 @@
 # models.py
-from sqlalchemy import Column, Integer, String
-from db import Base
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy.orm import relationship, backref
+from base import Base  # Import Base from base.py
+import enum
+import datetime
 
+class TransactionType(enum.Enum):
+    EXPENSE = "expense"
+    INCOME = "income"
+    TRANSFER = "transfer"
+    # You can add more specific transaction types if needed
+    # For example:
+    # SAVINGS = "savings"
+    # INVESTMENT = "investment"
+
+class Category(Base):
+    __tablename__ = 'categories'
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # Null for global categories
+    parent_id = Column(Integer, ForeignKey('categories.id'), nullable=True)  # For hierarchical grouping
+
+    user = relationship("User", back_populates="categories")
+    transactions = relationship("Transaction", back_populates="category")
+    parent = relationship("Category", remote_side=[id], backref=backref("subcategories", cascade="all, delete"))
+
+    def __repr__(self):
+        return f'<Category {self.name!r}>'
+
+    @property
+    def is_head_category(self) -> bool:
+        """Determine if the category is a head category."""
+        return self.parent_id is None
+
+class Transaction(Base):
+    __tablename__ = 'transactions'
+    id = Column(Integer, primary_key=True, index=True)
+    amount = Column(Float, nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=False)
+    transaction_type = Column(SQLEnum(TransactionType, name="transactiontype"), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    note = Column(String(255), nullable=True)
+    date = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="transactions")
+    category = relationship("Category", back_populates="transactions")
+
+    def __repr__(self):
+        return f'<Transaction {self.id} - {self.amount}>'
+
+# Update User model to include relationships
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)
@@ -10,6 +58,9 @@ class User(Base):
     password = Column(String(100), nullable=False)
     firstname = Column(String(50), nullable=False)
     lastname = Column(String(50), nullable=False)
+
+    categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
+    transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
 
     def __init__(self, username=None, password=None, firstname=None, lastname=None, role=None):
         self.username = username

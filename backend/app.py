@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes import auth, user
+from routes import auth, user, transaction, statistics
 from db import test_connection, init_db
 import uvicorn
 
@@ -7,6 +7,8 @@ app = FastAPI()
 
 app.include_router(auth.router)
 app.include_router(user.router)
+app.include_router(transaction.router)
+app.include_router(statistics.router)
 
 @app.get("/")
 def home():
