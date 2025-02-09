@@ -1,5 +1,6 @@
 package com.cs446.expensetracker.nav
 
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,12 +16,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 import com.cs446.expensetracker.nav.settings.AdminPageContainer
+import com.cs446.expensetracker.session.UserSession
+import com.cs446.expensetracker.ui.LoginActivity
 
 class SettingsNavContainer {
 
@@ -30,7 +34,13 @@ class SettingsNavContainer {
         NavHost(settingsNavController, startDestination = "settings") {
             composable("settings") {
                 SettingsScreen(
-                    onAdminPageClick = { settingsNavController.navigate("settings/admin-page") }
+                    onAdminPageClick = { settingsNavController.navigate("settings/admin-page") },
+                    onLogoutClick = {
+                        UserSession.isLoggedIn = false
+                        UserSession.userId = -1
+                        UserSession.access_token = ""
+                        UserSession.refresh_token = ""
+                    }
                 )
             }
 
@@ -42,7 +52,9 @@ class SettingsNavContainer {
     }
 
     @Composable
-    fun SettingsScreen(onAdminPageClick: () -> Unit) {
+    fun SettingsScreen(onAdminPageClick: () -> Unit, onLogoutClick: () -> Unit) {
+        val context = LocalContext.current
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -61,6 +73,17 @@ class SettingsNavContainer {
                 header = "Admin Page",
                 description = "Administrative page for testing backend connection and overall application health.",
                 onClick = onAdminPageClick
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(3.dp))
+            SettingsListItem(
+                header = "Logout",
+                description = "Log out of the application.",
+                onClick = {
+                    onLogoutClick()
+                    context.startActivity(Intent(context, LoginActivity::class.java))
+                }
             )
         }
     }

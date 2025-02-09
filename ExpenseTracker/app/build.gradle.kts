@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
