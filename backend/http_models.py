@@ -1,4 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
+from typing import Optional, List, Dict
+import datetime
+from models import TransactionType
+from typing import Any
 
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=1)
@@ -12,3 +16,104 @@ class RegistrationRequest(BaseModel):
     
 class TokenRefreshRequest(BaseModel):
     refresh_token: str = Field(..., min_length=1)
+
+class CategoryCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    parent_id: Optional[int] = None
+
+class TransactionCreateRequest(BaseModel):
+    amount: float
+    category_id: int
+    transaction_type: TransactionType
+    note: str
+    date: Optional[datetime.datetime] = None
+
+    @validator('transaction_type', pre=True)
+    def parse_transaction_type(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return TransactionType(v.lower())
+        return v
+
+# Response Models
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    firstname: str
+    lastname: str
+    role: str
+
+    class Config:
+        orm_mode = True
+
+class SubCategoryResponse(BaseModel):
+    id: int
+    name: str
+    parent_id: int  # This is always present for subcategories
+
+    class Config:
+        orm_mode = True
+
+class CategoryResponse(BaseModel):
+    id: int
+    name: str
+    parent_id: Optional[int] = None
+    subcategories: Optional[List[SubCategoryResponse]] = None
+
+    class Config:
+        orm_mode = True
+
+    def dict(self, *args, **kwargs):
+        data = super().dict(*args, **kwargs)
+        if data.get('parent_id') is None:
+            data.pop('parent_id')
+        if not data.get('subcategories'):
+            data.pop('subcategories', None)
+        return data
+
+class TransactionResponse(BaseModel):
+    id: int
+    user_id: int
+    amount: float
+    category_id: int
+    transaction_type: TransactionType
+    note: Optional[str] = None
+    date: datetime.datetime
+
+    class Config:
+        orm_mode = True
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+    class Config:
+        orm_mode = True
+
+class CategoryStats(BaseModel):
+    category_name: str
+    total_amount: float
+    percentage: float
+
+class SummaryResponse(BaseModel):
+    total_spend: float
+    category_breakdown: List[CategoryStats]
+    transaction_history: List[TransactionResponse]
+
+    class Config:
+        orm_mode = True
+
+class SummaryCategoryResponse(BaseModel):
+    type_totals: Dict[str, float]
+    transaction_history: List[TransactionResponse]
+    
+    class Config:
+        orm_mode = True
+
+class CustomCategoryCreateRequest(BaseModel):
+    name: str
+    parent_id: int
+
+# Needed for self-referencing models
+CategoryResponse.update_forward_refs()
