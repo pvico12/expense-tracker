@@ -1,45 +1,53 @@
 package com.cs446.expensetracker.ui
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.cs446.expensetracker.ui.ui.theme.ExpenseTrackerTheme
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.cs446.expensetracker.MainActivity
 import com.cs446.expensetracker.api.RetrofitInstance
-import com.cs446.expensetracker.api.models.LoginRequest
+import com.cs446.expensetracker.api.models.RegistrationRequest
 import com.cs446.expensetracker.session.UserSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class LoginActivity : ComponentActivity() {
+class SignupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            LoginScreen(onLoginSuccess = {
-                startActivity(Intent(this, MainActivity::class.java))
-                finish()
-            }, onCreateAccountClick = {
-                startActivity(Intent(this, SignupActivity::class.java))
-            })
+            ExpenseTrackerTheme {
+                SignupScreen(onSignupSuccess = {
+                    startActivity(Intent(this, LoginActivity::class.java))
+                    finish()
+                })
+            }
         }
     }
 }
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
+fun SignupScreen(onSignupSuccess: () -> Unit) {
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Column(
         modifier = Modifier
@@ -48,6 +56,18 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        TextField(
+            value = firstName,
+            onValueChange = { firstName = it },
+            label = { Text("First Name") }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        TextField(
+            value = lastName,
+            onValueChange = { lastName = it },
+            label = { Text("Last Name") }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
         TextField(
             value = username,
             onValueChange = { username = it },
@@ -65,13 +85,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
             isLoading = true
             errorMessage = null
             CoroutineScope(Dispatchers.IO).launch {
-                val result = login(username, password)
+                val result = signup(firstName, lastName, username, password)
                 withContext(Dispatchers.Main) {
                     isLoading = false
                     if (result) {
-                        onLoginSuccess()
+                        snackbarHostState.showSnackbar("Signup successful!")
+                        onSignupSuccess()
                     } else {
-                        errorMessage = "Login failed. Please try again."
+                        errorMessage = "Signup failed. Please try again."
                     }
                 }
             }
@@ -79,34 +100,28 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
             if (isLoading) {
                 CircularProgressIndicator()
             } else {
-                Text("Login")
+                Text("Signup")
             }
         }
         errorMessage?.let {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = it, color = MaterialTheme.colorScheme.error)
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onCreateAccountClick) {
-            Text("Create Account")
-        }
     }
+    SnackbarHost(hostState = snackbarHostState)
 }
 
-suspend fun login(username: String, password: String): Boolean {
+suspend fun signup(firstName: String, lastName: String, username: String, password: String): Boolean {
     return try {
-        val response = RetrofitInstance.apiService.login(LoginRequest(username, password))
+        val response = RetrofitInstance.apiService.register(
+            RegistrationRequest(
+                username = username,
+                password = password,
+                firstname = firstName,
+                lastname = lastName
+            ))
         if (response.isSuccessful) {
-            val loginResponse = response.body()
-            if (loginResponse != null) {
-                UserSession.isLoggedIn = true
-                UserSession.access_token = loginResponse.access_token
-                UserSession.refresh_token = loginResponse.refresh_token
-                UserSession.userId = 1
-                true
-            } else {
-                false
-            }
+            true
         } else {
             false
         }
