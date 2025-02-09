@@ -1,5 +1,6 @@
 package com.cs446.expensetracker.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -20,17 +21,29 @@ class UserSessionViewModel : ViewModel() {
         viewModelScope.launch {
             while (true) {
                 if (UserSession.isLoggedIn) {
-                    fetchUserProfile()
+                    checkTokenValidity()
                 }
-                kotlinx.coroutines.delay(30000) // 1 minute delay
+                kotlinx.coroutines.delay(30000) // 30s delay
             }
         }
     }
 
-    private suspend fun fetchUserProfile() {
+    private fun decodeTokenExpiryTime(token: String): Long {
+        val parts = token.split(".")
+        if (parts.size != 3) throw IllegalArgumentException("Invalid JWT token")
+
+        val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+        val json = org.json.JSONObject(payload)
+        return json.getLong("exp") * 1000 // Convert to milliseconds
+    }
+
+    private suspend fun checkTokenValidity() {
         try {
-            val response = apiService.getUserProfile(UserSession.userId)
-            if (response.code() == 401) {
+            // Check expiration time of access token
+            val tokenExpiryTime = decodeTokenExpiryTime(UserSession.access_token)
+            val timeToExpiry = tokenExpiryTime - System.currentTimeMillis()
+            // if access token expires in next 3 minutes, refresh it
+            if (timeToExpiry > 0 && timeToExpiry < 180000) {
                 refreshAccessToken()
             }
         } catch (e: Exception) {
