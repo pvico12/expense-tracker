@@ -2,6 +2,7 @@ package com.cs446.expensetracker.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.auth0.jwt.JWT
 import com.cs446.expensetracker.MainActivity
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.LoginRequest
@@ -102,7 +104,10 @@ suspend fun login(username: String, password: String): Boolean {
                 UserSession.isLoggedIn = true
                 UserSession.access_token = loginResponse.access_token
                 UserSession.refresh_token = loginResponse.refresh_token
-                UserSession.userId = 1
+
+                // decode access token to retrieve user id
+                val jwt = JWT.decode(loginResponse.access_token)
+                UserSession.userId = jwt.getClaim("user_id").asInt()
                 true
             } else {
                 false
