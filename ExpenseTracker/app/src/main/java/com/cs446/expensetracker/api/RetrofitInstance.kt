@@ -1,9 +1,12 @@
 package com.cs446.expensetracker.api
 
+import com.cs446.expensetracker.session.UserSession
+import okhttp3.Interceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 
 object RetrofitInstance {
@@ -13,7 +16,18 @@ object RetrofitInstance {
 
     private val logging = HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
 
-    private val okHttpClient = OkHttpClient.Builder().addInterceptor(logging).build()
+    private val authInterceptor = Interceptor { chain ->
+        val original: Request = chain.request()
+        val requestBuilder: Request.Builder = original.newBuilder()
+            .header("Authorization", "Bearer ${UserSession.access_token}")
+        val request: Request = requestBuilder.build()
+        chain.proceed(request)
+    }
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(logging)
+        .addInterceptor(authInterceptor)
+        .build()
 
     private val retrofitProd: Retrofit by lazy {
         Retrofit.Builder()
@@ -32,19 +46,19 @@ object RetrofitInstance {
     }
 
 
-    val apiService: ExpenseTrackerAPIService by lazy {
+    val apiService: BaseAPIService by lazy {
         when (EnvironmentConstants.TARGET_BACKEND_ENV) {
-            TargetBackendEnvironment.PROD -> retrofitProd.create(ExpenseTrackerAPIService::class.java)
-            TargetBackendEnvironment.DEV -> retrofitDev.create(ExpenseTrackerAPIService::class.java)
-            else -> retrofitProd.create(ExpenseTrackerAPIService::class.java)
+            TargetBackendEnvironment.PROD -> retrofitProd.create(BaseAPIService::class.java)
+            TargetBackendEnvironment.DEV -> retrofitDev.create(BaseAPIService::class.java)
+            else -> retrofitProd.create(BaseAPIService::class.java)
         }
     }
 
-    val apiService2: ExpenseTrackerAPIService by lazy {
+    val apiService2: BaseAPIService by lazy {
         when (EnvironmentConstants.TARGET_BACKEND_ENV) {
-            TargetBackendEnvironment.PROD -> retrofitDev.create(ExpenseTrackerAPIService::class.java)
-            TargetBackendEnvironment.DEV -> retrofitProd.create(ExpenseTrackerAPIService::class.java)
-            else -> retrofitDev.create(ExpenseTrackerAPIService::class.java)
+            TargetBackendEnvironment.PROD -> retrofitDev.create(BaseAPIService::class.java)
+            TargetBackendEnvironment.DEV -> retrofitProd.create(BaseAPIService::class.java)
+            else -> retrofitDev.create(BaseAPIService::class.java)
         }
     }
 }
