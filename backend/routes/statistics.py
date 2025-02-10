@@ -1,0 +1,124 @@
+from fastapi import APIRouter, HTTPException, Depends, status
+from sqlalchemy.orm import Session
+from typing import List, Optional, Dict
+
+import jwt
+from jwt import PyJWTError
+from dotenv import load_dotenv
+import os
+
+from http_models import SummaryResponse, CategoryStats, SummaryCategoryResponse, TransactionResponse
+from datetime import datetime
+from db import get_db, get_transactions as db_get_transactions, get_all_categories_for_user
+from models import Transaction, TransactionType, User
+import utils
+from fastapi.security import HTTPAuthorizationCredentials
+from dependencies.auth import get_current_user  # Updated import
+
+load_dotenv()
+JWT_ACCESS_TOKEN_SECRET = os.getenv('JWT_ACCESS_TOKEN_SECRET')
+
+router = APIRouter(
+    prefix="/statistics",
+    tags=["statistics"]
+)
+
+def fetch_transactions(
+    db: Session,
+    user: User,
+    start_date: Optional[datetime],
+    end_date: Optional[datetime]
+) -> List[Transaction]:
+    if end_date is None:
+        end_date = datetime.utcnow()
+    if start_date is None:
+        start_date = end_date.replace(day=1)
+
+    transactions = db.query(Transaction).filter(
+        Transaction.user_id == user.id,
+        Transaction.date >= start_date,
+        Transaction.date <= end_date
+    ).all()
+    return transactions
+
+def calculate_type_totals(transactions: List[Transaction]) -> Dict[str, float]:
+    type_totals: Dict[str, float] = {
+        TransactionType.INCOME.value: 0.0,
+        TransactionType.EXPENSE.value: 0.0,
+        TransactionType.TRANSFER.value: 0.0
+    }
+
+    for tx in transactions:
+        tx_type = tx.transaction_type.value
+        if tx_type in type_totals:
+            type_totals[tx_type] += tx.amount
+
+    return type_totals
+
+def serialize_transaction_history(transactions: List[Transaction]) -> List[TransactionResponse]:
+    return [
+        TransactionResponse(
+            id=tx.id,
+            amount=tx.amount,
+            transaction_type=tx.transaction_type.value,
+            category_name=tx.category.name if tx.category else None,
+            date=tx.date
+            # Add other fields as necessary
+        )
+        for tx in transactions
+    ]
+
+@router.get("/summary_spend", response_model=SummaryResponse)
+def get_summary(
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    transactions = fetch_transactions(db, current_user, start_date, end_date)
+    type_totals = calculate_type_totals(transactions)
+
+    total_spend = 0.0
+    category_totals: Dict[str, float] = {}
+
+    for tx in transactions:
+        amount = tx.amount if tx.transaction_type == TransactionType.INCOME else -tx.amount
+        if tx.transaction_type in [TransactionType.EXPENSE, TransactionType.TRANSFER]:
+            total_spend += tx.amount
+            category_name = tx.category.name if tx.category else "Uncategorized"
+            category_totals[category_name] = category_totals.get(category_name, 0.0) + tx.amount
+
+    # Calculate percentages
+    category_breakdown = []
+    for category, amount in category_totals.items():
+        percentage = (amount / total_spend) * 100 if total_spend > 0 else 0
+        category_breakdown.append(CategoryStats(
+            category_name=category,
+            total_amount=amount,
+            percentage=percentage
+        ))
+
+    # Optionally, sort the breakdown by percentage descending
+    category_breakdown.sort(key=lambda x: x.percentage, reverse=True)
+
+    return SummaryResponse(
+        total_spend=total_spend,
+        category_breakdown=category_breakdown,
+        transaction_history=transactions,
+        type_totals=type_totals
+    )
+
+@router.get("/summary_category", response_model=SummaryCategoryResponse)
+def get_summary_category(
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    transactions = fetch_transactions(db, current_user, start_date, end_date)
+    type_totals = calculate_type_totals(transactions)
+
+    return SummaryCategoryResponse(
+        type_totals=type_totals,
+        transaction_history=transactions
+    )

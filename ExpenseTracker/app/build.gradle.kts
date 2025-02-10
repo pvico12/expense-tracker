@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -92,5 +93,7 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    implementation("com.auth0:java-jwt:4.0.0")
 
 }
