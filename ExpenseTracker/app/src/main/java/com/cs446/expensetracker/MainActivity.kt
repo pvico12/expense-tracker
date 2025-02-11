@@ -14,9 +14,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.History
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -40,6 +42,7 @@ import androidx.compose.runtime.remember
 import com.cs446.expensetracker.nav.TransactionNavContainer
 import com.cs446.expensetracker.nav.SettingsNavContainer
 import com.cs446.expensetracker.session.UserSession
+import com.cs446.expensetracker.ui.AddExpenseScreen
 import com.cs446.expensetracker.viewmodels.UserSessionViewModel
 
 class MainActivity : ComponentActivity() {
@@ -94,6 +97,13 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+                        },
+                        floatingActionButton = {
+                            FloatingActionButton(
+                                onClick = { rootNavController.navigate("addExpense") }
+                            ) {
+                                Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Expense")
+                            }
                         }
                     ) { padding ->
                         Box(
@@ -113,6 +123,9 @@ class MainActivity : ComponentActivity() {
                                 composable("history") {
                                     val transactionNavContainer = TransactionNavContainer()
                                     transactionNavContainer.TransactionNavHost()
+                                }
+                                composable("addExpense") {
+                                    AddExpenseScreen(navController = rootNavController)
                                 }
                             }
                         }
