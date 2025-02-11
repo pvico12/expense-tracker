@@ -1,5 +1,6 @@
 package com.cs446.expensetracker.ui
 
+import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,23 +20,39 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(navController: NavController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     var expenseAmount by remember { mutableStateOf("") }
-
     var transactionNote by remember { mutableStateOf("") }
-    var expenseDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(Date())) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // Category Dropdown States
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
 
-    // Fetch categories from API
+    // Date Picker State
+    val calendar = Calendar.getInstance()
+    var selectedDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)) }
+
+    // Date Picker Dialog
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val formattedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            selectedDate = formattedDate
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    // Fetch categories from API when the screen loads
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             try {
@@ -72,7 +89,7 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Category Dropdown // needed to be fixed
+        // Category Dropdown
         Box {
             OutlinedTextField(
                 value = selectedCategory?.name ?: "Select Category",
@@ -103,23 +120,25 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Date Picker Field
+        OutlinedTextField(
+            value = selectedDate,
+            onValueChange = {},
+            readOnly = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { datePickerDialog.show() }, // Show date picker when clicked
+            label = { Text("Select Date") }
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         // Transaction Note
         OutlinedTextField(
             value = transactionNote,
             onValueChange = { transactionNote = it },
             label = { Text("Note (optional)") },
             modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Date Input (Pre-filled in ISO format)
-        OutlinedTextField(
-            value = expenseDate,
-            onValueChange = { expenseDate = it },
-            label = { Text("Date (ISO 8601 Format)") },
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -138,17 +157,17 @@ fun AddExpenseScreen(navController: NavController) {
                     errorMessage = null
                     try {
                         val amount = expenseAmount.toDoubleOrNull()
-                        if (amount == null) { // need to be fixed
+                        if (amount == null || selectedCategory == null) {
                             errorMessage = "Please fill in all fields correctly."
                             return@launch
                         }
 
                         val transaction = Transaction(
                             amount = amount,
-                            category_id = 1, // need to be fixed
+                            category_id = selectedCategory!!.id,
                             transaction_type = "expense",
                             note = transactionNote,
-                            date = expenseDate
+                            date = selectedDate
                         )
 
                         val token = UserSession.access_token ?: ""
