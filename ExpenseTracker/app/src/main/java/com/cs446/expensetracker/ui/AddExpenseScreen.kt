@@ -46,6 +46,7 @@ fun AddExpenseScreen(navController: NavController) {
 
     // Date Picker State
     val calendar = Calendar.getInstance()
+    val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
     var selectedDate by remember {
         mutableStateOf(
             SimpleDateFormat(
@@ -167,7 +168,7 @@ fun AddExpenseScreen(navController: NavController) {
                             category_id = selectedCategory!!.id,
                             transaction_type = "expense",
                             note = transactionNote,
-                            date = selectedDate
+                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!) // Convert here
                         )
 
                         val token = UserSession.access_token ?: ""
