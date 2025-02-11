@@ -4,10 +4,15 @@ import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -31,12 +36,11 @@ fun AddExpenseScreen(navController: NavController) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Category Dropdown States
+    // 🗂️ Category List State
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
-    var isDropdownExpanded by remember { mutableStateOf(false) }
 
-    // Date Picker State
+    // 🗓️ Date Picker State
     val calendar = Calendar.getInstance()
     var selectedDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)) }
 
@@ -44,8 +48,7 @@ fun AddExpenseScreen(navController: NavController) {
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
-            val formattedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
-            selectedDate = formattedDate
+            selectedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
@@ -89,30 +92,28 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Category Dropdown
-        Box {
-            OutlinedTextField(
-                value = selectedCategory?.name ?: "Select Category",
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isDropdownExpanded = true },
-                label = { Text("Category") }
-            )
-
-            DropdownMenu(
-                expanded = isDropdownExpanded,
-                onDismissRequest = { isDropdownExpanded = false },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                categories.forEach { category ->
-                    DropdownMenuItem(
-                        text = { Text(category.name) },
-                        onClick = {
-                            selectedCategory = category
-                            isDropdownExpanded = false // Close dropdown after selection
-                        }
+        // 🗂️ Category Selection List (Instead of Dropdown)
+        Text(text = "Select Category:", style = MaterialTheme.typography.bodyLarge)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp) // Limit height for scrolling
+        ) {
+            items(categories) { category ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable { selectedCategory = category },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedCategory?.id == category.id) Color.Gray else Color.White
+                    )
+                ) {
+                    Text(
+                        text = category.name,
+                        modifier = Modifier.padding(12.dp),
+                        color = if (selectedCategory?.id == category.id) Color.White else Color.Black
                     )
                 }
             }
@@ -120,14 +121,14 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Date Picker Field
+        // 🗓️ Date Picker
         OutlinedTextField(
             value = selectedDate,
             onValueChange = {},
             readOnly = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { datePickerDialog.show() }, // Show date picker when clicked
+                .clickable { datePickerDialog.show() },
             label = { Text("Select Date") }
         )
 
