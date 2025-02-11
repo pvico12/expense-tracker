@@ -36,13 +36,24 @@ fun AddExpenseScreen(navController: NavController) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // 🗂️ Category List State
+    // Category List State
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
 
-    // 🗓️ Date Picker State
+    // Bottom Sheet State
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+
+    // Date Picker State
     val calendar = Calendar.getInstance()
-    var selectedDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)) }
+    var selectedDate by remember {
+        mutableStateOf(
+            SimpleDateFormat(
+                "yyyy-MM-dd",
+                Locale.getDefault()
+            ).format(calendar.time)
+        )
+    }
 
     // Date Picker Dialog
     val datePickerDialog = DatePickerDialog(
@@ -77,7 +88,7 @@ fun AddExpenseScreen(navController: NavController) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(text = "Add New Expense", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "NEW TRANSACTION", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -92,45 +103,33 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 🗂️ Category Selection List (Instead of Dropdown)
-        Text(text = "Select Category:", style = MaterialTheme.typography.bodyLarge)
-        LazyColumn(
+        // Category Box (Tap to Open Bottom Sheet)
+        Text(text = "Category", style = MaterialTheme.typography.bodyLarge)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp) // Limit height for scrolling
+                .height(50.dp)
+                .clickable { showBottomSheet = true }
+                .padding(10.dp),
+            contentAlignment = Alignment.CenterStart
         ) {
-            items(categories) { category ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable { selectedCategory = category },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (selectedCategory?.id == category.id) Color.Gray else Color.White
-                    )
-                ) {
-                    Text(
-                        text = category.name,
-                        modifier = Modifier.padding(12.dp),
-                        color = if (selectedCategory?.id == category.id) Color.White else Color.Black
-                    )
-                }
-            }
+            Text(text = selectedCategory?.name ?: "Select a Category")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 🗓️ Date Picker
-        OutlinedTextField(
-            value = selectedDate,
-            onValueChange = {},
-            readOnly = true,
+        // Date Picker
+        Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { datePickerDialog.show() },
-            label = { Text("Select Date") }
-        )
+                .height(50.dp)
+                .clickable { datePickerDialog.show() }
+                .padding(10.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(text = selectedDate)
+        }
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -172,9 +171,14 @@ fun AddExpenseScreen(navController: NavController) {
                         )
 
                         val token = UserSession.access_token ?: ""
-                        val response = RetrofitInstance.apiService.addTransaction("Bearer $token", transaction)
+                        val response =
+                            RetrofitInstance.apiService.addTransaction("Bearer $token", transaction)
                         if (response.isSuccessful) {
-                            Toast.makeText(context, "Expense added successfully!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Expense added successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             navController.popBackStack()
                         } else {
                             errorMessage = "Failed to add transaction. Please try again."
@@ -196,6 +200,44 @@ fun AddExpenseScreen(navController: NavController) {
                 )
             } else {
                 Text(text = "Save Transaction")
+            }
+        }
+
+
+        // Bottom Sheet Implementation
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                Text(
+                    text = "Select a Category",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(16.dp)
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp) // Limits height for scrolling
+                ) {
+                    items(categories) { category ->
+                        ListItem(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedCategory = category
+                                    showBottomSheet = false
+                                }
+                                .padding(8.dp),
+                            headlineContent = {
+                                Text(
+                                    text = category.name,
+                                    color = if (selectedCategory?.id == category.id) Color.Blue else Color.Black
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     }
