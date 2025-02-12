@@ -7,32 +7,14 @@ import com.cs446.expensetracker.api.models.RegistrationRequest
 import com.cs446.expensetracker.api.models.TokenRefreshRequest
 import com.cs446.expensetracker.api.models.TokenRefreshResponse
 import com.cs446.expensetracker.api.models.UserProfileResponse
+import com.cs446.expensetracker.models.Category
+import com.cs446.expensetracker.models.Transaction
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
-
-data class Category(
-    val id: Int,
-    val name: String,
-    val subcategories: List<Subcategory>
-)
-
-data class Subcategory(
-    val id: Int,
-    val name: String,
-    val parent_id: Int
-)
-
-data class Transaction(
-    val amount: Double,
-    val category_id: Int,
-    val transaction_type: String = "expense", // Default to "expense"
-    val note: String,
-    val date: String // Must be in ISO 8601 format: "YYYY-MM-DDTHH:mm:ss.SSSZ"
-)
 
 interface BaseAPIService {
 
@@ -58,14 +40,9 @@ interface BaseAPIService {
 
     // ===================== Transactions ======================
     @POST("/transactions/")
-    suspend fun addTransaction(
-        @Header("Authorization") authHeader: String,
-        @Body transaction: Transaction
-    ): Response<Void>
+    suspend fun addTransaction(@Body transaction: Transaction): Response<Void>
 
     @GET("/transactions/categories")
-    suspend fun getCategories(
-        @Header("Authorization") authHeader: String
-    ): Response<List<Category>>
+    suspend fun getCategories(): Response<List<Category>>
 
 }

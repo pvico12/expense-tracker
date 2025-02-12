@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,9 +16,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.cs446.expensetracker.api.Category
 import com.cs446.expensetracker.api.RetrofitInstance
-import com.cs446.expensetracker.api.Transaction
+import com.cs446.expensetracker.models.Category
+import com.cs446.expensetracker.models.Transaction
 import com.cs446.expensetracker.session.UserSession
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -72,7 +71,7 @@ fun AddExpenseScreen(navController: NavController) {
         coroutineScope.launch {
             try {
                 val token = UserSession.access_token ?: ""
-                val response = RetrofitInstance.apiService.getCategories("Bearer $token")
+                val response = RetrofitInstance.apiService.getCategories()
                 if (response.isSuccessful) {
                     categories = response.body() ?: emptyList()
                 } else {
@@ -173,7 +172,7 @@ fun AddExpenseScreen(navController: NavController) {
 
                         val token = UserSession.access_token ?: ""
                         val response =
-                            RetrofitInstance.apiService.addTransaction("Bearer $token", transaction)
+                            RetrofitInstance.apiService.addTransaction(transaction)
                         if (response.isSuccessful) {
                             Toast.makeText(
                                 context,
