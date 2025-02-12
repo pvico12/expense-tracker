@@ -96,4 +96,6 @@ dependencies {
 
     implementation("com.auth0:java-jwt:4.0.0")
 
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
 }
