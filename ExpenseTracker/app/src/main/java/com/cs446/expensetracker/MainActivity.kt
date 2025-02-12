@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -35,7 +37,7 @@ import com.cs446.expensetracker.nav.HomeNavContainer
 import com.cs446.expensetracker.ui.theme.ExpenseTrackerTheme
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
-
+import com.cs446.expensetracker.nav.TransactionNavContainer
 import com.cs446.expensetracker.nav.SettingsNavContainer
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.viewmodels.UserSessionViewModel
@@ -108,6 +110,10 @@ class MainActivity : ComponentActivity() {
                                     val settingsNavContainer = SettingsNavContainer()
                                     settingsNavContainer.SettingsNavHost()
                                 }
+                                composable("history") {
+                                    val transactionNavContainer = TransactionNavContainer()
+                                    transactionNavContainer.TransactionNavHost()
+                                }
                             }
                         }
                     }
@@ -133,5 +139,10 @@ val navItems = listOf(
         title = "Settings",
         selectedIcon = Icons.Filled.Settings,
         unselectedIcon = Icons.Outlined.Settings,
+    ),
+    BottomNavigationItem(
+        title = "History",
+        selectedIcon = Icons.Filled.History,
+        unselectedIcon = Icons.Outlined.History,
     ),
 )
