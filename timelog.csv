@@ -15,3 +15,5 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-01-25,5,0,0,0,0,0,set up automated deployments to Play Store with fastlane + firebase
 2025-02-07,5,0,0,0,0,0,Setup authentication - backend - pt.1
 2025-02-07,5,0,0,0,0,0,Setup Authentication In App
+2025-02-10,0,0,0,5,0,0, Add Floating Action Button for Adding Transactions
+2025-02-11,0,0,0,0,0,4, Added Transaction History and Transaction Details screen
