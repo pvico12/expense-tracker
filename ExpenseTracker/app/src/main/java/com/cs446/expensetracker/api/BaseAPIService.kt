@@ -7,8 +7,11 @@ import com.cs446.expensetracker.api.models.RegistrationRequest
 import com.cs446.expensetracker.api.models.TokenRefreshRequest
 import com.cs446.expensetracker.api.models.TokenRefreshResponse
 import com.cs446.expensetracker.api.models.UserProfileResponse
+import com.cs446.expensetracker.models.Category
+import com.cs446.expensetracker.models.Transaction
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Header
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -34,4 +37,12 @@ interface BaseAPIService {
     // ==================== User ====================
     @GET("/user/profile/{userId}")
     suspend fun getUserProfile(@Path("userId") userId: Int): Response<UserProfileResponse>
+
+    // ===================== Transactions ======================
+    @POST("/transactions/")
+    suspend fun addTransaction(@Body transaction: Transaction): Response<Void>
+
+    @GET("/transactions/categories")
+    suspend fun getCategories(): Response<List<Category>>
+
 }
