@@ -217,24 +217,24 @@ def create_sample_deals():
                 "description": "50% off on all coffee varieties",
                 "price": 2.50,
                 "address": "123 Coffee St",
-                "longitude": -122.4194,
-                "latitude": 37.7749
+                "longitude": -80.54487905764393,
+                "latitude": 43.47223089803552
             },
             {
                 "name": "Gym Membership",
                 "description": "20% off on annual membership",
                 "price": 300.00,
                 "address": "456 Fitness Ave",
-                "longitude": -122.4194,
-                "latitude": 37.7749
+                "longitude": -80.54487905764393,
+                "latitude": 43.47223089803552
             },
             {
                 "name": "Concert Tickets",
                 "description": "Buy 1 Get 1 Free",
                 "price": 75.00,
                 "address": "789 Music Blvd",
-                "longitude": -122.4194,
-                "latitude": 37.7749
+                "longitude": -80.54487905764393,
+                "latitude": 43.47223089803552
             }
         ]
 
