@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
 
@@ -13,6 +14,10 @@ from typing import Optional
 from db import get_db, add_transaction, get_transactions as db_get_transactions, get_all_categories_for_user
 from models import Transaction, TransactionType, User, Category
 from dependencies.auth import get_current_user
+from utils import get_category_by_name
+from fastapi import UploadFile, File
+import csv
+from io import StringIO
 
 load_dotenv()
 JWT_ACCESS_TOKEN_SECRET = os.getenv('JWT_ACCESS_TOKEN_SECRET')
@@ -124,3 +129,53 @@ def create_custom_category(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/csv", status_code=status.HTTP_201_CREATED)
+def upload_csv(
+    file: UploadFile = File(...),
+    create_transactions: Optional[int] = 0,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Parse a transaction CSV file and return list of transactions.
+    If create_transactions is set to 1, also create the transactions in the database.
+    """
+    try:
+        content = file.file.read().decode('utf-8')
+        csv_reader = csv.DictReader(StringIO(content))
+        
+        categories = get_all_categories_for_user(user_id=current_user.id)
+        
+        transactions = []
+        for row in csv_reader:
+            target_category_id = get_category_by_name(row['category'], categories)
+            if not target_category_id:
+                raise Exception(f"Category '{row['category']}' not found")
+        
+            transaction = {
+                "user_id": current_user.id,
+                "amount": round(float(row['amount']), 2),
+                "category_id": target_category_id,
+                "transaction_type": row['transaction_type'],
+                "note": row.get('note', ''),
+                "date": row['date']
+            }
+            transactions.append(transaction)
+        
+        if create_transactions == 1:
+            db_transactions = [Transaction(**t) for t in transactions]
+            db.bulk_save_objects(db_transactions)
+            db.commit()
+            return {"message": "Transactions successfully inserted"}
+        
+        return transactions
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/csv/template", response_class=FileResponse)
+def get_csv_template():
+    """
+    Return the CSV template file.
+    """
+    file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template.csv')
+    return FileResponse(file_path, media_type='text/csv', filename="template.csv")

@@ -25,7 +25,7 @@ def hash_password(password: str) -> str:
 # Define the HTTPBearer scheme for Bearer token
 bearer_scheme = HTTPBearer()
 
-def getCategorySuggestion(item_name: str, categories: list) -> str:
+def get_category_suggestion(item_name: str, categories: list) -> str:
     prompt = f"Which category does the item '{item_name}' fit into? Categories: {', '.join(categories)}. Provide only the category name as the answer. If you can not find a suitable category, type 'None'."
 
     response = client.chat.completions.create(
@@ -37,3 +37,9 @@ def getCategorySuggestion(item_name: str, categories: list) -> str:
 
     suggestion = response.choices[0].message.content.strip()
     return suggestion
+
+def get_category_by_name(name: str, categories: list) -> str:
+    for category in categories:
+        if name.lower().strip() ==  category.name.lower().strip():
+            return category.id
+    return None
