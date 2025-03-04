@@ -85,6 +85,7 @@ postgresql://expense_tracker_admin:<your-newly-created-password>@localhost:5432/
 postgresql://expense_tracker_admin:<your-newly-created-password>@localhost:5432/expense-tracker
 ```
 
+
 #### Remote
 
 In this section, we will be connecting to a remote Postgres instance which is hosted on the UW CSC infrastructure associated with Petar Vico's instances.

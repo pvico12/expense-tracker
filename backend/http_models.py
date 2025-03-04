@@ -114,6 +114,22 @@ class SummaryCategoryResponse(BaseModel):
 class CustomCategoryCreateRequest(BaseModel):
     name: str
     parent_id: int
+    
+# === Category Suggestions ===
+class CategorySuggestionRequest(BaseModel):
+    item_name: str
+    
+class CategorySuggestionResponse(BaseModel):
+    category_id: int
+    category_name: str
+    
+# === Receipt Parsing ===
+class ReceiptParseResponse(BaseModel):
+    items: List[Dict[str, Any]]
+    approx_subtotal: float
+    approx_fees: float
+    total: float
+
 
 # Needed for self-referencing models
 CategoryResponse.update_forward_refs()
