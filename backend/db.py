@@ -3,7 +3,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker, declarative_base, joine
 import os
 from dotenv import load_dotenv
 import utils
-from models import Deal, User, Category, Transaction, TransactionType, Base
+from models import Deal, DealVote, User, Category, Transaction, TransactionType, Base
 from typing import List, Optional
 import datetime
 from sqlalchemy.exc import SQLAlchemyError
@@ -238,6 +238,7 @@ def create_sample_deals():
             }
         ]
 
+        # create deals
         for deal_info in sample_deals:
             add_deal(
                 user_id=random.choice(user_ids),
@@ -248,6 +249,13 @@ def create_sample_deals():
                 longitude=deal_info["longitude"],
                 latitude=deal_info["latitude"]
             )
+        
+        # create sample votes
+        deals = db_session.query(Deal).all()
+        for deal in deals:
+            for user_id in user_ids:
+                db_session.add(DealVote(deal_id=deal.id, user_id=user_id, vote=random.choice([1, -1])))
+        db_session.commit()
 
         print("Sample deals created successfully.")
     except Exception as e:
