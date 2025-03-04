@@ -8,7 +8,7 @@ from jwt import PyJWTError
 from dotenv import load_dotenv
 import os
 
-from http_models import TransactionCreateRequest, TransactionResponse, CategoryResponse, SubCategoryResponse, SummaryResponse, CategoryStats, CustomCategoryCreateRequest
+from http_models import ReceiptParseResponse, TransactionCreateRequest, TransactionResponse, CategoryResponse, SubCategoryResponse, SummaryResponse, CategoryStats, CustomCategoryCreateRequest
 from datetime import datetime
 from typing import Optional
 from db import get_db, add_transaction, get_transactions as db_get_transactions, get_all_categories_for_user
@@ -180,7 +180,7 @@ def get_csv_template():
     file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template.csv')
     return FileResponse(file_path, media_type='text/csv', filename="template.csv")
 
-@router.post("/receipt/scan", status_code=status.HTTP_200_OK)
+@router.post("/receipt/scan", response_model=ReceiptParseResponse, status_code=status.HTTP_200_OK)
 def scan_receipt(
     file: UploadFile = File(...)
 ):
@@ -191,14 +191,21 @@ def scan_receipt(
         content = file.file.read()
         items, total = parse_receipt(content)
         
-        # at this point, the items and total are extracted from the receipt
-        # the items are the specific line items on the receipt with a description and amount
-        # the total is the total amount on the receipt
-        # at this point, we can calculate an approximate "fees" amount by subtracting the sum of the items from the total
-        
+        """
+        At this point, the items and total are extracted from the receipt.
+        The items are the specific line items on the receipt with a description and amount.
+        The total is the total amount on the receipt.
+        We can calculate an approximate "fees" amount by subtracting the sum of the items
+        from the total.
+        """
         approx_subtotal = sum([item['amount'] for item in items])
-        approx_fees = (total / approx_subtotal - 1) * 100
+        approx_fees = round(total - approx_subtotal, 2)
         
-        return {"message": "Receipt successfully scanned"}
+        return ReceiptParseResponse(
+            items=items,
+            approx_subtotal=approx_subtotal,
+            approx_fees=approx_fees,
+            total=total
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

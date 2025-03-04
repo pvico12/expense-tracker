@@ -121,6 +121,13 @@ class CategorySuggestionRequest(BaseModel):
     
 class CategorySuggestionResponse(BaseModel):
     category_id: int
+    
+# === Receipt Parsing ===
+class ReceiptParseResponse(BaseModel):
+    items: List[Dict[str, Any]]
+    approx_subtotal: float
+    approx_fees: float
+    total: float
 
 
 # Needed for self-referencing models

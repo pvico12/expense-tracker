@@ -35,6 +35,8 @@ spec:
             secretKeyRef:
               name: jwt-token-secrets
               key: JWT_REFRESH_TOKEN_SECRET
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: expense-tracker-gcp.json
       imagePullSecrets:
       - name: ghcr-creds-secret
 ---

@@ -69,6 +69,7 @@ def parse_receipt(content):
     prompt = f"""
         You will receive some text that was pulled from a receipt.
         Please parse this text and extract the amount, and the descriptor of each line item.
+        If there are is a quantity, disregard it.
         If you notice any fees or taxe or subtotals, disregard them.
         If you find the total, return it in the following format ***TOTAL: amount.
         For the output, make sure that each item is on its own row, seperated by newlines.
