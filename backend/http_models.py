@@ -19,7 +19,7 @@ class TokenRefreshRequest(BaseModel):
 
 class CategoryCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    parent_id: Optional[int] = None
+    color: Optional[str] = Field(None, regex=r'^#[0-9A-Fa-f]{6}$')
 
 class TransactionCreateRequest(BaseModel):
     amount: float
@@ -46,30 +46,13 @@ class UserResponse(BaseModel):
     class Config:
         orm_mode = True
 
-class SubCategoryResponse(BaseModel):
-    id: int
-    name: str
-    parent_id: int  # This is always present for subcategories
-
-    class Config:
-        orm_mode = True
-
 class CategoryResponse(BaseModel):
     id: int
     name: str
-    parent_id: Optional[int] = None
-    subcategories: Optional[List[SubCategoryResponse]] = None
+    color: Optional[str]
 
     class Config:
         orm_mode = True
-
-    def dict(self, *args, **kwargs):
-        data = super().dict(*args, **kwargs)
-        if data.get('parent_id') is None:
-            data.pop('parent_id')
-        if not data.get('subcategories'):
-            data.pop('subcategories', None)
-        return data
 
 class TransactionResponse(BaseModel):
     id: int
@@ -113,8 +96,8 @@ class SummaryCategoryResponse(BaseModel):
 
 class CustomCategoryCreateRequest(BaseModel):
     name: str
-    parent_id: int
-    
+    color: Optional[str] = Field(None, regex=r'^#[0-9A-Fa-f]{6}$')
+
 # === Category Suggestions ===
 class CategorySuggestionRequest(BaseModel):
     item_name: str
@@ -129,7 +112,6 @@ class ReceiptParseResponse(BaseModel):
     approx_subtotal: float
     approx_fees: float
     total: float
-
 
 # Needed for self-referencing models
 CategoryResponse.update_forward_refs()

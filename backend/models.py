@@ -19,19 +19,13 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # Null for global categories
-    parent_id = Column(Integer, ForeignKey('categories.id'), nullable=True)  # For hierarchical grouping
+    color = Column(String(7), nullable=True)
 
     user = relationship("User", back_populates="categories")
     transactions = relationship("Transaction", back_populates="category")
-    parent = relationship("Category", remote_side=[id], backref=backref("subcategories", cascade="all, delete"))
 
     def __repr__(self):
         return f'<Category {self.name!r}>'
-
-    @property
-    def is_head_category(self) -> bool:
-        """Determine if the category is a head category."""
-        return self.parent_id is None
 
 class Transaction(Base):
     __tablename__ = 'transactions'

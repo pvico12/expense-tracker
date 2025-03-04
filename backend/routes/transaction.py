@@ -8,7 +8,7 @@ from jwt import PyJWTError
 from dotenv import load_dotenv
 import os
 
-from http_models import ReceiptParseResponse, TransactionCreateRequest, TransactionResponse, CategoryResponse, SubCategoryResponse, SummaryResponse, CategoryStats, CustomCategoryCreateRequest
+from http_models import ReceiptParseResponse, TransactionCreateRequest, TransactionResponse, CategoryResponse, SummaryResponse, CategoryStats, CustomCategoryCreateRequest
 from datetime import datetime
 from typing import Optional
 from db import get_db, add_transaction, get_transactions as db_get_transactions, get_all_categories_for_user
@@ -37,6 +37,15 @@ def create_transaction(
     Create a new transaction for the authenticated user.
     """
     try:
+        # Ensure the category exists and is accessible by the user
+        category = db.query(Category).filter(
+            Category.id == transaction.category_id,
+            (Category.user_id == current_user.id) | (Category.user_id.is_(None))
+        ).first()
+        
+        if not category:
+            raise HTTPException(status_code=404, detail="Category not found")
+
         new_transaction = add_transaction(
             user_id=current_user.id,
             amount=transaction.amount,
@@ -78,57 +87,6 @@ def delete_transaction(
     db.commit()
     return
 
-@router.get("/categories", response_model=List[CategoryResponse])
-def get_categories(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Retrieve all categories (global and user-specific) for the authenticated user.
-    """
-    categories = get_all_categories_for_user(user_id=current_user.id)
-    response = []
-
-    for head_cat in categories:
-        head_response = CategoryResponse.from_orm(head_cat)
-        if head_cat.subcategories:
-            head_response.subcategories = [
-                SubCategoryResponse.from_orm(subcat)
-                for subcat in head_cat.subcategories
-            ]
-        response.append(head_response)
-    
-    return response
-
-@router.post("/categories/custom", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
-def create_custom_category(
-    custom_category: CustomCategoryCreateRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    try:
-        head_category = db.query(Category).filter(
-            Category.id == custom_category.parent_id,
-            (Category.user_id == current_user.id) | (Category.user_id == None)
-        ).first()
-        
-        if not head_category:
-            raise HTTPException(status_code=404, detail="Head category not found")
-        
-        # Create the new custom category
-        new_category = Category(
-            name=custom_category.name,
-            parent_id=custom_category.parent_id,
-            user_id=current_user.id  # Assign to the current user
-        )
-        db.add(new_category)
-        db.commit()
-        db.refresh(new_category)
-        
-        return CategoryResponse.from_orm(new_category)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
 @router.post("/csv", status_code=status.HTTP_201_CREATED)
 def upload_csv(
     file: UploadFile = File(...),
@@ -144,13 +102,15 @@ def upload_csv(
         content = file.file.read().decode('utf-8')
         csv_reader = csv.DictReader(StringIO(content))
         
+        # Fetch categories for the current user
         categories = get_all_categories_for_user(user_id=current_user.id)
         
         transactions = []
         for row in csv_reader:
+            # Find the category by name for the current user
             target_category_id = get_category_by_name(row['category'], categories)
             if not target_category_id:
-                raise Exception(f"Category '{row['category']}' not found")
+                raise Exception(f"Category '{row['category']}' not found for the current user")
         
             transaction = {
                 "user_id": current_user.id,
