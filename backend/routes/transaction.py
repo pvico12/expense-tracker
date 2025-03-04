@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import Optional
 from db import get_db, add_transaction, get_transactions as db_get_transactions, get_all_categories_for_user
 from models import Transaction, TransactionType, User, Category
-import utils
 from dependencies.auth import get_current_user
 
 load_dotenv()
@@ -124,3 +123,4 @@ def create_custom_category(
         return CategoryResponse.from_orm(new_category)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
