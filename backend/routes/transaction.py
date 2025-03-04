@@ -14,7 +14,7 @@ from typing import Optional
 from db import get_db, add_transaction, get_transactions as db_get_transactions, get_all_categories_for_user
 from models import Transaction, TransactionType, User, Category
 from dependencies.auth import get_current_user
-from utils import get_category_by_name
+from utils import get_category_by_name, read_receipt, parse_receipt
 from fastapi import UploadFile, File
 import csv
 from io import StringIO
@@ -179,3 +179,26 @@ def get_csv_template():
     """
     file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template.csv')
     return FileResponse(file_path, media_type='text/csv', filename="template.csv")
+
+@router.post("/receipt/scan", status_code=status.HTTP_200_OK)
+def scan_receipt(
+    file: UploadFile = File(...)
+):
+    """
+    Parse a receipt image file and return list of transactions.
+    """
+    try:
+        content = file.file.read()
+        items, total = parse_receipt(content)
+        
+        # at this point, the items and total are extracted from the receipt
+        # the items are the specific line items on the receipt with a description and amount
+        # the total is the total amount on the receipt
+        # at this point, we can calculate an approximate "fees" amount by subtracting the sum of the items from the total
+        
+        approx_subtotal = sum([item['amount'] for item in items])
+        approx_fees = (total / approx_subtotal - 1) * 100
+        
+        return {"message": "Receipt successfully scanned"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
