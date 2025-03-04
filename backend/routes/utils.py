@@ -22,7 +22,9 @@ def get_category_suggestion(
     """
     try:
         categories = [category.name for category in get_all_categories_for_user(current_user.id)]
+        print(categories)
         suggestion = get_category_suggestion(category_suggestion_request.item_name, categories)
+        print(suggestion)
         return suggestion
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

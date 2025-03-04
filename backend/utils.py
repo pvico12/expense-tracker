@@ -30,7 +30,11 @@ def hash_password(password: str) -> str:
 bearer_scheme = HTTPBearer()
 
 def get_category_suggestion(item_name: str, categories: list) -> str:
-    prompt = f"Which category does the item '{item_name}' fit into? Categories: {', '.join(categories)}. Provide only the category name as the answer. If you can not find a suitable category, type 'None'."
+    prompt = f"""
+    Which category does the item '{item_name}' fit into? 
+    Categories: {', '.join(categories)}. Provide only the category name as the answer.
+    If you can not find a suitable category, type 'None'.
+    """
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
