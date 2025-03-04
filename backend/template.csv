@@ -1,0 +1,4 @@
+amount,category,transaction_type,note,date
+100.50,Food & Drinks,EXPENSE,Groceries,2025-03-01
+200.00,Miscellaneous,INCOME,Salary,2025-03-02
+50.75,Miscellaneous,EXPENSE,Utilities,2025-03-03
