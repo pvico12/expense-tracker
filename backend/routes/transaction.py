@@ -14,7 +14,7 @@ from typing import Optional
 from db import get_db, add_transaction, get_transactions as db_get_transactions, get_all_categories_for_user
 from models import Transaction, TransactionType, User, Category
 from dependencies.auth import get_current_user
-from utils import get_category_by_name, read_receipt, parse_receipt
+from utils import get_category_by_name, parse_receipt
 from fastapi import UploadFile, File
 import csv
 from io import StringIO

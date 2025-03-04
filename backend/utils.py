@@ -29,7 +29,7 @@ def hash_password(password: str) -> str:
 # Define the HTTPBearer scheme for Bearer token
 bearer_scheme = HTTPBearer()
 
-def get_category_suggestion(item_name: str, categories: list) -> str:
+def predict_category(item_name: str, categories: list) -> str:
     prompt = f"""
     Which category does the item '{item_name}' fit into? 
     Categories: {', '.join(categories)}. Provide only the category name as the answer.

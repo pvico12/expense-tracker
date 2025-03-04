@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from http_models import RegistrationRequest, LoginRequest, TokenRefreshRequest
 from models import User
 from db import get_db
-import utils
+from utils import hash_password
 
 load_dotenv()
 JWT_ACCESS_TOKEN_SECRET = os.getenv('JWT_ACCESS_TOKEN_SECRET')
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", status_code=201)
 def register(data: RegistrationRequest, db: Session = Depends(get_db)):
-    hashed_password = utils.hash_password(data.password)
+    hashed_password = hash_password(data.password)
     new_user = User(
         username=data.username,
         password=hashed_password,
@@ -32,7 +32,7 @@ def register(data: RegistrationRequest, db: Session = Depends(get_db)):
 @router.post("/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(username=data.username).first()
-    if not user or user.password != utils.hash_password(data.password):
+    if not user or user.password != hash_password(data.password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
     access_token = jwt.encode({

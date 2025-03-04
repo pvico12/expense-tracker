@@ -121,6 +121,7 @@ class CategorySuggestionRequest(BaseModel):
     
 class CategorySuggestionResponse(BaseModel):
     category_id: int
+    category_name: str
     
 # === Receipt Parsing ===
 class ReceiptParseResponse(BaseModel):
