@@ -3,28 +3,39 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 
 from models import DealVote, User, Deal
-from utils import predict_category, get_category_by_name
+from utils import get_coordinate_distance, predict_category, get_category_by_name
 from dependencies.auth import get_current_user
 from db import add_deal, get_db, get_single_deal
 from db import get_deals as db_get_deals
 from typing import List
-from http_models import DealCreationRequest, DealUpdateRequest, DealVoteResponse, HttpDeal
+from http_models import DealCreationRequest, DealRetrievalRequest, DealUpdateRequest, DealVoteResponse, HttpDeal, LocationFilter
 
 router = APIRouter(
     prefix="/deals",
     tags=["deals"]
 )
     
-@router.get("/", response_model=List[HttpDeal], status_code=status.HTTP_200_OK)
+@router.post("/list", response_model=List[HttpDeal], status_code=status.HTTP_200_OK)
 def get_deals(
-    user_id: Optional[int] = None
+    filters: Optional[DealRetrievalRequest] = None
 ):
     """
-    Get all deals. Optionally filter by user_id.
+    Get all deals. Optionally filter by user_id and location.
     """
     try:
         # get all the deals
-        deals = db_get_deals(user_id)
+        deals = db_get_deals(filters.user_id)
+        
+        location_filter = filters.location
+        if location_filter:
+            print("here")
+            # filter by location
+            deals = [deal for deal in deals if
+                     abs(get_coordinate_distance(
+                            deal.latitude, deal.longitude,
+                            location_filter.latitude, location_filter.longitude
+                         )) <= location_filter.distance]
+            
         deals_list = [HttpDeal.from_orm(deal) for deal in deals]
         return deals_list
     except Exception as e:

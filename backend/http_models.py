@@ -144,6 +144,15 @@ class HttpDeal(BaseModel):
     class Config:
         orm_mode = True
 
+class LocationFilter(BaseModel):
+    longitude: float
+    latitude: float
+    distance: float
+    
+class DealRetrievalRequest(BaseModel):
+    user_id: Optional[int] = None
+    location: Optional[LocationFilter] = None
+
 class DealCreationRequest(BaseModel):
     name: str
     description: str
