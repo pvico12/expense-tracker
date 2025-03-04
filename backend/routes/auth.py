@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from http_models import RegistrationRequest, LoginRequest, TokenRefreshRequest
 from models import User
-from db import get_db
+from db import get_db, add_predefined_categories
 from utils import hash_password
 
 load_dotenv()
@@ -27,6 +27,8 @@ def register(data: RegistrationRequest, db: Session = Depends(get_db)):
     )
     db.add(new_user)
     db.commit()
+    db.refresh(new_user)
+    add_predefined_categories(new_user.id)
     return {"message": "User created successfully"}
 
 @router.post("/login")
