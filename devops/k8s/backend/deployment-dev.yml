@@ -44,7 +44,7 @@ spec:
               key: OPENAI_API_KEY
         volumeMounts:
         - name: gcp-vision-api-service-account-config
-          mountPath: /root/expense-tracker-gcp.json
+          mountPath: /app/expense-tracker-gcp.json
           subPath: expense-tracker-gcp.json
       volumes:
       - name: gcp-vision-api-service-account-config
