@@ -8,8 +8,8 @@ from utils import predict_category, get_category_by_name
 from dependencies.auth import get_current_user
 
 router = APIRouter(
-    prefix="/utils",
-    tags=["utils"]
+    prefix="/tools",
+    tags=["tools"]
 )
     
 @router.post("/categories/suggestion", response_model=CategorySuggestionResponse, status_code=status.HTTP_200_OK)

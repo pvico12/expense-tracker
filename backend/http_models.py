@@ -130,6 +130,28 @@ class ReceiptParseResponse(BaseModel):
     approx_fees: float
     total: float
 
+# === Deals ====
+class HttpDeal(BaseModel):
+    id: Optional[int]
+    name: str
+    description: str
+    price: float
+    date: datetime.datetime
+    address: str
+    longitude: float
+    latitude: float
+    
+    class Config:
+        orm_mode = True
+
+class DealUpdateRequest(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+    price: Optional[float]
+    date: Optional[datetime.datetime]
+    address: Optional[str]
+    longitude: Optional[float]
+    latitude: Optional[float]
 
 # Needed for self-referencing models
 CategoryResponse.update_forward_refs()
