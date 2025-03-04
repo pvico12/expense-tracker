@@ -3,10 +3,11 @@ from sqlalchemy.orm import scoped_session, sessionmaker, declarative_base, joine
 import os
 from dotenv import load_dotenv
 import utils
-from models import User, Category, Transaction, TransactionType, Base
+from models import Deal, DealVote, User, Category, Transaction, TransactionType, Base
 from typing import List, Optional
 import datetime
 from sqlalchemy.exc import SQLAlchemyError
+import random
 
 load_dotenv()
 DATABASE_URI = os.getenv('DATABASE_URI')
@@ -26,6 +27,7 @@ def test_connection() -> bool:
         print(f"Database connection failed: {e}")
         return False
 
+# region DB initialization
 def init_tables(reset: bool = True):
     """Initialize the database tables."""
     if reset:
@@ -44,6 +46,16 @@ def fill_tables():
     print("DB SETUP: Populating predefined categories")
     create_predefined_categories()
     print("DB SETUP: Predefined categories populated successfully.")
+    
+    print("DB SETUP: Populating sample transactions")
+    add_sample_transactions()
+    print("DB SETUP: Sample transactions added successfully.")
+    
+    print("DB SETUP: Populating sample deals")
+    create_sample_deals()
+    print("DB SETUP: Sample deals created successfully.")
+    
+    
 
 def create_initial_users():
     """Create initial admin and team users."""
@@ -190,11 +202,72 @@ def add_sample_transactions():
         db_session.rollback()
         print(f"Error adding sample transactions: {e}")
 
+def create_sample_deals():
+    """Create a few random deals for each user."""
+    try:
+        users = db_session.query(User).all()
+        if not users:
+            raise ValueError("No users found in the database.")
+        
+        user_ids = [user.id for user in users]
+
+        sample_deals = [
+            {
+                "name": "Discounted Coffee",
+                "description": "50% off on all coffee varieties",
+                "price": 2.50,
+                "address": "123 Coffee St",
+                "longitude": -80.54487905764393,
+                "latitude": 43.47223089803552
+            },
+            {
+                "name": "Gym Membership",
+                "description": "20% off on annual membership",
+                "price": 300.00,
+                "address": "456 Fitness Ave",
+                "longitude": -80.54487905764393,
+                "latitude": 43.47223089803552
+            },
+            {
+                "name": "Concert Tickets",
+                "description": "Buy 1 Get 1 Free",
+                "price": 75.00,
+                "address": "789 Music Blvd",
+                "longitude": -80.54487905764393,
+                "latitude": 43.47223089803552
+            }
+        ]
+
+        # create deals
+        for deal_info in sample_deals:
+            add_deal(
+                user_id=random.choice(user_ids),
+                name=deal_info["name"],
+                description=deal_info["description"],
+                price=round(deal_info["price"], 2),
+                address=deal_info["address"],
+                longitude=deal_info["longitude"],
+                latitude=deal_info["latitude"]
+            )
+        
+        # create sample votes
+        deals = db_session.query(Deal).all()
+        for deal in deals:
+            for user_id in user_ids:
+                db_session.add(DealVote(deal_id=deal.id, user_id=user_id, vote=random.choice([1, -1])))
+        db_session.commit()
+
+        print("Sample deals created successfully.")
+    except Exception as e:
+        db_session.rollback()
+        print(f"Error creating sample deals: {e}")
+
 def init_db():
     """Initialize and populate the database."""
     init_tables()
     fill_tables()
-    add_sample_transactions()
+
+# endregion
 
 def get_db():
     """Dependency that provides a database session."""
@@ -203,6 +276,7 @@ def get_db():
     finally:
         db_session.remove()
 
+# region Helpers
 # CRUD Helper Functions
 
 def add_transaction(user_id: int, amount: float, category_id: int,
@@ -287,3 +361,46 @@ def get_all_categories_for_user(user_id: Optional[int] = None) -> List[Category]
     except SQLAlchemyError as e:
         print(f"Error fetching categories for user: {e}")
         return []
+
+def get_deals(user_id: Optional[int] = None) -> List[Deal]:
+    """Retrieve deals. Optionally for a specific user."""
+    try:
+        if user_id is None:
+            return db_session.query(Deal).order_by(Deal.date.desc()).all()
+        return db_session.query(Deal).filter_by(user_id=user_id).order_by(Deal.date.desc()).all()
+    except SQLAlchemyError as e:
+        print(f"Error fetching deals: {e}")
+        return []
+
+def add_deal(user_id: int, name: str, description: str, price: float,
+             address: str, longitude: float, latitude: float, date: Optional[datetime.datetime] = datetime.datetime.utcnow()) -> Deal:
+    """Add a new deal."""
+    try:
+        deal = Deal(
+            user_id=user_id,
+            name=name,
+            description=description,
+            price=round(price, 2),
+            date=date,
+            address=address,
+            longitude=longitude,
+            latitude=latitude
+        )
+        db_session.add(deal)
+        db_session.commit()
+        db_session.refresh(deal)
+        return deal
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        print(f"Error adding deal: {e}")
+        raise
+
+def get_single_deal(deal_id: int) -> Optional[Deal]:
+    """Retrieve a single deal by ID."""
+    try:
+        return db_session.query(Deal).filter_by(id=deal_id).first()
+    except SQLAlchemyError as e:
+        print(f"Error fetching deal: {e}")
+        return None
+
+# endregion
