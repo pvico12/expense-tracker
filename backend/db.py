@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker, declarative_base, joinedload
 import os
 from dotenv import load_dotenv
+from http_models import TransactionResponse
 import utils
 from models import Deal, DealVote, User, Category, Transaction, TransactionType, Base
 from typing import List, Optional
@@ -42,10 +43,6 @@ def fill_tables():
     admin_user = db_session.query(User).filter_by(username='admin').first()
     if not admin_user:
         create_initial_users()
-
-    print("DB SETUP: Populating predefined categories")
-    create_predefined_categories()
-    print("DB SETUP: Predefined categories populated successfully.")
     
     print("DB SETUP: Populating sample transactions")
     add_sample_transactions()
@@ -68,6 +65,9 @@ def create_initial_users():
             role='admin'
         )
         db_session.add(admin)
+        db_session.commit()
+        db_session.refresh(admin)  # Refresh to get the admin's ID
+        add_predefined_categories(admin.id)  # Assign predefined categories to admin
 
         team_users = [
             {'username': 'petar', 'password': 'cs', 'firstname': 'Petar', 'lastname': 'Vico'},
@@ -86,80 +86,45 @@ def create_initial_users():
                 lastname=user_info['lastname']
             )
             db_session.add(user)
+            db_session.commit()
+            db_session.refresh(user)  # Refresh to get the user's ID
+            add_predefined_categories(user.id)  # Assign predefined categories to each team user
 
-        db_session.commit()
         print("Admin and team users created successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error creating users: {e}")
 
-def create_predefined_categories():
-    """Create head categories and their predefined subcategories."""
-    head_categories = {
-        "Entertainment": [
-            "Bowling", "Cinema", "Concert", "Electronics", "Entertainment",
-            "Gym", "Hobby", "Nightclub", "Sports", "Subscription", "Vacation"
-        ],
-        "Food & Drinks": [
-            "Candy", "Coffee", "Drinks", "Food", "Groceries", "Restaurant"
-        ],
-        "Housing": [
-            "Bank", "Bills", "Electricity", "Home supplies", "Housing",
-            "Insurance", "Internet", "Loan", "Maintenance", "Rent", "Service",
-            "TV", "Taxes", "Telephone", "Water"
-        ],
-        "Income": [
-            "Child benefit", "Income", "Interest", "Investment", "Pension", "Salary"
-        ],
-        "Lifestyle": [
-            "Charity", "Child care", "Community", "Dentist", "Doctor", "Education",
-            "Gifts", "Hotel", "Lifestyle", "Office expenses", "Pet", "Pharmacy",
-            "Shopping", "Travel", "Work"
-        ],
-        "Miscellaneous": [
-            "Bank cost", "Clothes", "Healthcare", "Miscellaneous", "Student loan", "Unknown"
-        ],
-        "Savings": [
-            "Emergency savings", "Savings", "Vacation savings"
-        ],
-        "Transportation": [
-            "Car costs", "Car insurance", "Car loan", "Flight", "Gas",
-            "Parking", "Public transport", "Repair", "Taxi", "Transportation"
-        ]
-    }
+def add_predefined_categories(user_id: int):
+    """Assign predefined categories to a specific user."""
+    categories = [
+        {"name": "Entertainment", "color": "#FF5733"},
+        {"name": "Food & Drinks", "color": "#33FF57"},
+        {"name": "Housing", "color": "#3357FF"},
+        {"name": "Income", "color": "#FF33A1"},
+        {"name": "Lifestyle", "color": "#FF8C33"},
+        {"name": "Miscellaneous", "color": "#8C33FF"},
+        {"name": "Savings", "color": "#33FFF5"},
+        {"name": "Transportation", "color": "#FF3333"}
+    ]
 
     try:
-        for head_cat_name, subcats in head_categories.items():
-            head_cat = db_session.query(Category).filter_by(
-                name=head_cat_name,
-                user_id=None,
-                parent_id=None
+        for category_info in categories:
+            # Check if the category already exists for the user
+            category = db_session.query(Category).filter_by(
+                name=category_info["name"],
+                user_id=user_id
             ).first()
-            if not head_cat:
-                print(f"Creating head category: {head_cat_name}")
-                head_cat = Category(name=head_cat_name)
-                db_session.add(head_cat)
-                db_session.flush()  # Get the head_category.id without committing
-
-            for subcat_name in subcats:
-                subcat = db_session.query(Category).filter_by(
-                    name=subcat_name,
-                    user_id=None,
-                    parent_id=head_cat.id
-                ).first()
-                if not subcat:
-                    print(f"  Adding subcategory: {subcat_name} under {head_cat_name}")
-                    subcategory = Category(
-                        name=subcat_name,
-                        user_id=None,
-                        parent_id=head_cat.id
-                    )
-                    db_session.add(subcategory)
+            if not category:
+                print(f"Creating category for user {user_id}: {category_info['name']}")
+                category = Category(name=category_info["name"], color=category_info["color"], user_id=user_id)
+                db_session.add(category)
 
         db_session.commit()
+        print(f"Predefined categories assigned to user {user_id} successfully.")
     except Exception as e:
         db_session.rollback()
-        print(f"Error creating categories: {e}")
+        print(f"Error assigning categories to user {user_id}: {e}")
 
 def add_sample_transactions():
     """Add sample transactions to the database."""
@@ -170,7 +135,7 @@ def add_sample_transactions():
             raise ValueError("Admin user does not exist.")
 
         # Fetch a category (assuming 'Food & Drinks' exists)
-        food_category = db_session.query(Category).filter_by(name='Food & Drinks', parent_id=None).first()
+        food_category = db_session.query(Category).filter_by(name='Food & Drinks').first()
         if not food_category:
             raise ValueError("Food & Drinks category does not exist.")
 
@@ -301,63 +266,36 @@ def add_transaction(user_id: int, amount: float, category_id: int,
         print(f"Error adding transaction: {e}")
         raise
 
-def get_transactions(user_id: int, limit: int = 100, offset: int = 0) -> List[Transaction]:
-    """Retrieve transactions for a user."""
+def get_transactions(user_id: int, limit: int = 100, offset: int = 0) -> List[TransactionResponse]:
+    """Retrieve transactions for a user, including category names."""
     try:
         return db_session.query(Transaction).filter_by(user_id=user_id).order_by(Transaction.date.desc()).limit(limit).offset(offset).all()
     except SQLAlchemyError as e:
         print(f"Error fetching transactions: {e}")
         return []
 
-def add_category(name: str, user_id: Optional[int] = None, parent_id: Optional[int] = None) -> Category:
+def add_category(name: str, user_id: Optional[int] = None, color: Optional[str] = None) -> Category:
     """Add a new category."""
     try:
-        if parent_id:
-            parent_category = db_session.query(Category).filter_by(id=parent_id, parent_id=None).first()
-            if not parent_category:
-                raise ValueError("Parent category must be one of the predefined head categories.")
-
-        category = Category(name=name, user_id=user_id, parent_id=parent_id)
+        category = Category(name=name, user_id=user_id, color=color)
         db_session.add(category)
         db_session.commit()
         db_session.refresh(category)
         return category
-    except (SQLAlchemyError, ValueError) as e:
+    except SQLAlchemyError as e:
         db_session.rollback()
         print(f"Error adding category: {e}")
         raise
 
-def get_head_categories_with_subcategories() -> List[Category]:
-    """Get head categories along with their subcategories."""
-    try:
-        return db_session.query(Category).options(joinedload(Category.subcategories)).filter(
-            Category.user_id.is_(None),
-            Category.parent_id.is_(None)
-        ).all()
-    except SQLAlchemyError as e:
-        print(f"Error fetching head categories: {e}")
-        return []
-
 def get_all_categories_for_user(user_id: Optional[int] = None) -> List[Category]:
-    """Get all categories for a user, including global and user-specific subcategories."""
+    """Get all categories for a user, including global and user-specific categories."""
     try:
-        head_cats = get_head_categories_with_subcategories()
+        # Fetch all categories that are either global (user_id is None) or specific to the user
+        categories = db_session.query(Category).filter(
+            (Category.user_id == user_id) | (Category.user_id.is_(None))
+        ).all()
         
-        if user_id:
-            user_subcats = db_session.query(Category).filter(
-                Category.user_id == user_id
-            ).all()
-            
-            user_subcat_map = {}
-            for subcat in user_subcats:
-                if subcat.parent_id not in user_subcat_map:
-                    user_subcat_map[subcat.parent_id] = []
-                user_subcat_map[subcat.parent_id].append(subcat)
-            
-            for head_cat in head_cats:
-                head_cat.subcategories.extend(user_subcat_map.get(head_cat.id, []))
-        
-        return head_cats
+        return categories
     except SQLAlchemyError as e:
         print(f"Error fetching categories for user: {e}")
         return []

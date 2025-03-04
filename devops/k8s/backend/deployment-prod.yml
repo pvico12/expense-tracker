@@ -35,6 +35,21 @@ spec:
             secretKeyRef:
               name: jwt-token-secrets
               key: JWT_REFRESH_TOKEN_SECRET
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: expense-tracker-gcp.json
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-api-key
+              key: OPENAI_API_KEY
+        volumeMounts:
+        - name: gcp-vision-api-service-account-config
+          mountPath: /app/expense-tracker-gcp.json
+          subPath: expense-tracker-gcp.json
+      volumes:
+      - name: gcp-vision-api-service-account-config
+        configMap:
+          name: gcp-vision-api-service-account-config
       imagePullSecrets:
       - name: ghcr-creds-secret
 ---
