@@ -162,5 +162,11 @@ class DealUpdateRequest(BaseModel):
     longitude: Optional[float]
     latitude: Optional[float]
 
+class DealVoteResponse(BaseModel):
+    upvotes: int
+    downvotes: int
+    
+
+
 # Needed for self-referencing models
 CategoryResponse.update_forward_refs()
