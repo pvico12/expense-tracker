@@ -8,7 +8,7 @@ from dependencies.auth import get_current_user
 from db import add_deal, get_db, get_single_deal
 from db import get_deals as db_get_deals
 from typing import List
-from http_models import DealUpdateRequest, HttpDeal
+from http_models import DealCreationRequest, DealUpdateRequest, HttpDeal
 
 router = APIRouter(
     prefix="/deals",
@@ -32,7 +32,7 @@ def get_deals(
     
 @router.post("/", response_model=None, status_code=status.HTTP_201_CREATED)
 def create_deal(
-    deal: HttpDeal,
+    deal: DealCreationRequest,
     current_user: User = Depends(get_current_user)
 ):
     """

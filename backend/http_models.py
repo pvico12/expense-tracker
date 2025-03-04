@@ -144,6 +144,15 @@ class HttpDeal(BaseModel):
     class Config:
         orm_mode = True
 
+class DealCreationRequest(BaseModel):
+    name: str
+    description: str
+    price: float
+    date: datetime.datetime
+    address: str
+    longitude: float
+    latitude: float
+
 class DealUpdateRequest(BaseModel):
     name: Optional[str]
     description: Optional[str]
