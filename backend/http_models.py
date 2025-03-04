@@ -114,6 +114,14 @@ class SummaryCategoryResponse(BaseModel):
 class CustomCategoryCreateRequest(BaseModel):
     name: str
     parent_id: int
+    
+# === Category Suggestions ===
+class CategorySuggestionRequest(BaseModel):
+    item_name: str
+    
+class CategorySuggestionResponse(BaseModel):
+    category_id: int
+
 
 # Needed for self-referencing models
 CategoryResponse.update_forward_refs()
