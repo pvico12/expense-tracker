@@ -5,5 +5,5 @@ data class Transaction(
     val category_id: Int,
     val transaction_type: String = "expense", // Default to "expense"
     val note: String,
-    val date: String // Must be in ISO 8601 format: "YYYY-MM-DDTHH:mm:ss.SSSZ"
+    val date: String
 )

@@ -6,6 +6,7 @@ import com.cs446.expensetracker.api.models.LoginResponse
 import com.cs446.expensetracker.api.models.RegistrationRequest
 import com.cs446.expensetracker.api.models.TokenRefreshRequest
 import com.cs446.expensetracker.api.models.TokenRefreshResponse
+import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.models.Category
 import com.cs446.expensetracker.models.Transaction
@@ -15,6 +16,7 @@ import retrofit2.http.Header
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface BaseAPIService {
 
@@ -44,5 +46,12 @@ interface BaseAPIService {
 
     @GET("/transactions/categories")
     suspend fun getCategories(): Response<List<Category>>
+
+    @GET("/transactions/")
+    suspend fun getTransactions(
+        @Query("skip") skip: Int,
+        @Query("limit") limit: Int
+    ): Response<List<TransactionResponse>>
+
 
 }
