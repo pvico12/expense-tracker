@@ -163,3 +163,27 @@ class DealVoteResponse(BaseModel):
 
 # Needed for self-referencing models
 CategoryResponse.update_forward_refs()
+
+class RecurringTransactionCreateRequest(BaseModel):
+    start_date: datetime.datetime
+    end_date: datetime.datetime
+    note: Optional[str] = None
+    period: int  # in days
+    amount: float
+    category_id: int
+    transaction_type: TransactionType
+    vendor: Optional[str] = None
+
+class RecurringTransactionUpdateRequest(RecurringTransactionCreateRequest):
+    # For now, the update fields mirror the creation request.
+    pass
+
+class RecurringTransactionResponse(BaseModel):
+    id: int
+    start_date: datetime.datetime
+    end_date: datetime.datetime
+    note: Optional[str]
+    period: int
+
+    class Config:
+        orm_mode = True
