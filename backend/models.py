@@ -1,5 +1,6 @@
 # models.py
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum
+from typing import Optional
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import relationship, backref
 from base import Base  # Import Base from base.py
 import enum
@@ -36,6 +37,7 @@ class Transaction(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     note = Column(String(255), nullable=True)
     date = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    vendor: Optional[str] = None
 
     user = relationship("User", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")

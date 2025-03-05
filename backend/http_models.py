@@ -62,6 +62,7 @@ class TransactionResponse(BaseModel):
     transaction_type: TransactionType
     note: Optional[str] = None
     date: datetime.datetime
+    vendor: Optional[str] = None
 
     class Config:
         orm_mode = True
