@@ -28,6 +28,7 @@ import com.cs446.expensetracker.api.models.CategoryRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
+import com.cs446.expensetracker.ui.ui.theme.Typography
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -142,10 +143,19 @@ fun AddExpenseScreen(navController: NavController) {
             .padding(16.dp)
             .verticalScroll(scrollState) // Enable scrolling
     ) {
-        Text(text = "NEW TRANSACTION", style = MaterialTheme.typography.headlineMedium)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "NEW TRANSACTION", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.weight(1.0f))
+            TextButton(onClick = { navController.popBackStack() },
+                contentPadding = PaddingValues(
+                    start = 20.dp,
+                    top = 0.dp,
+                    end = 0.dp,
+                    bottom = 10.dp,
+                )) {
+                Text("X",  style = Typography.titleLarge, color= Color(0xFF4B0C0C))
+            }
+        }
         // Amount Input
         OutlinedTextField(
             value = expenseAmount,
@@ -306,6 +316,9 @@ fun AddExpenseScreen(navController: NavController) {
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            ),
             enabled = !isLoading
         ) {
             if (isLoading) {

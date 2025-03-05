@@ -11,6 +11,7 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 val mainBackgroundColor = Color(0xFFF3E3E1)
 val mainTextColor = Color(0xFF4B0C0C)
+val secondTextColor = Color(0xFF6E0606)
 val tileColor = Color(0xFFF6F3F3)
 
 val pieChartColor1 = Color(0xFF9A3B3B)
