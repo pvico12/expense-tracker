@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,8 @@ class WelcomeActivity : ComponentActivity() {
 
 @Composable
 fun WelcomeScreen(onLoginClick: () -> Unit, onCreateAccountClick: () -> Unit) {
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp
     val buttonShape = RoundedCornerShape(26.dp)
 
     Column(
@@ -70,20 +73,20 @@ fun WelcomeScreen(onLoginClick: () -> Unit, onCreateAccountClick: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(150.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.2f).dp))
         Text(
             text = "CoinTrail",
             color = tileColor,
             style = Typography.headlineLarge,
         )
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.01f).dp))
         Text(
             text = "Can't seem to keep your finances in check?\nLet us help you change that",
             style = Typography.bodySmall,
             color = tileColor,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(150.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.1f).dp))
         Button(
             onClick = onLoginClick,
             modifier = Modifier
@@ -121,7 +124,7 @@ fun WelcomeScreen(onLoginClick: () -> Unit, onCreateAccountClick: () -> Unit) {
                 Text(text="LOGIN", style=Typography.headlineSmall)
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.02f).dp))
         Button(
             onClick = onCreateAccountClick,
             modifier = Modifier

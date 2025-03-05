@@ -23,6 +23,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -76,29 +77,32 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
     val focusRequester3 = FocusRequester()
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp
+
     val buttonShape = RoundedCornerShape(26.dp)
     val textFieldShape = RoundedCornerShape(12.dp)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(48.dp),
+            .padding((screenHeight * 0.05f).dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(120.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.12f).dp))
         Text(
             text = "Get Started",
             color = tileColor,
             style = Typography.headlineMedium,
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.01f).dp))
         Text(
             text = "Create your account",
             style = Typography.bodySmall,
             color = tileColor
         )
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.07).dp))
         TextField(
             value = firstName,
             onValueChange = { firstName = it.replace("\n", "") },
@@ -115,7 +119,7 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
                 onNext = { focusRequester1.requestFocus() }
             )
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.02f).dp))
         TextField(
             value = lastName,
             onValueChange = { lastName = it.replace("\n", "") },
@@ -132,7 +136,7 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
                 onNext = { focusRequester2.requestFocus() }
             )
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.02f).dp))
         TextField(
             value = username,
             onValueChange = { username = it.replace("\n", "") },
@@ -149,7 +153,7 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
                 onNext = { focusRequester3.requestFocus() }
             )
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.02f).dp))
         TextField(
             value = password,
             onValueChange = { password = it.replace("\n", "") },
@@ -167,7 +171,7 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
                 onDone = { keyboardController?.hide() }
             )
         )
-        Spacer(modifier = Modifier.height(165.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.16f).dp))
         Button(
             onClick = {
                 isLoading = true
@@ -220,15 +224,15 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
                 if (isLoading) {
                     CircularProgressIndicator()
                 } else {
-                    Text("SIGNUP", style=Typography.headlineSmall)
+                    Text("SIGN UP", style=Typography.headlineSmall)
                 }
             }
         }
         errorMessage?.let {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height((screenHeight * 0.005f).dp))
             Text(text = it, color = Color(0xFFDBAD8C))
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.01f).dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,

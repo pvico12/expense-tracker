@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -85,29 +87,32 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp
+
     val buttonShape = RoundedCornerShape(26.dp)
     val textFieldShape = RoundedCornerShape(12.dp)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(48.dp),
+            .padding((screenHeight * 0.05f).dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(250.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.25f).dp))
         Text(
             text = "Welcome Back",
             color = tileColor,
             style = Typography.headlineMedium,
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.01f).dp))
         Text(
             text = "Login to your account",
             style = Typography.bodySmall,
             color = tileColor
         )
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.07f).dp))
         TextField(
             value = username,
             onValueChange = { username = it.replace("\n", "") },
@@ -124,7 +129,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
                 onNext = { focusRequester.requestFocus() }
             )
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.02f).dp))
         TextField(
             value = password,
             onValueChange = { password = it.replace("\n", "") },
@@ -142,7 +147,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
                 onDone = { keyboardController?.hide() }
             )
         )
-        Spacer(modifier = Modifier.height(180.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.2f).dp))
         Button(
             onClick = {
                 isLoading = true
@@ -199,10 +204,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
             }
         }
         errorMessage?.let {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height((screenHeight * 0.005f).dp))
             Text(text = it, color = Color(0xFFDBAD8C))
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.01f).dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
