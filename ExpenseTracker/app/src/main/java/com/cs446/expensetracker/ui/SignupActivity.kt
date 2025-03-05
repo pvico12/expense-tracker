@@ -90,7 +90,7 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
         Text(
             text = "Get Started",
             color = tileColor,
-            style = Typography.headlineLarge,
+            style = Typography.headlineMedium,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(

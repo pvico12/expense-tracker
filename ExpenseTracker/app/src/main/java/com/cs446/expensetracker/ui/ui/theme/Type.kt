@@ -39,6 +39,13 @@ val Typography = Typography(
     headlineLarge = TextStyle(
         fontFamily = migaeFamily,
         fontWeight = FontWeight.SemiBold,
+        fontSize = 60.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = migaeFamily,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 40.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp

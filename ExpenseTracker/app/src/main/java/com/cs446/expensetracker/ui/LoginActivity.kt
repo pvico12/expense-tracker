@@ -75,6 +75,7 @@ class LoginActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
     var username by remember { mutableStateOf("") }
@@ -98,7 +99,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
         Text(
             text = "Welcome Back",
             color = tileColor,
-            style = Typography.headlineLarge,
+            style = Typography.headlineMedium,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -193,7 +194,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
                 if (isLoading) {
                     CircularProgressIndicator()
                 } else {
-                    Text(text="LOGIN", style=Typography.headlineSmall)
+                    Text(text = "LOGIN", style = Typography.headlineSmall)
                 }
             }
         }
