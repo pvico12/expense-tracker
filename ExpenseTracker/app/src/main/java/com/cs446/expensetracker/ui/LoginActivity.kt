@@ -207,11 +207,12 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "Don't have an account? ")
+            Text(text = "Don't have an account? ", style = Typography.bodySmall)
             TextButton(onClick = onCreateAccountClick) {
                 Text(
                     text = "Sign up",
                     color = tileColor,
+                    style = Typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     textDecoration = TextDecoration.Underline
                 )
