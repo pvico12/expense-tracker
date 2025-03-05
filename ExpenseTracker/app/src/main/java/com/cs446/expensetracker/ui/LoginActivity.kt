@@ -9,7 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,15 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.auth0.jwt.JWT
@@ -81,6 +81,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val buttonShape = RoundedCornerShape(26.dp)
     val textFieldShape = RoundedCornerShape(12.dp)
 
@@ -106,26 +109,36 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
         Spacer(modifier = Modifier.height(64.dp))
         TextField(
             value = username,
-            onValueChange = { username = it },
+            onValueChange = { username = it.replace("\n", "") },
             label = { Text("Username") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = textFieldShape,
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(
+                onNext = { focusRequester.requestFocus() }
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
         TextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { password = it.replace("\n", "") },
             label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
             visualTransformation = PasswordVisualTransformation(),
             shape = textFieldShape,
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = { keyboardController?.hide() }
             )
         )
         Spacer(modifier = Modifier.height(180.dp))
@@ -149,11 +162,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
                 .fillMaxWidth()
                 .height(50.dp)
                 .graphicsLayer {
-                    shadowElevation = 8f  // Elevation of the shadow
-                    shape = buttonShape    // Consistent shape for shadow
-                    clip = true            // Clip to the shape to prevent overflow
-                    translationX = 4f      // Move shadow right (adjust for more/less)
-                    translationY = 4f      // Move shadow down (adjust for more/less)
+                    shadowElevation = 8f
+                    shape = buttonShape
+                    clip = true
+                    translationX = 4f
+                    translationY = 4f
                 },
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
@@ -186,7 +199,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
         }
         errorMessage?.let {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = it, color = Color(0xFFC08261))
+            Text(text = it, color = Color(0xFFDBAD8C))
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(
