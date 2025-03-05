@@ -17,8 +17,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
-import com.cs446.expensetracker.models.Category
-import com.cs446.expensetracker.models.Transaction
+import com.cs446.expensetracker.api.models.Category
+import com.cs446.expensetracker.api.models.CategoryRequest
+import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -32,12 +33,16 @@ fun AddExpenseScreen(navController: NavController) {
 
     var expenseAmount by remember { mutableStateOf("") }
     var transactionNote by remember { mutableStateOf("") }
+    var vendorName by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Category List State
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
+
+    // AI Suggestion Loading State
+    var isAiLoading by remember { mutableStateOf(false) }
 
     // Bottom Sheet State
     val sheetState = rememberModalBottomSheetState()
@@ -103,6 +108,43 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Vendor Input
+        OutlinedTextField(
+            value = vendorName,
+            onValueChange = { vendorName = it },
+            label = { Text("Item / Vendor Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // AI Category Suggestion Button
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    isAiLoading = true
+                    val response = RetrofitInstance.apiService.getCategorySuggestion(CategoryRequest(vendorName))
+                    isAiLoading = false
+                    if (response.isSuccessful) {
+                        val aiCategory = response.body()
+                        selectedCategory = categories.find { it.id == aiCategory?.category_id }
+                    } else {
+                        errorMessage = "AI could not predict the category."
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = vendorName.isNotBlank()
+        ) {
+            if (isAiLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                Text("Run with AI")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         // Category Box (Tap to Open Bottom Sheet)
         Text(text = "Category", style = MaterialTheme.typography.bodyLarge)
         Box(
@@ -117,6 +159,12 @@ fun AddExpenseScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(10.dp))
+
+        // Error Message Display
+        if (errorMessage != null) {
+            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(10.dp))
+        }
 
         // Date Picker
         Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
