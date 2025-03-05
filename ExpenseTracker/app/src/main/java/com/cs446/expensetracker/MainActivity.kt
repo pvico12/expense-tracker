@@ -1,6 +1,5 @@
 package com.cs446.expensetracker
 
-import com.cs446.expensetracker.ui.LoginActivity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -51,6 +50,7 @@ import com.cs446.expensetracker.nav.SettingsNavContainer
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.AddDealScreen
 import com.cs446.expensetracker.ui.AddExpenseScreen
+import com.cs446.expensetracker.ui.WelcomeActivity
 import com.cs446.expensetracker.viewmodels.UserSessionViewModel
 
 class MainActivity : ComponentActivity() {
@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(isLoggedIn) {
                     if (!isLoggedIn) {
-                        startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                        startActivity(Intent(this@MainActivity, WelcomeActivity::class.java))
                         finish()
                     }
                 }

@@ -5,6 +5,7 @@ on:
       - develop
     paths:
       - 'backend/**'
+  workflow_dispatch:
         
 jobs:
   build-and-deploy:

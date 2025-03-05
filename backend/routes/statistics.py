@@ -11,7 +11,6 @@ from http_models import SummaryResponse, CategoryStats, SummaryCategoryResponse,
 from datetime import datetime
 from db import get_db, get_transactions as db_get_transactions, get_all_categories_for_user
 from models import Transaction, TransactionType, User
-import utils
 from fastapi.security import HTTPAuthorizationCredentials
 from dependencies.auth import get_current_user  # Updated import
 

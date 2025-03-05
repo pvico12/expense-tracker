@@ -30,6 +30,11 @@
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.ExpenseTracker" />
         <activity
+            android:name=".ui.WelcomeActivity"
+            android:exported="false"
+            android:label="@string/title_activity_welcome"
+            android:theme="@style/Theme.ExpenseTracker" />
+        <activity
             android:name=".activities.AdminPageActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_page"

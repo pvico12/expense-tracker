@@ -19,19 +19,13 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # Null for global categories
-    parent_id = Column(Integer, ForeignKey('categories.id'), nullable=True)  # For hierarchical grouping
+    color = Column(String(7), nullable=True)
 
     user = relationship("User", back_populates="categories")
     transactions = relationship("Transaction", back_populates="category")
-    parent = relationship("Category", remote_side=[id], backref=backref("subcategories", cascade="all, delete"))
 
     def __repr__(self):
         return f'<Category {self.name!r}>'
-
-    @property
-    def is_head_category(self) -> bool:
-        """Determine if the category is a head category."""
-        return self.parent_id is None
 
 class Transaction(Base):
     __tablename__ = 'transactions'
@@ -79,3 +73,29 @@ class User(Base):
             'firstname': self.firstname,
             'lastname': self.lastname
         }
+        
+        
+class Deal(Base):
+    __tablename__ = 'deals'
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), nullable=False)
+    description = Column(String(255), nullable=False)
+    price = Column(Float, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    date = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    address = Column(String(255), nullable=False)
+    longitude = Column(Float, nullable=False)
+    latitude = Column(Float, nullable=False)
+
+    def __repr__(self):
+        return f'<Deal {self.name!r}>'
+    
+class DealVote(Base):
+    __tablename__ = 'deal_votes'
+    id = Column(Integer, primary_key=True, index=True)
+    deal_id = Column(Integer, ForeignKey('deals.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    vote = Column(Integer, nullable=False)  # 1 for upvote, -1 for downvote
+
+    def __repr__(self):
+        return f'<DealVote {self.vote!r}>'
