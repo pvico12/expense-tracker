@@ -20,6 +20,7 @@ import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.models.Category
 import com.cs446.expensetracker.models.Transaction
 import com.cs446.expensetracker.session.UserSession
+import com.cs446.expensetracker.ui.ui.theme.Typography
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -88,10 +89,19 @@ fun AddExpenseScreen(navController: NavController) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(text = "NEW TRANSACTION", style = MaterialTheme.typography.headlineMedium)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "NEW TRANSACTION", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.weight(1.0f))
+            TextButton(onClick = { navController.popBackStack() },
+                contentPadding = PaddingValues(
+                    start = 20.dp,
+                    top = 0.dp,
+                    end = 0.dp,
+                    bottom = 10.dp,
+                )) {
+                Text("X",  style = Typography.titleLarge, color= Color(0xFF4B0C0C))
+            }
+        }
         // Amount Input
         OutlinedTextField(
             value = expenseAmount,
@@ -191,6 +201,9 @@ fun AddExpenseScreen(navController: NavController) {
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            ),
             enabled = !isLoading
         ) {
             if (isLoading) {
