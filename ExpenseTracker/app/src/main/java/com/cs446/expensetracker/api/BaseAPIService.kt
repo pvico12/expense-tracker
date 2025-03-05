@@ -12,6 +12,7 @@ import com.cs446.expensetracker.api.models.CategoryRequest
 import com.cs446.expensetracker.api.models.CategoryResponse
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.Transaction
+import com.cs446.expensetracker.api.models.TransactionResponse
 import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -48,6 +49,13 @@ interface BaseAPIService {
     // ===================== Transactions ======================
     @POST("/transactions/")
     suspend fun addTransaction(@Body transaction: Transaction): Response<Void>
+
+    @GET("/transactions/")
+    suspend fun getTransactions(
+        @Query("skip") skip: Int,
+        @Query("limit") limit: Int
+    ): Response<List<TransactionResponse>>
+
 
     @Multipart
     @POST("/transactions/csv")
