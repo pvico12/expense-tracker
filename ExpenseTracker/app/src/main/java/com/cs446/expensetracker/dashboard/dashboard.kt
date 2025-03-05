@@ -44,9 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.cs446.expensetracker.api.RetrofitInstance
+import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.mockData.dashboard_mock_expense
-import com.cs446.expensetracker.models.Category
-import com.cs446.expensetracker.models.Transaction
+import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
 import com.github.mikephil.charting.animation.Easing

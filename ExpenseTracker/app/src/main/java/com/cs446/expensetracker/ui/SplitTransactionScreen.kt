@@ -90,7 +90,7 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
                 // Use the amount from the transaction if available, otherwise the user input.
                 val parsedAmount = amountInput.toDoubleOrNull() ?: transaction?.amount ?: 0.0
                 if (count > 0) {
-                    val splitAmount = parsedAmount / count
+                    val splitAmount = parsedAmount / (count + 1)
                     val recipients = emailList.joinToString(separator = ",")
                     val subject = "E-Transfer request for ${transaction?.note ?: "Transaction"}"
                     val body = "Hello! Please E-Transfer this amount to the sender: $${"%.2f".format(splitAmount)}. Thank you!"

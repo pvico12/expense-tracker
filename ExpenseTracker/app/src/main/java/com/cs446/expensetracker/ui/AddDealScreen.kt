@@ -20,8 +20,8 @@ import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.mockData.Deal
 import com.cs446.expensetracker.mockData.mockDeals
 import com.cs446.expensetracker.mockData.mock_deal_json
-import com.cs446.expensetracker.models.Category
-import com.cs446.expensetracker.models.Transaction
+import com.cs446.expensetracker.api.models.Category
+import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
 import com.cs446.expensetracker.ui.ui.theme.mainTextColor

@@ -145,6 +145,10 @@ class MainActivity : ComponentActivity() {
                                 composable("deals") {
                                     val settingsNavContainer = DealsContainer()
                                     settingsNavContainer.DealsNavHost()
+
+                                }
+                                composable("addExpense") {
+                                    AddExpenseScreen(navController = rootNavController)
                                 }
                             }
                         }
