@@ -34,6 +34,7 @@ import com.auth0.jwt.JWT
 import com.cs446.expensetracker.MainActivity
 import com.cs446.expensetracker.R
 import com.cs446.expensetracker.api.RetrofitInstance
+import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
 import com.cs446.expensetracker.api.models.LoginRequest
 import com.cs446.expensetracker.session.UserSession
 import kotlinx.coroutines.CoroutineScope
@@ -240,6 +241,11 @@ suspend fun login(username: String, password: String): Boolean {
                 // decode access token to retrieve user id
                 val jwt = JWT.decode(loginResponse.access_token)
                 UserSession.userId = jwt.getClaim("user_id").asInt()
+
+                // send FCM token if it exists
+                if (UserSession.fcmToken != "") {
+                    RetrofitInstance.apiService.uploadFcmToken(FcmTokenUploadRequest(UserSession.fcmToken))
+                }
                 true
             } else {
                 false

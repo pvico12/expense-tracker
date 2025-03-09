@@ -17,6 +17,9 @@ class UserSessionViewModel : ViewModel() {
     private val _isLoggedIn = MutableLiveData(UserSession.isLoggedIn)
     val isLoggedIn: LiveData<Boolean> get() = _isLoggedIn
 
+    private val _fcmToken = MutableLiveData<String>()
+    val fcmToken: LiveData<String> get() = _fcmToken
+
     fun initializeSession() {
         viewModelScope.launch {
             while (true) {
