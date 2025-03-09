@@ -3,10 +3,18 @@ from fastapi import FastAPI
 from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction
 from db import test_connection, init_db
 import uvicorn
-import threading
-import time
 import logging
 import asyncio
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),  # Save logs to a file
+        logging.StreamHandler()          # Also output to console
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 

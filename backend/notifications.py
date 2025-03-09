@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from models import FcmToken
 import json
@@ -6,6 +7,8 @@ import requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from db import db_session
+
+logger = logging.getLogger(__name__)
 
 FCM_ENDPOINT = "https://fcm.googleapis.com/v1/projects/expense-tracker-app-448920/messages:send"
 
@@ -25,6 +28,8 @@ class FirebaseHTTPV1:
     def send_single_notification(self, device_token, title, body):
         try:
             access_token = self.get_access_token()
+            
+            logger.info(f"Sending notification to {device_token}")
             
             # Construct the message payload
             message = {
@@ -74,7 +79,7 @@ async def push_notification_healthcheck():
     while True:
         # get all FCM tokens from fcm_tokens table
         fcm_tokens = db_session.query(FcmToken).all()
-        print(fcm_tokens)
+        logger.info(f"Sending healthcheck notification to {len(fcm_tokens)} devices")
         
         # send a test notification to each device
         fcm.send_multiple_notifications([token.token for token in fcm_tokens], "Healthcheck", "This is a test notification")
