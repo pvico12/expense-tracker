@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
-from http_models import RegistrationRequest, LoginRequest, TokenRefreshRequest
+from http_models import FCMTokenUploadRequest, RegistrationRequest, LoginRequest, TokenRefreshRequest
 from models import FcmToken, User
 from db import get_db, add_predefined_categories
 from dependencies.auth import get_current_user
@@ -79,7 +79,7 @@ def refresh_token(data: TokenRefreshRequest, db: Session = Depends(get_db)):
 
 @router.post("/fcm_token")
 def send_fcm_token(
-    fcm_token: str,
+    fcm_token: FCMTokenUploadRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
