@@ -1,3 +1,4 @@
+import logging
 import os
 import datetime
 import jwt
@@ -10,6 +11,8 @@ from models import FcmToken, User
 from db import get_db, add_predefined_categories
 from dependencies.auth import get_current_user
 from utils import hash_password
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 JWT_ACCESS_TOKEN_SECRET = os.getenv('JWT_ACCESS_TOKEN_SECRET')
@@ -92,6 +95,9 @@ def send_fcm_token(
         token = FcmToken(user_id=current_user.id, token=request.fcm_token)
         db.add(token)
         db.commit()
+        
+        logger.info(f"FCM token added for user {current_user.id}. Token: {request.fcm_token}")
+        
         return {"message": "Token added successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
