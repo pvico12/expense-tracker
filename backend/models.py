@@ -82,6 +82,19 @@ class User(Base):
             'lastname': self.lastname
         }
         
+class FcmToken(Base):
+    __tablename__ = 'fcm_tokens'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(50), unique=True, nullable=False)
+    token = Column(String(50), unique=True, nullable=False)
+    
+    def __init__(self, user_id=None, token=None):
+        self.user_id = user_id
+        self.token = token
+    
+    def __repr__(self):
+        return f'<FcmToken {self.token!r}>'
+
         
 class Deal(Base):
     __tablename__ = 'deals'
