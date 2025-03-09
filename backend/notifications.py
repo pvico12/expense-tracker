@@ -68,7 +68,7 @@ class FirebaseHTTPV1:
 
 
 def push_notification_healthcheck():
-    fcm = FirebaseHTTPV1("expense-tracker-app-448920-firebase-adminsdk-fbsvc-cb6e177e39.json")
+    fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
     
     while True:
         # get all FCM tokens from fcm_tokens table
