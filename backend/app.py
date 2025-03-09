@@ -1,7 +1,10 @@
+from notifications import push_notification_healthcheck
 from fastapi import FastAPI
 from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction
 from db import test_connection, init_db
 import uvicorn
+import threading
+import time
 
 app = FastAPI()
 
@@ -13,7 +16,6 @@ app.include_router(recurring_transaction.router)
 app.include_router(statistics.router)
 app.include_router(tools.router)
 app.include_router(deals.router)
-
 
 @app.get("/")
 def home():
@@ -28,6 +30,7 @@ def startup():
     if not test_connection():
         print("Database connection failed!")
     init_db()
+    threading.Thread(target=push_notification_healthcheck, daemon=True).start()
 
 if __name__ == '__main__':
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
