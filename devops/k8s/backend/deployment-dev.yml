@@ -46,10 +46,16 @@ spec:
         - name: gcp-vision-api-service-account-config
           mountPath: /app/expense-tracker-gcp.json
           subPath: expense-tracker-gcp.json
+        - name: gcp-firebase-service-account-config
+          mountPath: /app/expense-tracker-firebase.json
+          subPath: expense-tracker-firebase.json
       volumes:
       - name: gcp-vision-api-service-account-config
         configMap:
           name: gcp-vision-api-service-account-config
+      - name: gcp-firebase-service-account-config
+        configMap:
+          name: gcp-firebase-service-account-config
       imagePullSecrets:
       - name: ghcr-creds-secret
 ---

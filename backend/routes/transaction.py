@@ -52,7 +52,8 @@ def create_transaction(
             category_id=transaction.category_id,
             transaction_type=transaction.transaction_type,
             note=transaction.note,
-            date=transaction.date
+            date=transaction.date,
+            vendor=transaction.vendor
         )
         return TransactionResponse.from_orm(new_transaction)
     except Exception as e:
@@ -116,9 +117,9 @@ def upload_csv(
                 "user_id": current_user.id,
                 "amount": round(float(row['amount']), 2),
                 "category_id": target_category_id,
-                "transaction_type": row['transaction_type'],
                 "note": row.get('note', ''),
-                "date": row['date']
+                "date": row['date'],
+                "vendor": row.get('vendor')
             }
             transactions.append(transaction)
         

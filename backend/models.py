@@ -1,5 +1,6 @@
 # models.py
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum
+from typing import Optional
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import relationship, backref
 from base import Base  # Import Base from base.py
 import enum
@@ -36,10 +37,17 @@ class Transaction(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     note = Column(String(255), nullable=True)
     date = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
-
+    
+    # Change the vendor field to be defined as a column
+    vendor = Column(String, nullable=True)
+    
+    # Recurring ID column and relationship remain unchanged
+    recurring_id = Column(Integer, ForeignKey('recurring_transactions.id'), nullable=True)
+    recurring = relationship("RecurringTransaction", backref="transactions", foreign_keys=[recurring_id])
+    
     user = relationship("User", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
-
+    
     def __repr__(self):
         return f'<Transaction {self.id} - {self.amount}>'
 
@@ -74,6 +82,21 @@ class User(Base):
             'lastname': self.lastname
         }
         
+class FcmToken(Base):
+    __tablename__ = 'fcm_tokens'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    token = Column(String(50), unique=True, nullable=False)
+    
+    user = relationship("User", backref=backref("fcm_tokens", cascade="all, delete-orphan"))
+    
+    def __init__(self, user_id=None, token=None):
+        self.user_id = user_id
+        self.token = token
+    
+    def __repr__(self):
+        return f'<FcmToken {self.token!r}>'
+
         
 class Deal(Base):
     __tablename__ = 'deals'
@@ -86,6 +109,8 @@ class Deal(Base):
     address = Column(String(255), nullable=False)
     longitude = Column(Float, nullable=False)
     latitude = Column(Float, nullable=False)
+    
+    user = relationship("User", backref=backref("deals", cascade="all, delete-orphan"))
 
     def __repr__(self):
         return f'<Deal {self.name!r}>'
@@ -96,6 +121,24 @@ class DealVote(Base):
     deal_id = Column(Integer, ForeignKey('deals.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     vote = Column(Integer, nullable=False)  # 1 for upvote, -1 for downvote
+    
+    user = relationship("User", backref=backref("deal_votes", cascade="all, delete-orphan"))
+    deal = relationship("Deal", backref=backref("deal_votes", cascade="all, delete-orphan"))
 
     def __repr__(self):
         return f'<DealVote {self.vote!r}>'
+
+class RecurringTransaction(Base):
+    __tablename__ = 'recurring_transactions'
+    id = Column(Integer, primary_key=True, index=True)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=True)  # Could be optional if it goes on indefinitely
+    note = Column(String(255), nullable=True)
+    period = Column(Integer, nullable=False)  # period in days
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+
+    # Establish relationship with the User
+    user = relationship("User", backref=backref("recurring_transactions", cascade="all, delete-orphan"))
+    
+    def __repr__(self):
+        return f'<RecurringTransaction {self.id} for user {self.user_id}>'

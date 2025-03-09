@@ -9,6 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,10 +20,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,12 +43,12 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.cs446.expensetracker.api.RetrofitInstance
+import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.mockData.dashboard_mock_expense
-import com.cs446.expensetracker.ui.ui.theme.PurpleGrey40
-import com.cs446.expensetracker.ui.ui.theme.Typography
-import com.cs446.expensetracker.ui.ui.theme.mainBackgroundColor
-import com.cs446.expensetracker.ui.ui.theme.mainTextColor
-import com.cs446.expensetracker.ui.ui.theme.tileColor
+import com.cs446.expensetracker.api.models.Category
+import com.cs446.expensetracker.session.UserSession
+import com.cs446.expensetracker.ui.ui.theme.*
 import com.github.mikephil.charting.animation.Easing
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.PieData
@@ -43,6 +56,7 @@ import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.utils.MPPointF
+import kotlinx.coroutines.launch
 
 class Dashboard {
     val format = DecimalFormat("#,###.00")
@@ -50,6 +64,10 @@ class Dashboard {
     @Composable
     fun DashboardHost() {
         val scrollState = rememberScrollState()
+        val coroutineScope = rememberCoroutineScope()
+        var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+        var errorMessage = ""
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -58,13 +76,33 @@ class Dashboard {
             ,
             verticalArrangement = Arrangement.Top
         ) {
-            Text(
-                text = "Home Dashboard",
-                color = mainTextColor,
-                style = Typography.titleLarge,
+            Row(
                 modifier = Modifier
-                    .padding(start = 16.dp, top = 16.dp)
-            )
+                    .fillMaxWidth()
+                    .padding(0.dp),
+            ) {
+                Text(
+                    text = "Home Dashboard",
+                    color = mainTextColor,
+                    style = Typography.titleLarge,
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 16.dp)
+                )
+                Spacer(Modifier.weight(1f))
+                TextButton(
+                    onClick = { /* ... */ },
+                    shape = CircleShape,
+                    modifier = Modifier.size(70.dp).padding(bottom=5.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Favorite",
+                        modifier = Modifier.size(45.dp),
+                        tint = mainTextColor
+                    )
+                }
+            }
             Piechart()
             Text(
                 text = "This Month's Expenses",

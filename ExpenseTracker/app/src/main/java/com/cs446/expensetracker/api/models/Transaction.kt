@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.models
+package com.cs446.expensetracker.api.models
 
 data class Transaction(
     val amount: Double,

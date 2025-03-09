@@ -17,11 +17,18 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-02-07,5,0,0,0,0,0,Setup authentication - backend - pt.1
 2025-02-07,5,0,0,0,0,0,Setup Authentication In App
 2025-02-10,0,0,0,5,0,0, Add Floating Action Button for Adding Transactions
+2025-02-10,0,0.5,0.5,0.5,0,0.5,Meet and assign frontend tasks for i1
 2025-02-11,0,6,0,0,0,0,Added home/dashboard pie chart + expenses list
 2025-02-11,0,0,0,0,0,4, Added Transaction History and Transaction Details screen
+2025-02-11,0,0,3,0,0,0,UML and proposal clarification document for i1
+2025-02-11,0,0.5,0.5,0.5,0.5,0.5,Meet and finalize for i1
+2025-02-12,0.5,0.5,0.5,0.5,0.5,0.5,Meet and briefly discuss features
+2025-02-18,0,0,2.5,0,0,0,Compiling a features list draft for i2
 2025-02-20,2,2,2,2,2,2, Meet and discuss Iteration 2 goals/requirements/tasks and general planning
 2025-03-01,3,0,0,0,0,0, Add AI assisted category recommendations
 2025-03-01,4,0,0,0,0,0, Add CSV file upload for transactions (scan + create transactions + get template)
 2025-03-01,5,0,0,0,0,0, OCR Receipt Scanning Feature + AI integration
 2025-03-02,4,0,0,0,0,0, Deals Backend Feature
-
+2025-03-04,0,0,4,0,0,0, Revamp Login page visuals
+2025-03-04,0,0,2,0,0,0, Update UML diagram
+2025-03-09,5,0,0,0,0,0, Push Notifications Firebase Backend Setup
