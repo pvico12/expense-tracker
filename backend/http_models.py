@@ -17,6 +17,9 @@ class RegistrationRequest(BaseModel):
 class TokenRefreshRequest(BaseModel):
     refresh_token: str = Field(..., min_length=1)
 
+class FCMTokenUploadRequest(BaseModel):
+    fcm_token: str = Field(..., min_length=1)
+
 class CategoryCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     color: Optional[str] = Field(None, regex=r'^#[0-9A-Fa-f]{6}$')
