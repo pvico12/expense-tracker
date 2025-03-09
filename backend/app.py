@@ -5,6 +5,8 @@ from db import test_connection, init_db
 import uvicorn
 import threading
 import time
+import logging
+import asyncio
 
 app = FastAPI()
 
@@ -26,12 +28,14 @@ def healthcheck():
     return {"status": "healthy"}
 
 @app.on_event("startup")
-def startup():
+async def startup():
     if not test_connection():
         print("Database connection failed!")
     init_db()
-    threading.Thread(target=push_notification_healthcheck, daemon=True).start()
-
+    
+    # Start the healthcheck thread
+    asyncio.create_task(push_notification_healthcheck())
+    
 if __name__ == '__main__':
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
 

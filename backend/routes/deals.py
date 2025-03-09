@@ -28,7 +28,6 @@ def get_deals(
         
         location_filter = filters.location
         if location_filter:
-            print("here")
             # filter by location
             deals = [deal for deal in deals if
                      abs(get_coordinate_distance(

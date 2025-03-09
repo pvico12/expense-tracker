@@ -1,3 +1,4 @@
+import asyncio
 import time
 from models import FcmToken
 import json
@@ -67,7 +68,7 @@ class FirebaseHTTPV1:
         return results
 
 
-def push_notification_healthcheck():
+async def push_notification_healthcheck():
     fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
     
     while True:
@@ -82,4 +83,4 @@ def push_notification_healthcheck():
         # fcm_tokens = ["dnAFw0TDTvCPhzV2YhJeYl:APA91bGiM-YlnIDDEelSp5bZ8O3QxxRgjMghEQwcZHrKDUvnGrRwP8M--pM1AwqJfOCjxQAR3AxCl6kqdeqNh7Nh8P5mXoipnvyopJNq3SqyLOOVgjtlmqo"]
         # fcm.send_multiple_notifications(fcm_tokens, "Healthcheck", "This is a test notification")
         
-        time.sleep(20)
+        await asyncio.sleep(60)
