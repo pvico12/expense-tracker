@@ -7,7 +7,7 @@ spec:
   selector:
     matchLabels:
       app: expense-tracker-backend-prod
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       labels:
