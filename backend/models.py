@@ -85,8 +85,10 @@ class User(Base):
 class FcmToken(Base):
     __tablename__ = 'fcm_tokens'
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String(50), unique=True, nullable=False)
+    user_id = Column(String(50), ForeignKey('users.id'), nullable=False)
     token = Column(String(50), unique=True, nullable=False)
+    
+    user = relationship("User", backref=backref("fcm_tokens", cascade="all, delete-orphan"))
     
     def __init__(self, user_id=None, token=None):
         self.user_id = user_id

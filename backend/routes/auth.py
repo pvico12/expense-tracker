@@ -1,12 +1,13 @@
 import os
 import datetime
 import jwt
+from backend.dependencies.auth import get_current_user
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
 from http_models import RegistrationRequest, LoginRequest, TokenRefreshRequest
-from models import User
+from models import FcmToken, User
 from db import get_db, add_predefined_categories
 from utils import hash_password
 
@@ -75,3 +76,22 @@ def refresh_token(data: TokenRefreshRequest, db: Session = Depends(get_db)):
         'message': 'Token refreshed',
         'access_token': access_token
     }
+
+@router.post("/fcm_token")
+def send_fcm_token(
+    fcm_token: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # remove all tokens related to the userid
+        db.query(FcmToken).filter_by(user_id=current_user.id).delete()
+        db.commit()
+        
+        # add the new token
+        token = FcmToken(user_id=current_user.id, token=fcm_token)
+        db.add(token)
+        db.commit()
+        return {"message": "Token added successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
