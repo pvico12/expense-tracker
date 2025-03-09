@@ -1,7 +1,6 @@
 import os
 import datetime
 import jwt
-from backend.dependencies.auth import get_current_user
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -9,6 +8,7 @@ from dotenv import load_dotenv
 from http_models import RegistrationRequest, LoginRequest, TokenRefreshRequest
 from models import FcmToken, User
 from db import get_db, add_predefined_categories
+from dependencies.auth import get_current_user
 from utils import hash_password
 
 load_dotenv()

@@ -85,7 +85,7 @@ class User(Base):
 class FcmToken(Base):
     __tablename__ = 'fcm_tokens'
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String(50), ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     token = Column(String(50), unique=True, nullable=False)
     
     user = relationship("User", backref=backref("fcm_tokens", cascade="all, delete-orphan"))
@@ -109,6 +109,8 @@ class Deal(Base):
     address = Column(String(255), nullable=False)
     longitude = Column(Float, nullable=False)
     latitude = Column(Float, nullable=False)
+    
+    user = relationship("User", backref=backref("deals", cascade="all, delete-orphan"))
 
     def __repr__(self):
         return f'<Deal {self.name!r}>'
@@ -119,6 +121,9 @@ class DealVote(Base):
     deal_id = Column(Integer, ForeignKey('deals.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     vote = Column(Integer, nullable=False)  # 1 for upvote, -1 for downvote
+    
+    user = relationship("User", backref=backref("deal_votes", cascade="all, delete-orphan"))
+    deal = relationship("Deal", backref=backref("deal_votes", cascade="all, delete-orphan"))
 
     def __repr__(self):
         return f'<DealVote {self.vote!r}>'
