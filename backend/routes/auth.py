@@ -79,7 +79,7 @@ def refresh_token(data: TokenRefreshRequest, db: Session = Depends(get_db)):
 
 @router.post("/fcm_token")
 def send_fcm_token(
-    fcm_token: FCMTokenUploadRequest,
+    request: FCMTokenUploadRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -89,7 +89,7 @@ def send_fcm_token(
         db.commit()
         
         # add the new token
-        token = FcmToken(user_id=current_user.id, token=fcm_token)
+        token = FcmToken(user_id=current_user.id, token=request.fcm_token)
         db.add(token)
         db.commit()
         return {"message": "Token added successfully"}
