@@ -132,9 +132,9 @@ class RecurringTransaction(Base):
     __tablename__ = 'recurring_transactions'
     id = Column(Integer, primary_key=True, index=True)
     start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=True)  # Could be optional if it goes on indefinitely
+    end_date = Column(DateTime, nullable=True)
     note = Column(String(255), nullable=True)
-    period = Column(Integer, nullable=False)  # period in days
+    period = Column(Integer, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
     # Establish relationship with the User
@@ -148,10 +148,11 @@ class Goal(Base):
     __tablename__ = 'goals'
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)  # Optional for global goals
-    goal_type = Column(String(20), nullable=False)  # "amount" or "percentage"
-    limit = Column(Float, nullable=False) # amount or percentage digit
-    duration = Column(String(10), nullable=False)   # "week" or "month"
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
+    goal_type = Column(String(20), nullable=False)
+    limit = Column(Float, nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
     on_track = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -159,4 +160,4 @@ class Goal(Base):
     category = relationship("Category", backref=backref("goals", cascade="all, delete-orphan"), foreign_keys=[category_id])
 
     def __repr__(self):
-        return f"<Goal {self.id} for User {self.user_id} on Category {self.category_id}>"
+        return f"<Goal {self.id} for User {self.user_id} on Category {self.category_id} from {self.start_date} to {self.end_date}>"

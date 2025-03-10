@@ -1,25 +1,60 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
-from typing import List
-from http_models import GoalCreateRequest, GoalUpdateRequest, GoalResponse
+from typing import List, Optional
+from http_models import GoalCreateRequest, GoalUpdateRequest, GoalResponse, GoalsStatisticsResponse
 from models import Goal, Category, User
 from dependencies.auth import get_current_user
 from db import get_db
+import datetime
 
 router = APIRouter(
     prefix="/goals",
     tags=["goals"]
 )
 
-@router.get("/", response_model=List[GoalResponse])
-def get_goals(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    goals = db.query(Goal).filter(Goal.user_id == current_user.id).all()
-    return goals
+@router.get("/", response_model=GoalsStatisticsResponse)
+def get_goals(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    start_date: Optional[datetime.datetime] = None,
+    end_date: Optional[datetime.datetime] = None
+):
+    """
+    Retrieve goals for the authenticated user.
+    Optionally filter goals based on start_date and end_date.
+    If only start_date is provided, use that date up until now.
+    Returns additional statistics including the number of completed and incompleted goals.
+    """
+    query = db.query(Goal).filter(Goal.user_id == current_user.id)
+    effective_end = end_date
+    if start_date:
+        query = query.filter(Goal.start_date >= start_date)
+        if not end_date:
+            effective_end = datetime.datetime.utcnow()
+    if effective_end:
+         query = query.filter(Goal.end_date <= effective_end)
+    goals = query.all()
+
+    now = datetime.datetime.utcnow()
+    completed_count = sum(1 for goal in goals if goal.end_date <= now and goal.on_track)
+    incompleted_count = sum(1 for goal in goals if goal.end_date > now)
+    failed_count = sum(1 for goal in goals if goal.end_date < now and not goal.on_track)
+    return {
+        "goals": goals,
+        "stats": {
+            "completed": completed_count,
+            "in_progress": incompleted_count,
+            "failed": failed_count
+        }
+    }
 
 @router.post("/", response_model=GoalResponse, status_code=status.HTTP_201_CREATED)
-def create_goal(goal: GoalCreateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_goal(
+    goal: GoalCreateRequest, 
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
     if goal.category_id is not None:
-        # Ensure that if a category is supplied, it exists and is accessible.
         category = db.query(Category).filter(
             Category.id == goal.category_id,
             (Category.user_id == current_user.id) | (Category.user_id.is_(None))
@@ -27,12 +62,16 @@ def create_goal(goal: GoalCreateRequest, current_user: User = Depends(get_curren
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
     
+    start_date = goal.start_date
+    end_date = start_date + datetime.timedelta(days=goal.period)
+
     new_goal = Goal(
         user_id=current_user.id,
         category_id=goal.category_id,
         goal_type=goal.goal_type,
         limit=goal.limit,
-        duration=goal.duration
+        start_date=start_date,
+        end_date=end_date
     )
     db.add(new_goal)
     db.commit()
@@ -48,8 +87,10 @@ def update_goal(goal_id: int, goal_update: GoalUpdateRequest, current_user: User
         goal.goal_type = goal_update.goal_type
     if goal_update.limit is not None:
         goal.limit = goal_update.limit
-    if goal_update.duration is not None:
-        goal.duration = goal_update.duration
+    if goal_update.start_date is not None:
+        goal.start_date = goal_update.start_date
+    if goal_update.end_date is not None:
+        goal.end_date = goal_update.end_date
     db.commit()
     db.refresh(goal)
     return goal

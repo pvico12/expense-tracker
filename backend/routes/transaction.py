@@ -57,9 +57,7 @@ def create_transaction(
         )
         
         from middlewares.goal_utils import recalc_goal_progress
-        # Recalculate for the category (if applicable)...
         recalc_goal_progress(db, current_user.id, transaction.category_id)
-        # ...and also for any global goals.
         recalc_goal_progress(db, current_user.id, None)
         
         return TransactionResponse.from_orm(new_transaction)
