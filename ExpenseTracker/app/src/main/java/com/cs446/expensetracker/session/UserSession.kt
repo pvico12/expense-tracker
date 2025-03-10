@@ -9,4 +9,5 @@ object UserSession {
     var userId: Int = -1
     var access_token: String = ""
     var refresh_token: String = ""
+    var fcmToken: String = ""
 }

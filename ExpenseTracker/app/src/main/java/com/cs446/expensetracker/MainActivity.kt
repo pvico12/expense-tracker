@@ -2,6 +2,7 @@ package com.cs446.expensetracker
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -52,13 +53,29 @@ import com.cs446.expensetracker.ui.AddDealScreen
 import com.cs446.expensetracker.ui.AddExpenseScreen
 import com.cs446.expensetracker.ui.WelcomeActivity
 import com.cs446.expensetracker.viewmodels.UserSessionViewModel
-
+import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
 class MainActivity : ComponentActivity() {
     private val userSessionViewModel: UserSessionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         userSessionViewModel.initializeSession()
+
+        FirebaseApp.initializeApp(this) // Add this line
+
+        // Fetch FCM token
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                Log.d("FCM Token", token)
+                UserSession.fcmToken = token
+                // Send this token to your Python backend
+//                sendTokenToBackend(token)
+            } else {
+                Log.e("FCM Token", "Fetching token failed", task.exception)
+            }
+        }
 
         setContent {
             ExpenseTrackerTheme {

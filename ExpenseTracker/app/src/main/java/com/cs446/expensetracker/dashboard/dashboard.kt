@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.icu.text.DecimalFormat
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,6 +68,8 @@ class Dashboard {
         val coroutineScope = rememberCoroutineScope()
         var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
         var errorMessage = ""
+
+        Log.d("FCM Token", UserSession.fcmToken)
 
         Column(
             modifier = Modifier

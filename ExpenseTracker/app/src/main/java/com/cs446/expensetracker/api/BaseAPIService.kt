@@ -10,6 +10,7 @@ import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.CategoryRequest
 import com.cs446.expensetracker.api.models.CategoryResponse
+import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.api.models.TransactionResponse
@@ -38,6 +39,9 @@ interface BaseAPIService {
 
     @POST("/auth/refresh")
     suspend fun refreshToken(@Body request: TokenRefreshRequest): Response<TokenRefreshResponse>
+
+    @POST("/auth/fcm_token")
+    suspend fun uploadFcmToken(@Body request: FcmTokenUploadRequest): Response<Unit>
 
 //    @POST("/auth/token/identify")
 //    suspend fun identifyUserToken(): Response<UserTokenIdentificationResponse>

@@ -8,7 +8,7 @@ from jwt import PyJWTError
 from dotenv import load_dotenv
 import os
 
-from http_models import ReceiptParseResponse, TransactionCreateRequest, TransactionResponse, CategoryResponse, SummaryResponse, CategoryStats, CustomCategoryCreateRequest
+from http_models import ReceiptParseResponse, TransactionCreateRequest, TransactionResponse, CategoryResponse, SummaryResponse, CategoryStats, CustomCategoryCreateRequest, TransactionUpdateRequest
 from datetime import datetime
 from typing import Optional
 from db import get_db, add_transaction, get_transactions as db_get_transactions, get_all_categories_for_user
@@ -170,3 +170,45 @@ def scan_receipt(
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/{transaction_id}", response_model=TransactionResponse)
+def update_transaction(
+    transaction_id: int,
+    transaction_update: TransactionUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing transaction for the authenticated user.
+    """
+    tx = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.user_id == current_user.id
+    ).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # If a new category is provided, validate it.
+    if transaction_update.category_id is not None:
+        category = db.query(Category).filter(
+            Category.id == transaction_update.category_id,
+            (Category.user_id == current_user.id) | (Category.user_id.is_(None))
+        ).first()
+        if not category:
+            raise HTTPException(status_code=404, detail="Category not found")
+        tx.category_id = transaction_update.category_id
+
+    if transaction_update.amount is not None:
+        tx.amount = transaction_update.amount
+    if transaction_update.transaction_type is not None:
+        tx.transaction_type = transaction_update.transaction_type
+    if transaction_update.note is not None:
+        tx.note = transaction_update.note
+    if transaction_update.date is not None:
+        tx.date = transaction_update.date
+    if transaction_update.vendor is not None:
+        tx.vendor = transaction_update.vendor
+
+    db.commit()
+    db.refresh(tx)
+    return TransactionResponse.from_orm(tx)
