@@ -163,6 +163,11 @@ class DealVoteResponse(BaseModel):
     upvotes: int
     downvotes: int
     
+class UserProfileUpdateRequest(BaseModel):
+    firstname: Optional[str]
+    lastname: Optional[str]
+    username: Optional[str]
+    
 
 
 # Needed for self-referencing models
