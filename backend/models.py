@@ -142,3 +142,21 @@ class RecurringTransaction(Base):
     
     def __repr__(self):
         return f'<RecurringTransaction {self.id} for user {self.user_id}>'
+
+# New model for spending goals.
+class Goal(Base):
+    __tablename__ = 'goals'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)  # Optional for global goals
+    goal_type = Column(String(20), nullable=False)  # "amount" or "percentage"
+    limit = Column(Float, nullable=False) # amount or percentage digit
+    duration = Column(String(10), nullable=False)   # "week" or "month"
+    on_track = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", backref=backref("goals", cascade="all, delete-orphan"))
+    category = relationship("Category", backref=backref("goals", cascade="all, delete-orphan"), foreign_keys=[category_id])
+
+    def __repr__(self):
+        return f"<Goal {self.id} for User {self.user_id} on Category {self.category_id}>"

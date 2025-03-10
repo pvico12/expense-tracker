@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, root_validator
 from typing import Optional, List, Dict
 import datetime
 from models import TransactionType
@@ -205,3 +205,59 @@ class TransactionUpdateRequest(BaseModel):
         if v is not None and isinstance(v, str):
             return TransactionType(v.lower())
         return v
+
+class GoalCreateRequest(BaseModel):
+    category_id: Optional[int] = None  # If None, this is a global spending goal (only allowed for amount type)
+    goal_type: str  # "amount" or "percentage"
+    limit: float
+    duration: str   # "week" or "month"
+
+    ## need to validate duration and goal_type
+    @validator("duration")
+    def validate_duration(cls, v):
+        if v not in ["week", "month"]:
+            raise ValueError("duration must be either 'week' or 'month'")
+        return v
+
+    @validator("goal_type")
+    def validate_goal_type(cls, v):
+        if v not in ["amount", "percentage"]:
+            raise ValueError("goal_type must be either 'amount' or 'percentage'")
+        return v.lower()
+
+    @root_validator
+    def check_category_for_percentage(cls, values):
+        goal_type = values.get("goal_type")
+        category_id = values.get("category_id")
+        if goal_type == "percentage" and category_id is None:
+            raise ValueError("Percentage goal must have a category_id")
+        return values
+
+class GoalUpdateRequest(BaseModel):
+    # For updates, note that we are not allowing update of category_id.
+    limit: Optional[float] = None
+    duration: Optional[str] = None
+    goal_type: Optional[str] = None
+
+    @validator("duration")
+    def validate_duration(cls, v):
+        if v and v not in ["week", "month"]:
+            raise ValueError("duration must be either 'week' or 'month'")
+        return v
+
+    @validator("goal_type")
+    def validate_goal_type(cls, v):
+        if v and v not in ["amount", "percentage"]:
+            raise ValueError("goal_type must be either 'amount' or 'percentage'")
+        return v.lower()
+
+class GoalResponse(BaseModel):
+    id: int
+    category_id: Optional[int] = None
+    goal_type: str
+    limit: float
+    duration: str
+    on_track: bool
+
+    class Config:
+        orm_mode = True

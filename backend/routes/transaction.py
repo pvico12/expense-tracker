@@ -37,7 +37,7 @@ def create_transaction(
     Create a new transaction for the authenticated user.
     """
     try:
-        # Ensure the category exists and is accessible by the user
+        # Validate the category (if applicable).
         category = db.query(Category).filter(
             Category.id == transaction.category_id,
             (Category.user_id == current_user.id) | (Category.user_id.is_(None))
@@ -55,6 +55,13 @@ def create_transaction(
             date=transaction.date,
             vendor=transaction.vendor
         )
+        
+        from middlewares.goal_utils import recalc_goal_progress
+        # Recalculate for the category (if applicable)...
+        recalc_goal_progress(db, current_user.id, transaction.category_id)
+        # ...and also for any global goals.
+        recalc_goal_progress(db, current_user.id, None)
+        
         return TransactionResponse.from_orm(new_transaction)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -81,11 +88,21 @@ def delete_transaction(
     """
     Delete a transaction by its ID for the authenticated user.
     """
-    transaction = db.query(Transaction).filter(Transaction.id == transaction_id, Transaction.user_id == current_user.id).first()
+    transaction = db.query(Transaction).filter(
+        Transaction.id == transaction_id, 
+        Transaction.user_id == current_user.id
+    ).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    category_id = transaction.category_id
     db.delete(transaction)
     db.commit()
+    
+    from middlewares.goal_utils import recalc_goal_progress
+    recalc_goal_progress(db, current_user.id, category_id)
+    recalc_goal_progress(db, current_user.id, None)
+    
     return
 
 @router.post("/csv", status_code=status.HTTP_201_CREATED)
@@ -211,4 +228,9 @@ def update_transaction(
 
     db.commit()
     db.refresh(tx)
+    
+    from middlewares.goal_utils import recalc_goal_progress
+    recalc_goal_progress(db, current_user.id, tx.category_id)
+    recalc_goal_progress(db, current_user.id, None)
+    
     return TransactionResponse.from_orm(tx)
