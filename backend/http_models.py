@@ -30,6 +30,7 @@ class TransactionCreateRequest(BaseModel):
     transaction_type: TransactionType
     note: str
     date: Optional[datetime.datetime] = None
+    vendor: Optional[str] = None
 
     @validator('transaction_type', pre=True)
     def parse_transaction_type(cls, v: Any) -> Any:
@@ -190,3 +191,17 @@ class RecurringTransactionResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class TransactionUpdateRequest(BaseModel):
+    amount: Optional[float] = None
+    category_id: Optional[int] = None
+    transaction_type: Optional[TransactionType] = None
+    note: Optional[str] = None
+    date: Optional[datetime.datetime] = None
+    vendor: Optional[str] = None
+
+    @validator('transaction_type', pre=True)
+    def parse_transaction_type(cls, v: Any) -> Any:
+        if v is not None and isinstance(v, str):
+            return TransactionType(v.lower())
+        return v
