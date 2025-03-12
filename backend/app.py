@@ -1,6 +1,6 @@
 from notifications import push_notification_healthcheck
 from fastapi import FastAPI
-from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction
+from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction, goals
 from db import test_connection, init_db
 import uvicorn
 import logging
@@ -26,6 +26,7 @@ app.include_router(recurring_transaction.router)
 app.include_router(statistics.router)
 app.include_router(tools.router)
 app.include_router(deals.router)
+app.include_router(goals.router)
 
 @app.get("/")
 def home():

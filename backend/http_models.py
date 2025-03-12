@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, root_validator
 from typing import Optional, List, Dict
 import datetime
 from models import TransactionType
@@ -210,3 +210,79 @@ class TransactionUpdateRequest(BaseModel):
         if v is not None and isinstance(v, str):
             return TransactionType(v.lower())
         return v
+
+class GoalCreateRequest(BaseModel):
+    category_id: Optional[int] = None
+    goal_type: str
+    limit: float
+    start_date: datetime.datetime
+    period: int = Field(..., gt=0, description="The duration of the goal in days from the start_date")
+
+    @validator("goal_type")
+    def validate_goal_type(cls, v):
+        if v not in ["amount", "percentage"]:
+            raise ValueError("goal_type must be either 'amount' or 'percentage'")
+        return v.lower()
+
+    @root_validator
+    def check_goal_specifics(cls, values):
+        goal_type = values.get("goal_type")
+        category_id = values.get("category_id")
+        if goal_type == "percentage" and category_id is None:
+            raise ValueError("Percentage goal must have a category_id")
+        return values
+
+class GoalUpdateRequest(BaseModel):
+    limit: Optional[float] = None
+    start_date: Optional[datetime.datetime] = None
+    end_date: Optional[datetime.datetime] = None
+    goal_type: Optional[str] = None
+
+    @validator("goal_type")
+    def validate_goal_type(cls, v):
+        if v and v not in ["amount", "percentage"]:
+            raise ValueError("goal_type must be either 'amount' or 'percentage'")
+        return v.lower()
+
+    @root_validator
+    def validate_dates(cls, values):
+        start_date = values.get("start_date")
+        end_date = values.get("end_date")
+        if start_date and end_date and start_date > end_date:
+            raise ValueError("start_date must be before or equal to end_date")
+        return values
+
+class GoalResponse(BaseModel):
+    id: int
+    category_id: Optional[int] = None
+    goal_type: str
+    limit: float
+    start_date: datetime.datetime
+    end_date: datetime.datetime
+    period: int = 0
+    on_track: bool
+    time_left: int = 0
+
+    class Config:
+        orm_mode = True
+
+    @validator("period", always=True, pre=True)
+    def compute_period(cls, v, values):
+        start_date = values.get("start_date")
+        end_date = values.get("end_date")
+        if start_date and end_date:
+            return (end_date - start_date).days + 1
+        return 0
+
+    @validator("time_left", always=True, pre=True)
+    def compute_time_left(cls, v, values):
+        now = datetime.datetime.utcnow()
+        end_date = values.get("end_date")
+        if end_date:
+            diff = (end_date - now).days
+            return diff if diff > 0 else 0
+        return 0
+
+class GoalsStatisticsResponse(BaseModel):
+    goals: List[GoalResponse]
+    stats: Dict[str, int]
