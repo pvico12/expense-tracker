@@ -128,6 +128,8 @@ class HttpDeal(BaseModel):
     address: str
     longitude: float
     latitude: float
+    upvotes: Optional[int]
+    downvotes: Optional[int]
     
     class Config:
         orm_mode = True
