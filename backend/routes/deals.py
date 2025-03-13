@@ -14,10 +14,25 @@ router = APIRouter(
     prefix="/deals",
     tags=["deals"]
 )
+
+# Helpers
+def get_deal_votes_by_id(db, id):
+    # find all votes with this deal id
+    votes = db.query(DealVote).filter(DealVote.deal_id == id).all()
+    
+    # count upvotes and downvotes
+    upvotes = len([vote for vote in votes if vote.vote == 1])
+    downvotes = len([vote for vote in votes if vote.vote == -1])
+    
+    return {
+        "upvotes": upvotes,
+        "downvotes": downvotes
+    }
     
 @router.post("/list", response_model=List[HttpDeal], status_code=status.HTTP_200_OK)
 def get_deals(
-    filters: Optional[DealRetrievalRequest] = None
+    filters: Optional[DealRetrievalRequest] = None,
+    db: Session = Depends(get_db)
 ):
     """
     Get all deals. Optionally filter by user_id and location.
@@ -34,6 +49,12 @@ def get_deals(
                             deal.latitude, deal.longitude,
                             location_filter.latitude, location_filter.longitude
                          )) <= location_filter.distance]
+            
+        for deal in deals:
+            # get votes for each deal
+            votes = get_deal_votes_by_id(db, deal.id)
+            deal.upvotes = votes["upvotes"]
+            deal.downvotes = votes["downvotes"]
             
         deals_list = [HttpDeal.from_orm(deal) for deal in deals]
         return deals_list
@@ -118,14 +139,8 @@ def get_deal_votes(
         if not deal:
             raise Exception("Deal not found.")
         
-        # find all votes with this deal id
-        votes = db.query(DealVote).filter(DealVote.deal_id == deal_id).all()
-        
-        # count upvotes and downvotes
-        upvotes = len([vote for vote in votes if vote.vote == 1])
-        downvotes = len([vote for vote in votes if vote.vote == -1])
-        
-        return DealVoteResponse(upvotes=upvotes, downvotes=downvotes)
+        votes = get_deal_votes_by_id(db, deal_id)
+        return DealVoteResponse(**votes)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
