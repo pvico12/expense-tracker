@@ -246,7 +246,7 @@ def get_db():
 
 def add_transaction(user_id: int, amount: float, category_id: int,
                    transaction_type: TransactionType, note: Optional[str] = None,
-                   date: Optional[datetime.datetime] = None) -> Transaction:
+                   date: Optional[datetime.datetime] = None, vendor: Optional[str] = None) -> Transaction:
     """Add a new transaction."""
     try:
         db_transaction = Transaction(
@@ -255,7 +255,8 @@ def add_transaction(user_id: int, amount: float, category_id: int,
             category_id=category_id,
             transaction_type=transaction_type,
             note=note,
-            date=date or datetime.datetime.utcnow()
+            date=date or datetime.datetime.utcnow(),
+            vendor=vendor
         )
         db_session.add(db_transaction)
         db_session.commit()
