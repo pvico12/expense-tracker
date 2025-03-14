@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 import com.cs446.expensetracker.nav.settings.AdminPageContainer
+import com.cs446.expensetracker.nav.settings.ProfilePageContainer
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.LoginActivity
 
@@ -40,7 +41,8 @@ class SettingsNavContainer {
                         UserSession.userId = -1
                         UserSession.access_token = ""
                         UserSession.refresh_token = ""
-                    }
+                    },
+                    onProfileClick = { settingsNavController.navigate("settings/profile") }
                 )
             }
 
@@ -48,11 +50,16 @@ class SettingsNavContainer {
                 val adminPageContainer = AdminPageContainer()
                 adminPageContainer.AdminPageScreen(onBackClick = { settingsNavController.popBackStack() })
             }
+
+            composable("settings/profile") {
+                val profilePageContainer = ProfilePageContainer()
+                profilePageContainer.ProfilePageScreen(onBackClick = { settingsNavController.popBackStack() })
+            }
         }
     }
 
     @Composable
-    fun SettingsScreen(onAdminPageClick: () -> Unit, onLogoutClick: () -> Unit) {
+    fun SettingsScreen(onAdminPageClick: () -> Unit, onLogoutClick: () -> Unit, onProfileClick: () -> Unit) {
         val context = LocalContext.current
 
         Column(
@@ -62,9 +69,9 @@ class SettingsNavContainer {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             SettingsListItem(
-                header = "Settings Option 1",
-                description = "Description of Settings Option 1",
-                onClick = { }
+                header = "Profile",
+                description = "Edit user profile.",
+                onClick = onProfileClick
             )
             Spacer(modifier = Modifier.height(3.dp))
             HorizontalDivider()

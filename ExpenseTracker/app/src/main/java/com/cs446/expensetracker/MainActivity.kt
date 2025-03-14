@@ -132,12 +132,14 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         floatingActionButton = {
-                            FloatingActionButton(
-                                onClick = { rootNavController.navigate("addExpense") },
-                                containerColor = Color(0xFF4B0C0C),
-                                contentColor = Color(0xFFF6F3F3)
-                            ) {
-                                Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Expense")
+                            if (navBackStackEntry?.destination?.route != "settings") {
+                                FloatingActionButton(
+                                    onClick = { rootNavController.navigate("addExpense") },
+                                    containerColor = Color(0xFF4B0C0C),
+                                    contentColor = Color(0xFFF6F3F3)
+                                ) {
+                                    Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Expense")
+                                }
                             }
                         }
                     ) { padding ->
