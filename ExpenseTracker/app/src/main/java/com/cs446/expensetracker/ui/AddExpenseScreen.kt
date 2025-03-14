@@ -260,7 +260,7 @@ fun AddExpenseScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { filePickerLauncher.launch("text/csv") },
+            onClick = { filePickerLauncher.launch("text/*") },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Upload CSV")
