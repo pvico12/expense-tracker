@@ -129,37 +129,70 @@ def add_predefined_categories(user_id: int):
 def add_sample_transactions():
     """Add sample transactions to the database."""
     try:
-        # Fetch the admin user
-        admin_user = db_session.query(User).filter_by(username='admin').first()
-        if not admin_user:
-            raise ValueError("Admin user does not exist.")
+        # Fetch all users
+        users = db_session.query(User).all()
+        if not users:
+            raise ValueError("No users found in the database.")
 
-        # Fetch a category (assuming 'Food & Drinks' exists)
-        food_category = db_session.query(Category).filter_by(name='Food & Drinks').first()
-        if not food_category:
-            raise ValueError("Food & Drinks category does not exist.")
+        # Fetch categories (assuming they exist)
+        categories = {
+            "Food & Drinks": db_session.query(Category).filter_by(name='Food & Drinks').first(),
+            "Income": db_session.query(Category).filter_by(name='Income').first(),
+            "Entertainment": db_session.query(Category).filter_by(name='Entertainment').first(),
+            "Transportation": db_session.query(Category).filter_by(name='Transportation').first(),
+            "Housing": db_session.query(Category).filter_by(name='Housing').first(),
+            "Savings": db_session.query(Category).filter_by(name='Savings').first()
+        }
 
-        # Add a sample expense transaction
-        sample_transaction = Transaction(
-            user_id=admin_user.id,
-            amount=50.75,
-            category_id=food_category.id,
-            transaction_type=TransactionType.EXPENSE,
-            note="Dinner at Italian Restaurant",
-            date=datetime.datetime.utcnow()
-        )
-        db_session.add(sample_transaction)
+        if any(category is None for category in categories.values()):
+            raise ValueError("One or more categories do not exist.")
 
-        # Add a sample income transaction
-        sample_income = Transaction(
-            user_id=admin_user.id,
-            amount=1500.00,
-            category_id=food_category.id,  # Assuming income can also be categorized under 'Income'
-            transaction_type=TransactionType.INCOME,
-            note="Monthly Salary",
-            date=datetime.datetime.utcnow()
-        )
-        db_session.add(sample_income)
+        # Define sample transactions for each category
+        sample_transactions_data = {
+            "Food & Drinks": [
+                {"amount": 50.75, "note": "Dinner at Italian Restaurant"},
+                {"amount": 20.00, "note": "Lunch at Cafe"},
+                {"amount": 15.50, "note": "Groceries"}
+            ],
+            "Income": [
+                {"amount": 1500.00, "note": "Monthly Salary"},
+                {"amount": 200.00, "note": "Freelance Work"}
+            ],
+            "Entertainment": [
+                {"amount": 200.00, "note": "Concert tickets"},
+                {"amount": 50.00, "note": "Movie night"},
+                {"amount": 30.00, "note": "Amusement park"}
+            ],
+            "Transportation": [
+                {"amount": 75.00, "note": "Gas for car"},
+                {"amount": 50.00, "note": "Bus pass"},
+                {"amount": 100.00, "note": "Car maintenance"}
+            ],
+            "Housing": [
+                {"amount": 1200.00, "note": "Monthly Rent"},
+                {"amount": 100.00, "note": "Utilities"},
+                {"amount": 50.00, "note": "Home repairs"}
+            ],
+            "Savings": [
+                {"amount": 300.00, "note": "Savings deposit"},
+                {"amount": 500.00, "note": "Emergency fund"}
+            ]
+        }
+
+        # Add sample transactions for each user
+        for user in users:
+            for category_name, transactions in sample_transactions_data.items():
+                category = categories[category_name]
+                for transaction_info in transactions:
+                    sample_transaction = Transaction(
+                        user_id=user.id,
+                        amount=transaction_info["amount"],
+                        category_id=category.id,
+                        transaction_type=TransactionType.EXPENSE if category_name != "Income" else TransactionType.INCOME,
+                        note=transaction_info["note"],
+                        date=datetime.datetime.utcnow()
+                    )
+                    db_session.add(sample_transaction)
 
         db_session.commit()
         print("Sample transactions added successfully.")
