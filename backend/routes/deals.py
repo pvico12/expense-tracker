@@ -29,6 +29,9 @@ def get_deal_votes_by_id(db, id):
         "downvotes": downvotes
     }
     
+def get_maps_link(latitude, longitude):
+    return f"https://www.google.com/maps?q={latitude},{longitude}"
+    
 @router.post("/list", response_model=List[HttpDeal], status_code=status.HTTP_200_OK)
 def get_deals(
     filters: Optional[DealRetrievalRequest] = None,
@@ -61,8 +64,43 @@ def get_deals(
             target_vote = db.query(DealVote).filter(DealVote.deal_id == deal.id, DealVote.user_id == current_user.id).first()
             deal.user_vote = target_vote.vote if target_vote else 0
             
+            # insert maps link
+            deal.maps_link = get_maps_link(deal.latitude, deal.longitude)
+            
         deals_list = [HttpDeal.from_orm(deal) for deal in deals]
         return deals_list
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/{deal_id}", response_model=HttpDeal, status_code=status.HTTP_200_OK)
+def get_specific_deal(
+    deal_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a specific deal.
+    """
+    try:
+        # find deal with this id
+        deal = get_single_deal(deal_id)
+        
+        if not deal:
+            raise Exception("Deal not found.")
+        
+        # get votes for this deal
+        votes = get_deal_votes_by_id(db, deal_id)
+        deal.upvotes = votes["upvotes"]
+        deal.downvotes = votes["downvotes"]
+        
+        # check if current_user has voted
+        target_vote = db.query(DealVote).filter(DealVote.deal_id == deal_id, DealVote.user_id == current_user.id).first()
+        deal.user_vote = target_vote.vote if target_vote else 0
+        
+        # insert maps link
+        deal.maps_link = get_maps_link(deal.latitude, deal.longitude)
+        
+        return HttpDeal.from_orm(deal)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
@@ -76,7 +114,7 @@ def create_deal(
     """
     try:
         # create deal
-        add_deal(current_user.id, deal.name, deal.description, deal.price, deal.address, deal.longitude, deal.latitude, deal.date)
+        add_deal(current_user.id, deal.name, deal.description, deal.price, deal.address, deal.longitude, deal.latitude, deal.date, deal.vendor)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
