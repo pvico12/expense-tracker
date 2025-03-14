@@ -43,8 +43,8 @@ def fetch_transactions(
 def calculate_type_totals(transactions: List[Transaction]) -> Dict[str, float]:
     type_totals: Dict[str, float] = {
         TransactionType.INCOME.value: 0.0,
-        TransactionType.EXPENSE.value: 0.0,
-        TransactionType.TRANSFER.value: 0.0
+        TransactionType.EXPENSE.value: 0.0
+        # TransactionType.TRANSFER.value: 0.0
     }
 
     for tx in transactions:
@@ -82,7 +82,8 @@ def get_summary(
     category_totals: Dict[tuple, float] = {}
 
     for tx in transactions:
-        if tx.transaction_type in [TransactionType.EXPENSE, TransactionType.TRANSFER]:
+        # if tx.transaction_type in [TransactionType.EXPENSE, TransactionType.TRANSFER]:
+        if tx.transaction_type in [TransactionType.EXPENSE]:
             total_spend += tx.amount
             # Group by both category name and color; if no category exists, use "Uncategorized" and no color.
             key = (tx.category.name, tx.category.color) if tx.category else ("Uncategorized", None)

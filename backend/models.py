@@ -9,7 +9,7 @@ import datetime
 class TransactionType(enum.Enum):
     EXPENSE = "expense"
     INCOME = "income"
-    TRANSFER = "transfer"
+    # TRANSFER = "transfer"
     # You can add more specific transaction types if needed
     # For example:
     # SAVINGS = "savings"
