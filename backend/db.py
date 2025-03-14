@@ -134,19 +134,6 @@ def add_sample_transactions():
         if not users:
             raise ValueError("No users found in the database.")
 
-        # Fetch categories (assuming they exist)
-        categories = {
-            "Food & Drinks": db_session.query(Category).filter_by(name='Food & Drinks').first(),
-            "Income": db_session.query(Category).filter_by(name='Income').first(),
-            "Entertainment": db_session.query(Category).filter_by(name='Entertainment').first(),
-            "Transportation": db_session.query(Category).filter_by(name='Transportation').first(),
-            "Housing": db_session.query(Category).filter_by(name='Housing').first(),
-            "Savings": db_session.query(Category).filter_by(name='Savings').first()
-        }
-
-        if any(category is None for category in categories.values()):
-            raise ValueError("One or more categories do not exist.")
-
         # Define sample transactions for each category
         sample_transactions_data = {
             "Food & Drinks": [
@@ -179,15 +166,23 @@ def add_sample_transactions():
             ]
         }
 
-        # Add sample transactions for each user
+        # For each user, fetch their specific categories and add sample transactions
         for user in users:
+            # Build a dictionary of user-specific categories
+            user_categories = {}
+            for category_name in sample_transactions_data.keys():
+                category = db_session.query(Category).filter_by(name=category_name, user_id=user.id).first()
+                if not category:
+                    raise ValueError(f"Category {category_name} does not exist for user {user.id}.")
+                user_categories[category_name] = category
+
+            # Add transactions using the category IDs belonging to that specific user
             for category_name, transactions in sample_transactions_data.items():
-                category = categories[category_name]
                 for transaction_info in transactions:
                     sample_transaction = Transaction(
                         user_id=user.id,
                         amount=transaction_info["amount"],
-                        category_id=category.id,
+                        category_id=user_categories[category_name].id,
                         transaction_type=TransactionType.EXPENSE if category_name != "Income" else TransactionType.INCOME,
                         note=transaction_info["note"],
                         date=datetime.datetime.utcnow()
