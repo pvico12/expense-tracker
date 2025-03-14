@@ -38,3 +38,4 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-11,0,0,2,0,0,0, Add profile settings
 2025-03-13,0.5,0,0,0,0,0, Add votes to general deal GET request
 2025-03-13,0.5,0,0,0,0,0, Add more sample transactions on DB init
+2025-03-14,2,0,0,0,0,0, Add vendor to deals + create more deals on db init + add specific deal request
