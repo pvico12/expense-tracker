@@ -130,6 +130,7 @@ class HttpDeal(BaseModel):
     latitude: float
     upvotes: Optional[int]
     downvotes: Optional[int]
+    user_vote: Optional[int]
     
     class Config:
         orm_mode = True
