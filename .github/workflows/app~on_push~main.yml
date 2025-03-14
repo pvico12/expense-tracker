@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'ExpenseTracker/**'
+  workflow_dispatch:
     
 
 jobs:
@@ -23,9 +24,13 @@ jobs:
         bundler-cache: true
         working-directory: 'ExpenseTracker'
     
-    - name: Create google_service_account.json
+    - name: Create google_service_account.json (for Playstore)
       run: |
         echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > ExpenseTracker/google_service_account.json
+    
+    - name: Create google-services.json (for Firebase)
+      run: |
+        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PUSH_NOTIFICATIONS }}" | base64 --decode > ExpenseTracker/app/google-services.json
 
     - name: Create key.jks
       run: |
