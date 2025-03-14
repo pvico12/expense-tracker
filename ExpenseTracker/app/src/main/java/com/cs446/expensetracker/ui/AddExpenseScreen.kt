@@ -208,6 +208,9 @@ fun AddExpenseScreen(navController: NavController) {
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            ),
             enabled = vendorName.isNotBlank()
         ) {
             if (isAiLoading) {
@@ -234,12 +237,6 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Error Message Display
-        if (errorMessage != null) {
-            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
         // Date Picker
         Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
         Box(
@@ -265,10 +262,73 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Save Expense Button
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    isLoading = true
+                    errorMessage = null
+                    try {
+                        val amount = expenseAmount.toDoubleOrNull()
+                        if (amount == null || selectedCategory == null) {
+                            errorMessage = "Please fill in all fields correctly."
+                            return@launch
+                        }
+
+                        val transaction = Transaction(
+                            amount = amount,
+                            category_id = selectedCategory!!.id,
+                            transaction_type = "expense",
+                            note = transactionNote,
+                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
+                            vendor = vendorName
+                        )
+
+                        val token = UserSession.access_token ?: ""
+                        val response =
+                            RetrofitInstance.apiService.addTransaction(transaction)
+                        if (response.isSuccessful) {
+                            Toast.makeText(
+                                context,
+                                "Expense added successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.popBackStack()
+                        } else {
+                            errorMessage = "Failed to add transaction. Please try again."
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = "Error: ${e.message}"
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            ),
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text(text = "Save Transaction")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         // Upload CSV Button
         Button(
             onClick = { filePickerLauncher.launch("text/*") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            )
         ) {
             Text("Upload CSV")
         }
@@ -334,14 +394,20 @@ fun AddExpenseScreen(navController: NavController) {
                                     navController.popBackStack()
                                 }
                             }
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            Color(0xFF4B0C0C),
+                        )
                     ) {
                         Text("Save Transactions")
                     }
                 },
                 dismissButton = {
                     Button(
-                        onClick = { showReviewDialog = false }
+                        onClick = { showReviewDialog = false },
+                        colors = ButtonDefaults.buttonColors(
+                            Color(0xFF4B0C0C),
+                        )
                     ) {
                         Text("Cancel")
                     }
@@ -352,7 +418,10 @@ fun AddExpenseScreen(navController: NavController) {
         // Scan Receipt Button
         Button(
             onClick = { receiptPickerLauncher.launch("image/*") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            )
         ) {
             Text("Scan Receipt")
         }
@@ -364,65 +433,6 @@ fun AddExpenseScreen(navController: NavController) {
             Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(10.dp))
         }
-
-        // Save Expense Button
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    isLoading = true
-                    errorMessage = null
-                    try {
-                        val amount = expenseAmount.toDoubleOrNull()
-                        if (amount == null || selectedCategory == null) {
-                            errorMessage = "Please fill in all fields correctly."
-                            return@launch
-                        }
-
-                        val transaction = Transaction(
-                            amount = amount,
-                            category_id = selectedCategory!!.id,
-                            transaction_type = "expense",
-                            note = transactionNote,
-                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
-                            vendor = vendorName
-                        )
-
-                        val token = UserSession.access_token ?: ""
-                        val response =
-                            RetrofitInstance.apiService.addTransaction(transaction)
-                        if (response.isSuccessful) {
-                            Toast.makeText(
-                                context,
-                                "Expense added successfully!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.popBackStack()
-                        } else {
-                            errorMessage = "Failed to add transaction. Please try again."
-                        }
-                    } catch (e: Exception) {
-                        errorMessage = "Error: ${e.message}"
-                    } finally {
-                        isLoading = false
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            ),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text(text = "Save Transaction")
-            }
-        }
-
 
         // Bottom Sheet Implementation
         if (showBottomSheet) {
