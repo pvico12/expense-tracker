@@ -84,15 +84,21 @@ fun AddExpenseScreen(navController: NavController) {
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
+    // CSV Review State
+    var parsedTransactions by remember { mutableStateOf<List<Transaction>?>(null) }
+    var showReviewDialog by remember { mutableStateOf(false) }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
             coroutineScope.launch {
                 isLoading = true
-                val fetchedTransactions = uploadCsv(context, selectedUri, 1)
+                val fetchedTransactions = uploadCsv(context, selectedUri, 0) // Set createTransactions to 0 to just parse the CSV
                 isLoading = false
                 if (fetchedTransactions != null) {
+                    parsedTransactions = fetchedTransactions
+                    showReviewDialog = true
                     Toast.makeText(context, "CSV Uploaded!", Toast.LENGTH_SHORT).show()
                 } else {
                     errorMessage = "Failed to upload CSV."
@@ -153,7 +159,7 @@ fun AddExpenseScreen(navController: NavController) {
             .verticalScroll(scrollState) // Enable scrolling
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "NEW TRANSACTION", style = MaterialTheme.typography.headlineMedium)
+            Text(text = "Enter Transaction", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.weight(1.0f))
             TextButton(onClick = { navController.popBackStack() },
                 contentPadding = PaddingValues(
@@ -269,6 +275,80 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Review Dialog
+        if (showReviewDialog && parsedTransactions != null) {
+            AlertDialog(
+                onDismissRequest = { showReviewDialog = false },
+                title = { Text("Review Transactions") },
+                text = {
+                    LazyColumn {
+                        items(parsedTransactions!!) { parsedTransaction ->
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text("Amount: ${parsedTransaction.amount}")
+                                Text("Category: ${categories.find { it.id == parsedTransaction.category_id }?.name ?: "Unknown"}")
+                                Text("Note: ${parsedTransaction.note}")
+                                Text("Date: ${parsedTransaction.date}")
+                                Divider()
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isLoading = true
+                                var successCount = 0
+                                var failureCount = 0
+
+                                parsedTransactions?.forEach { parsedTransaction ->
+                                    try {
+                                        val token = UserSession.access_token ?: ""
+
+                                        val transaction = Transaction(
+                                            amount = parsedTransaction.amount,
+                                            category_id = parsedTransaction.category_id,
+                                            transaction_type = "expense",
+                                            note = parsedTransaction.note,
+                                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(parsedTransaction.date)!!),
+                                            vendor = parsedTransaction.vendor
+                                        )
+                                        val response = RetrofitInstance.apiService.addTransaction(transaction)
+                                        if (response.isSuccessful) {
+                                            successCount++
+                                        } else {
+                                            failureCount++
+                                        }
+                                    } catch (e: Exception) {
+                                        failureCount++
+                                    }
+                                }
+
+                                isLoading = false
+                                showReviewDialog = false
+
+                                val message = "Saved $successCount transactions, $failureCount failed."
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+
+                                if (successCount > 0) {
+                                    navController.popBackStack()
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Save Transactions")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { showReviewDialog = false }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
         // Scan Receipt Button
         Button(
             onClick = { receiptPickerLauncher.launch("image/*") },
@@ -303,7 +383,8 @@ fun AddExpenseScreen(navController: NavController) {
                             category_id = selectedCategory!!.id,
                             transaction_type = "expense",
                             note = transactionNote,
-                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!) // Convert here
+                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
+                            vendor = vendorName
                         )
 
                         val token = UserSession.access_token ?: ""
