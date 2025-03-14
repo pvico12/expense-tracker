@@ -107,18 +107,27 @@ fun AddExpenseScreen(navController: NavController) {
         uri?.let { selectedUri ->
             coroutineScope.launch {
                 isLoading = true
-                val receipt = uploadReceipt(context, selectedUri)
-                isLoading = false
-                if (receipt != null) {
-                    expenseAmount = receipt.total.toString()
-                    transactionNote = "Receipt scanned items added."
-                    Toast.makeText(context, "Receipt Scanned!", Toast.LENGTH_SHORT).show()
-                } else {
-                    errorMessage = "Failed to scan receipt."
+                uploadReceipt(context, selectedUri, categories) { receipt, suggestedCategory ->
+                    isLoading = false
+                    if (receipt != null) {
+                        expenseAmount = receipt.total.toString()
+                        transactionNote = "Receipt scanned items added."
+
+                        // Use first item description as vendor name
+                        vendorName = receipt.items.firstOrNull()?.descriptor ?: ""
+
+                        // Select AI-suggested category if available
+                        selectedCategory = suggestedCategory
+
+                        Toast.makeText(context, "Receipt Scanned!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        errorMessage = "Failed to scan receipt."
+                    }
                 }
             }
         }
     }
+
 
     // Fetch categories from API when the screen loads
     LaunchedEffect(Unit) {
@@ -381,13 +390,36 @@ suspend fun uploadCsv(context: Context, uri: Uri, createTransactions: Int): List
     }
 }
 
-suspend fun uploadReceipt(context: Context, uri: Uri): OcrResponse? {
-    return try {
+suspend fun uploadReceipt(context: Context, uri: Uri, categories: List<Category>, onResult: (OcrResponse?, Category?) -> Unit) {
+    try {
         val file = uriToMultipart(context, uri)
         val response = RetrofitInstance.apiService.scanReceipt(file)
-        if (response.isSuccessful) response.body() else null
+
+        if (response.isSuccessful) {
+            val receipt = response.body()
+
+            // Extract first item's description
+            val firstItemDescription = receipt?.items?.firstOrNull()?.descriptor
+
+            if (firstItemDescription != null) {
+                // Send item name to AI endpoint for category suggestion
+                val aiResponse = RetrofitInstance.apiService.getCategorySuggestion(CategoryRequest(firstItemDescription))
+
+                if (aiResponse.isSuccessful) {
+                    val suggestedCategory = aiResponse.body()
+                    val matchedCategory = categories.find { it.id == suggestedCategory?.category_id }
+                    onResult(receipt, matchedCategory)
+                } else {
+                    onResult(receipt, null) // AI failed, return receipt without a category
+                }
+            } else {
+                onResult(receipt, null) // No items in receipt, return without category
+            }
+        } else {
+            onResult(null, null) // Receipt scanning failed
+        }
     } catch (e: Exception) {
-        null
+        onResult(null, null) // Handle errors gracefully
     }
 }
 
