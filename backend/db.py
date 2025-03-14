@@ -155,7 +155,7 @@ def add_sample_transactions():
                 {"amount": 15.50, "note": "Groceries"}
             ],
             "Income": [
-                {"amount": 1500.00, "note": "Monthly Salary"},
+                {"amount": 3000.00, "note": "Monthly Salary"},
                 {"amount": 200.00, "note": "Freelance Work"}
             ],
             "Entertainment": [
