@@ -1,6 +1,7 @@
 package com.cs446.expensetracker.ui
 
 import android.app.DatePickerDialog
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,11 +22,14 @@ import com.cs446.expensetracker.mockData.Deal
 import com.cs446.expensetracker.mockData.mockDeals
 import com.cs446.expensetracker.mockData.mock_deal_json
 import com.cs446.expensetracker.api.models.Category
+import com.cs446.expensetracker.api.models.DealCreationRequest
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
 import com.cs446.expensetracker.ui.ui.theme.mainTextColor
 import com.cs446.expensetracker.ui.ui.theme.secondTextColor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,16 +46,14 @@ fun AddDealScreen(navController: NavController) {
     var address by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var goBack by remember { mutableStateOf(false) }
 
     // Date Picker State
     val calendar = Calendar.getInstance()
     val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
     var selectedDate by remember {
         mutableStateOf(
-            SimpleDateFormat(
-                "yyyy-MM-dd",
-                Locale.getDefault()
-            ).format(calendar.time)
+            isoFormat.format(calendar.time)
         )
     }
 
@@ -82,7 +84,7 @@ fun AddDealScreen(navController: NavController) {
             Spacer(modifier = Modifier.weight(1.0f))
             TextButton(onClick = { navController.popBackStack() },
                 contentPadding = PaddingValues(
-                    start = 20.dp,
+                    start = 5.dp,
                     top = 0.dp,
                     end = 0.dp,
                     bottom = 10.dp,
@@ -166,7 +168,7 @@ fun AddDealScreen(navController: NavController) {
         // Save Expense Button
         Button(
             onClick = {
-                coroutineScope.launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     isLoading = true
                     errorMessage = null
                     try {
@@ -176,24 +178,25 @@ fun AddDealScreen(navController: NavController) {
 //                            return@launch
 //                        }
 
-                        mock_deal_json.mock_deals += Deal(
-                            price.toDouble(),
-                            itemName,
-                            location,
-                            "",
-                            selectedDate,
-                            5,
-                            3,
-                            address
+                        val deal = DealCreationRequest (
+                            name = itemName,
+                            description = "",
+                            price = price.toDouble(),
+                            date = selectedDate, // ISO 8601 format
+                            address = address,
+                            longitude = 0.0,
+                            latitude = 0.0
                         )
 
-                        Toast.makeText(
-                            context,
-                            "Expense added successfully!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        navController.popBackStack()
-
+                        val token = UserSession.access_token ?: ""
+                        val response =
+                            RetrofitInstance.apiService.addDeal(deal)
+                        if (response.isSuccessful) {
+                            goBack = true
+                            Log.d("Response", "Add Deal Response: ${response}")
+                        } else {
+                            errorMessage = "Failed to add deal. Please try again."
+                        }
                     } catch (e: Exception) {
                         errorMessage = "Error: ${e.message}"
                     } finally {
@@ -215,6 +218,15 @@ fun AddDealScreen(navController: NavController) {
             } else {
                 Text(text = "Save Transaction")
             }
+        }
+        if (goBack) {
+            goBack = false
+            Toast.makeText(
+                context,
+                "Deal added successfully!",
+                Toast.LENGTH_SHORT
+            ).show()
+            navController.popBackStack()
         }
     }
 }

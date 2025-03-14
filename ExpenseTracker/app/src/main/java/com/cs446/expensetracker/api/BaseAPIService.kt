@@ -10,8 +10,12 @@ import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.CategoryRequest
 import com.cs446.expensetracker.api.models.CategoryResponse
+import com.cs446.expensetracker.api.models.DealCreationRequest
+import com.cs446.expensetracker.api.models.DealRetrievalRequest
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
+import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.OcrResponse
+import com.cs446.expensetracker.api.models.SpendingSummaryResponse
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.UserProfileUpdateRequest
@@ -65,7 +69,6 @@ interface BaseAPIService {
         @Query("limit") limit: Int
     ): Response<List<TransactionResponse>>
 
-
     @Multipart
     @POST("/transactions/csv")
     suspend fun uploadCsv(
@@ -83,6 +86,26 @@ interface BaseAPIService {
     // ====================== Categories ===========================
     @GET("/categories/")
     suspend fun getCategories(): Response<List<Category>>
+
+    // ====================== Statistics ===========================
+    @GET("/statistics/summary_spend")
+    suspend fun getSpendingSummary(
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String
+    ): Response<SpendingSummaryResponse>
+
+    // ====================== Deals ===========================
+    @POST("/deals/list")
+    suspend fun getDeals(@Body DealRetrievalRequest: DealRetrievalRequest): Response<List<DealRetrievalResponse>>
+
+    @POST("/deals/")
+    suspend fun addDeal(@Body DealCreationRequest: DealCreationRequest): Response<String>
+
+    @POST("/deals/upvote/{deal_id}")
+    suspend fun upvoteDeal(@Path("deal_id") dealId: String): Response<String>
+
+    @POST("/deals/downvote/{deal_id}")
+    suspend fun downvoteDeal(@Path("deal_id") dealId: String): Response<String>
 
     // ====================== Tools ===========================
     @POST("tools/categories/suggestion")
