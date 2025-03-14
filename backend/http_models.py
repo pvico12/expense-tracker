@@ -83,6 +83,7 @@ class CategoryStats(BaseModel):
     category_name: str
     total_amount: float
     percentage: float
+    color: Optional[str] = None
 
 class SummaryResponse(BaseModel):
     total_spend: float
