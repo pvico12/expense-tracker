@@ -59,7 +59,7 @@ def create_initial_users():
     try:
         admin = User(
             username='admin',
-            password=utils.hash_password('admin'),  # Ensure you have a hash_password function
+            password=utils.hash_password('admin'),
             firstname='Admin',
             lastname='User',
             role='admin'
@@ -68,7 +68,7 @@ def create_initial_users():
         db_session.commit()
         db_session.refresh(admin)  # Refresh to get the admin's ID
         add_predefined_categories(admin.id)  # Assign predefined categories to admin
-
+        
         team_users = [
             {'username': 'petar', 'password': 'cs', 'firstname': 'Petar', 'lastname': 'Vico'},
             {'username': 'jack', 'password': 'cs', 'firstname': 'PuYuan', 'lastname': 'Li'},
