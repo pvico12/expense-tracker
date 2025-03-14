@@ -30,10 +30,10 @@ def create_custom_category(
     db: Session = Depends(get_db)
 ):
     try:
-        # Create the new custom category
         new_category = Category(
             name=custom_category.name,
-            user_id=current_user.id  # Assign to the current user
+            color=custom_category.color,
+            user_id=current_user.id
         )
         db.add(new_category)
         db.commit()

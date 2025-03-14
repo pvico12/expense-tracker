@@ -43,8 +43,8 @@ def fetch_transactions(
 def calculate_type_totals(transactions: List[Transaction]) -> Dict[str, float]:
     type_totals: Dict[str, float] = {
         TransactionType.INCOME.value: 0.0,
-        TransactionType.EXPENSE.value: 0.0,
-        TransactionType.TRANSFER.value: 0.0
+        TransactionType.EXPENSE.value: 0.0
+        # TransactionType.TRANSFER.value: 0.0
     }
 
     for tx in transactions:
@@ -78,23 +78,26 @@ def get_summary(
     type_totals = calculate_type_totals(transactions)
 
     total_spend = 0.0
-    category_totals: Dict[str, float] = {}
+    # Group transactions by (category name, color) tuple
+    category_totals: Dict[tuple, float] = {}
 
     for tx in transactions:
-        amount = tx.amount if tx.transaction_type == TransactionType.INCOME else -tx.amount
-        if tx.transaction_type in [TransactionType.EXPENSE, TransactionType.TRANSFER]:
+        # if tx.transaction_type in [TransactionType.EXPENSE, TransactionType.TRANSFER]:
+        if tx.transaction_type in [TransactionType.EXPENSE]:
             total_spend += tx.amount
-            category_name = tx.category.name if tx.category else "Uncategorized"
-            category_totals[category_name] = category_totals.get(category_name, 0.0) + tx.amount
+            # Group by both category name and color; if no category exists, use "Uncategorized" and no color.
+            key = (tx.category.name, tx.category.color) if tx.category else ("Uncategorized", None)
+            category_totals[key] = category_totals.get(key, 0.0) + tx.amount
 
-    # Calculate percentages
+    # Calculate percentages and build the breakdown list including the color.
     category_breakdown = []
-    for category, amount in category_totals.items():
+    for (name, color), amount in category_totals.items():
         percentage = (amount / total_spend) * 100 if total_spend > 0 else 0
         category_breakdown.append(CategoryStats(
-            category_name=category,
+            category_name=name,
             total_amount=amount,
-            percentage=percentage
+            percentage=percentage,
+            color=color
         ))
 
     # Optionally, sort the breakdown by percentage descending

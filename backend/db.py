@@ -214,26 +214,47 @@ def create_sample_deals():
                 "name": "Discounted Coffee",
                 "description": "50% off on all coffee varieties",
                 "price": 2.50,
-                "address": "123 Coffee St",
-                "longitude": -80.54487905764393,
-                "latitude": 43.47223089803552
+                "address": "247 King St N, Waterloo, ON N2J 2Y8",
+                "longitude": -80.5252355084388, 
+                "latitude": 43.4765187812192,
+                "vendor": "Starbucks"
             },
             {
                 "name": "Gym Membership",
                 "description": "20% off on annual membership",
                 "price": 300.00,
-                "address": "456 Fitness Ave",
-                "longitude": -80.54487905764393,
-                "latitude": 43.47223089803552
+                "address": "560 Parkside Dr, Waterloo, ON N2L 5Z4",
+                "longitude": -80.54331470097128, 
+                "latitude": 43.49613260747481,
+                "vendor": "Crunch Fitness"
             },
             {
                 "name": "Concert Tickets",
                 "description": "Buy 1 Get 1 Free",
                 "price": 75.00,
-                "address": "789 Music Blvd",
-                "longitude": -80.54487905764393,
-                "latitude": 43.47223089803552
-            }
+                "address": "200 University Ave W, Waterloo, ON N2L 3G1",
+                "longitude": -80.54130657364077,
+                "latitude": 43.467625068716494,
+                "vendor": "Humanities Theatre - UW"
+            },
+            {
+                "name": "BOGO Pizza",
+                "description": "Buy 1 Get 1 Free (Large)",
+                "price": 15.00,
+                "address": "160 University Ave W #2, Waterloo, ON N2L 3E9",
+                "longitude": -80.53803732886678,
+                "latitude": 43.47231281322054,
+                "vendor": "Campus Pizza"
+            },
+            {
+                "name": "Cheap Pizza Slices",
+                "description": "$3 per slice",
+                "price": 3.00,
+                "address": "251 Hemlock St #110, Waterloo, ON N2L 0H2",
+                "longitude": -80.53163653751186,
+                "latitude": 43.47531462727487,
+                "vendor": "Toma's Pizza"
+            },
         ]
 
         # create deals
@@ -242,6 +263,7 @@ def create_sample_deals():
                 user_id=random.choice(user_ids),
                 name=deal_info["name"],
                 description=deal_info["description"],
+                vendor=deal_info["vendor"],
                 price=round(deal_info["price"], 2),
                 address=deal_info["address"],
                 longitude=deal_info["longitude"],
@@ -345,13 +367,16 @@ def get_deals(user_id: Optional[int] = None) -> List[Deal]:
         return []
 
 def add_deal(user_id: int, name: str, description: str, price: float,
-             address: str, longitude: float, latitude: float, date: Optional[datetime.datetime] = datetime.datetime.utcnow()) -> Deal:
+             address: str, longitude: float, latitude: float,
+             date: Optional[datetime.datetime] = datetime.datetime.utcnow(),
+             vendor: Optional[str] = "") -> Deal:
     """Add a new deal."""
     try:
         deal = Deal(
             user_id=user_id,
             name=name,
             description=description,
+            vendor=vendor,
             price=round(price, 2),
             date=date,
             address=address,

@@ -83,6 +83,7 @@ class CategoryStats(BaseModel):
     category_name: str
     total_amount: float
     percentage: float
+    color: Optional[str] = None
 
 class SummaryResponse(BaseModel):
     total_spend: float
@@ -123,6 +124,7 @@ class HttpDeal(BaseModel):
     id: Optional[int]
     name: str
     description: str
+    vendor: Optional[str]
     price: float
     date: datetime.datetime
     address: str
@@ -130,6 +132,8 @@ class HttpDeal(BaseModel):
     latitude: float
     upvotes: Optional[int]
     downvotes: Optional[int]
+    user_vote: Optional[int]
+    maps_link: Optional[str]
     
     class Config:
         orm_mode = True
@@ -146,6 +150,7 @@ class DealRetrievalRequest(BaseModel):
 class DealCreationRequest(BaseModel):
     name: str
     description: str
+    vendor: Optional[str]
     price: float
     date: datetime.datetime
     address: str

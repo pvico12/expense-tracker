@@ -8,6 +8,6 @@ data class OcrResponse(
 )
 
 data class OcrItem(
-    val description: String,
-    val price: Double
+    val descriptor: String,
+    val amount: Double
 )
