@@ -90,9 +90,9 @@ fun AddExpenseScreen(navController: NavController) {
         uri?.let { selectedUri ->
             coroutineScope.launch {
                 isLoading = true
-                val transactions = uploadCsv(context, selectedUri, 0)
+                val fetchedTransactions = uploadCsv(context, selectedUri, 1)
                 isLoading = false
-                if (transactions != null) {
+                if (fetchedTransactions != null) {
                     Toast.makeText(context, "CSV Uploaded!", Toast.LENGTH_SHORT).show()
                 } else {
                     errorMessage = "Failed to upload CSV."
@@ -259,6 +259,7 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Upload CSV Button
         Button(
             onClick = { filePickerLauncher.launch("text/*") },
             modifier = Modifier.fillMaxWidth()
@@ -268,6 +269,7 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Scan Receipt Button
         Button(
             onClick = { receiptPickerLauncher.launch("image/*") },
             modifier = Modifier.fillMaxWidth()
