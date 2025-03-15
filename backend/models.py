@@ -9,7 +9,7 @@ import datetime
 class TransactionType(enum.Enum):
     EXPENSE = "expense"
     INCOME = "income"
-    TRANSFER = "transfer"
+    # TRANSFER = "transfer"
     # You can add more specific transaction types if needed
     # For example:
     # SAVINGS = "savings"
@@ -102,7 +102,8 @@ class Deal(Base):
     __tablename__ = 'deals'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
-    description = Column(String(255), nullable=False)
+    description = Column(String(512), nullable=False)
+    vendor = Column(String(255), nullable=False)
     price = Column(Float, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     date = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)

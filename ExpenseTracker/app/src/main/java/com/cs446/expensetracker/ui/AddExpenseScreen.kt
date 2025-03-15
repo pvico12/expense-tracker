@@ -84,15 +84,21 @@ fun AddExpenseScreen(navController: NavController) {
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
+    // CSV Review State
+    var parsedTransactions by remember { mutableStateOf<List<Transaction>?>(null) }
+    var showReviewDialog by remember { mutableStateOf(false) }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
             coroutineScope.launch {
                 isLoading = true
-                val transactions = uploadCsv(context, selectedUri, 0)
+                val fetchedTransactions = uploadCsv(context, selectedUri, 0) // Set createTransactions to 0 to just parse the CSV
                 isLoading = false
-                if (transactions != null) {
+                if (fetchedTransactions != null) {
+                    parsedTransactions = fetchedTransactions
+                    showReviewDialog = true
                     Toast.makeText(context, "CSV Uploaded!", Toast.LENGTH_SHORT).show()
                 } else {
                     errorMessage = "Failed to upload CSV."
@@ -107,18 +113,27 @@ fun AddExpenseScreen(navController: NavController) {
         uri?.let { selectedUri ->
             coroutineScope.launch {
                 isLoading = true
-                val receipt = uploadReceipt(context, selectedUri)
-                isLoading = false
-                if (receipt != null) {
-                    expenseAmount = receipt.total.toString()
-                    transactionNote = "Receipt scanned items added."
-                    Toast.makeText(context, "Receipt Scanned!", Toast.LENGTH_SHORT).show()
-                } else {
-                    errorMessage = "Failed to scan receipt."
+                uploadReceipt(context, selectedUri, categories) { receipt, suggestedCategory ->
+                    isLoading = false
+                    if (receipt != null) {
+                        expenseAmount = receipt.total.toString()
+                        transactionNote = "Receipt scanned items added."
+
+                        // Use first item description as vendor name
+                        vendorName = receipt.items.firstOrNull()?.descriptor ?: ""
+
+                        // Select AI-suggested category if available
+                        selectedCategory = suggestedCategory
+
+                        Toast.makeText(context, "Receipt Scanned!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        errorMessage = "Failed to scan receipt."
+                    }
                 }
             }
         }
     }
+
 
     // Fetch categories from API when the screen loads
     LaunchedEffect(Unit) {
@@ -144,7 +159,7 @@ fun AddExpenseScreen(navController: NavController) {
             .verticalScroll(scrollState) // Enable scrolling
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "NEW TRANSACTION", style = MaterialTheme.typography.headlineMedium)
+            Text(text = "Enter Transaction", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.weight(1.0f))
             TextButton(onClick = { navController.popBackStack() },
                 contentPadding = PaddingValues(
@@ -193,6 +208,9 @@ fun AddExpenseScreen(navController: NavController) {
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            ),
             enabled = vendorName.isNotBlank()
         ) {
             if (isAiLoading) {
@@ -219,12 +237,6 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Error Message Display
-        if (errorMessage != null) {
-            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
         // Date Picker
         Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
         Box(
@@ -250,30 +262,6 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Button(
-            onClick = { filePickerLauncher.launch("text/csv") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Upload CSV")
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Button(
-            onClick = { receiptPickerLauncher.launch("image/*") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Scan Receipt")
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Error Message Display
-        if (errorMessage != null) {
-            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
         // Save Expense Button
         Button(
             onClick = {
@@ -292,7 +280,8 @@ fun AddExpenseScreen(navController: NavController) {
                             category_id = selectedCategory!!.id,
                             transaction_type = "expense",
                             note = transactionNote,
-                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!) // Convert here
+                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
+                            vendor = vendorName
                         )
 
                         val token = UserSession.access_token ?: ""
@@ -331,6 +320,119 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Upload CSV Button
+        Button(
+            onClick = { filePickerLauncher.launch("text/*") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            )
+        ) {
+            Text("Upload CSV")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Review Dialog
+        if (showReviewDialog && parsedTransactions != null) {
+            AlertDialog(
+                onDismissRequest = { showReviewDialog = false },
+                title = { Text("Review Transactions") },
+                text = {
+                    LazyColumn {
+                        items(parsedTransactions!!) { parsedTransaction ->
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text("Amount: ${parsedTransaction.amount}")
+                                Text("Category: ${categories.find { it.id == parsedTransaction.category_id }?.name ?: "Unknown"}")
+                                Text("Note: ${parsedTransaction.note}")
+                                Text("Date: ${parsedTransaction.date}")
+                                Divider()
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isLoading = true
+                                var successCount = 0
+                                var failureCount = 0
+
+                                parsedTransactions?.forEach { parsedTransaction ->
+                                    try {
+                                        val token = UserSession.access_token ?: ""
+
+                                        val transaction = Transaction(
+                                            amount = parsedTransaction.amount,
+                                            category_id = parsedTransaction.category_id,
+                                            transaction_type = "expense",
+                                            note = parsedTransaction.note,
+                                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(parsedTransaction.date)!!),
+                                            vendor = parsedTransaction.vendor
+                                        )
+                                        val response = RetrofitInstance.apiService.addTransaction(transaction)
+                                        if (response.isSuccessful) {
+                                            successCount++
+                                        } else {
+                                            failureCount++
+                                        }
+                                    } catch (e: Exception) {
+                                        failureCount++
+                                    }
+                                }
+
+                                isLoading = false
+                                showReviewDialog = false
+
+                                val message = "Saved $successCount transactions, $failureCount failed."
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+
+                                if (successCount > 0) {
+                                    navController.popBackStack()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            Color(0xFF4B0C0C),
+                        )
+                    ) {
+                        Text("Save Transactions")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { showReviewDialog = false },
+                        colors = ButtonDefaults.buttonColors(
+                            Color(0xFF4B0C0C),
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Scan Receipt Button
+        Button(
+            onClick = { receiptPickerLauncher.launch("image/*") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            )
+        ) {
+            Text("Scan Receipt")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Error Message Display
+        if (errorMessage != null) {
+            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(10.dp))
+        }
 
         // Bottom Sheet Implementation
         if (showBottomSheet) {
@@ -381,13 +483,36 @@ suspend fun uploadCsv(context: Context, uri: Uri, createTransactions: Int): List
     }
 }
 
-suspend fun uploadReceipt(context: Context, uri: Uri): OcrResponse? {
-    return try {
+suspend fun uploadReceipt(context: Context, uri: Uri, categories: List<Category>, onResult: (OcrResponse?, Category?) -> Unit) {
+    try {
         val file = uriToMultipart(context, uri)
         val response = RetrofitInstance.apiService.scanReceipt(file)
-        if (response.isSuccessful) response.body() else null
+
+        if (response.isSuccessful) {
+            val receipt = response.body()
+
+            // Extract first item's description
+            val firstItemDescription = receipt?.items?.firstOrNull()?.descriptor
+
+            if (firstItemDescription != null) {
+                // Send item name to AI endpoint for category suggestion
+                val aiResponse = RetrofitInstance.apiService.getCategorySuggestion(CategoryRequest(firstItemDescription))
+
+                if (aiResponse.isSuccessful) {
+                    val suggestedCategory = aiResponse.body()
+                    val matchedCategory = categories.find { it.id == suggestedCategory?.category_id }
+                    onResult(receipt, matchedCategory)
+                } else {
+                    onResult(receipt, null) // AI failed, return receipt without a category
+                }
+            } else {
+                onResult(receipt, null) // No items in receipt, return without category
+            }
+        } else {
+            onResult(null, null) // Receipt scanning failed
+        }
     } catch (e: Exception) {
-        null
+        onResult(null, null) // Handle errors gracefully
     }
 }
 
