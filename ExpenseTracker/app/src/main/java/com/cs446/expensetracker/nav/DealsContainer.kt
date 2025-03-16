@@ -2,6 +2,7 @@ package com.cs446.expensetracker.nav
 
 import com.cs446.expensetracker.ui.AddExpenseScreen
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.icu.text.DecimalFormat
 import android.location.Address
@@ -10,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -67,9 +69,19 @@ import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
+//
+//fun Context.getActivity(): AppCompatActivity? {
+//    var currentContext = this
+//    while (currentContext is ContextWrapper) {
+//        if (currentContext is AppCompatActivity) {
+//            return currentContext
+//        }
+//        currentContext = currentContext.baseContext
+//    }
+//    return null
+//}
 
 class DealsContainer {
-
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @Composable
@@ -81,8 +93,8 @@ class DealsContainer {
             composable("deals") {
                 dealsPage.DealsHost(dealsNavController)
             }
-            composable("addDealScreen") {
-                AddDealScreen(navController = dealsNavController)
+            composable("addDealScreen/{editVersion}") { backStackEntry ->
+                AddDealScreen(navController = dealsNavController, editVersion=backStackEntry.arguments?.getString("editVersion")?.toInt() ?: -1)
             }
         }
     }
