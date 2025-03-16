@@ -72,12 +72,13 @@ fun AddExpenseScreen(navController: NavController) {
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
 
-    var isRecurring by remember { mutableStateOf(false) }
-
+    // Recurrence Period
     var recurrencePeriod by remember { mutableStateOf(7) } // Default to weekly (7 days)
     var expanded by remember { mutableStateOf(false) }
 
+    // End Date
     var endDate by remember { mutableStateOf("") }
+    var isEndDateValid by remember { mutableStateOf(true) } // Track if end date is valid
 
     // Date Picker State
     val calendar = Calendar.getInstance()
@@ -96,21 +97,37 @@ fun AddExpenseScreen(navController: NavController) {
         context,
         { _, year, month, dayOfMonth ->
             selectedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            // Reset end date when start date changes
+            endDate = ""
+            isEndDateValid = true
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
+    // End Date Picker Dialog
+
     val endDatePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
-            endDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            val selectedEndDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+
+            // Ensure end date is later than start date
+            if (selectedEndDate > selectedDate) {
+                endDate = selectedEndDate
+                isEndDateValid = true
+            } else {
+                isEndDateValid = false
+            }
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
-    )
+    ).apply {
+        // Prevent selecting an end date before the start date
+        datePicker.minDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)?.time ?: 0L
+    }
 
     // CSV Review State
     var parsedTransactions by remember { mutableStateOf<List<Transaction>?>(null) }
@@ -315,14 +332,32 @@ fun AddExpenseScreen(navController: NavController) {
                 .padding(10.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(text = if (endDate.isNotEmpty()) endDate else "Select End Date")
+            Text(text = if (endDate.isNotEmpty()) endDate else "Select End Date (for Recurring Transaction)")
+        }
+
+        // Show error message if end date is invalid
+        if (!isEndDateValid) {
+            Text(
+                text = "End date must be later than the start date",
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Recurrence Period
+
         Text("Recurrence Period")
-        Box {
-            Button(onClick = { expanded = true }) {
+        Box (
+            modifier = Modifier.padding(10.dp)
+        ) {
+            Button(
+                onClick = { expanded = true },
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFF4B0C0C),
+                ),
+            ) {
                 Text(
                     text = when (recurrencePeriod) {
                         1 -> "Daily"
@@ -353,7 +388,6 @@ fun AddExpenseScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(10.dp))
-
 
         // Transaction Note
         OutlinedTextField(
@@ -387,7 +421,6 @@ fun AddExpenseScreen(navController: NavController) {
                             vendor = vendorName
                         )
 
-                        val token = UserSession.access_token ?: ""
                         val response =
                             RetrofitInstance.apiService.addTransaction(transaction)
                         if (response.isSuccessful) {
@@ -433,7 +466,7 @@ fun AddExpenseScreen(navController: NavController) {
                     errorMessage = null
                     try {
                         val amount = expenseAmount.toDoubleOrNull()
-                        if (amount == null || selectedCategory == null || endDate == null || recurrencePeriod == null) {
+                        if (amount == null || selectedCategory == null || endDate.isEmpty() || !isEndDateValid) {
                             errorMessage = "Please fill in all fields correctly."
                             return@launch
                         }
@@ -469,7 +502,7 @@ fun AddExpenseScreen(navController: NavController) {
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
-            enabled = !isLoading
+            enabled = !isLoading && endDate.isNotEmpty()
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
