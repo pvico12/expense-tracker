@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.Category
-import com.cs446.expensetracker.api.models.CategoryRequest
+import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
@@ -197,7 +197,7 @@ fun AddExpenseScreen(navController: NavController) {
             onClick = {
                 coroutineScope.launch {
                     isAiLoading = true
-                    val response = RetrofitInstance.apiService.getCategorySuggestion(CategoryRequest(vendorName))
+                    val response = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(vendorName))
                     isAiLoading = false
                     if (response.isSuccessful) {
                         val aiCategory = response.body()
@@ -496,7 +496,7 @@ suspend fun uploadReceipt(context: Context, uri: Uri, categories: List<Category>
 
             if (firstItemDescription != null) {
                 // Send item name to AI endpoint for category suggestion
-                val aiResponse = RetrofitInstance.apiService.getCategorySuggestion(CategoryRequest(firstItemDescription))
+                val aiResponse = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(firstItemDescription))
 
                 if (aiResponse.isSuccessful) {
                     val suggestedCategory = aiResponse.body()
