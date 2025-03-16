@@ -8,8 +8,6 @@ import com.cs446.expensetracker.api.models.TokenRefreshRequest
 import com.cs446.expensetracker.api.models.TokenRefreshResponse
 import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.api.models.Category
-import com.cs446.expensetracker.api.models.CategoryRequest
-import com.cs446.expensetracker.api.models.CategoryResponse
 import com.cs446.expensetracker.api.models.DealCreationRequest
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithUser
