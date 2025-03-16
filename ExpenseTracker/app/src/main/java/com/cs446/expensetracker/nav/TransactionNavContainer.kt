@@ -29,6 +29,8 @@ import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class TransactionNavContainer {
 
@@ -36,6 +38,7 @@ class TransactionNavContainer {
     fun TransactionNavHost() {
         val transactionNavController = rememberNavController()
         NavHost(transactionNavController, startDestination = "history") {
+
             composable("history") {
                 TransactionHistoryScreen(
                     onTransactionClick = { transactionId ->
@@ -43,25 +46,32 @@ class TransactionNavContainer {
                     }
                 )
             }
+
             composable("history/detail/{transactionId}") { backStackEntry ->
                 val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
                 TransactionDetailScreen(
                     transactionId = transactionId,
                     onBackClick = { transactionNavController.popBackStack() },
-                    // Updated: Pass transactionId to the split route.
-                    onSplitClick = { transactionNavController.navigate("split/$transactionId") }
+                    onSplitClick = { transaction ->
+                        transactionNavController.currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("transactionToSplit", transaction)
+
+                        transactionNavController.navigate("split")
+                    }
                 )
             }
-            // New route for the bill splitting screen.
-            composable("split/{transactionId}") { backStackEntry ->
-                val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
-                // Retrieve the transaction by its ID.
-                // You must implement getTransactionById (or use a shared ViewModel) to fetch the Transaction.
-                val transaction = getTransactionById(transactionId)
+
+            composable("split") {
+                val transaction = transactionNavController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<Transaction>("transactionToSplit")
+
                 SplitTransactionScreen(transaction = transaction)
             }
         }
     }
+
 
     @Composable
     fun TransactionHistoryScreen(onTransactionClick: (String) -> Unit) {
@@ -69,18 +79,15 @@ class TransactionNavContainer {
         var isLoading by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
 
-        // Search bar states
         var searchQuery by remember { mutableStateOf("") }
         var startDate by remember { mutableStateOf<Date?>(null) }
         var endDate by remember { mutableStateOf<Date?>(null) }
 
-        // Filter transactions based on search query and date range.
         val filteredTransactions = transactions.filter { transaction ->
             val matchesQuery = if (searchQuery.isNotBlank())
                 transaction.note.contains(searchQuery, ignoreCase = true)
             else true
 
-            // Parse the transaction date from ISO string.
             val transactionDate: Date? = parseIsoDate(transaction.date)
 
             val inDateRange = if (transactionDate != null) {
@@ -93,7 +100,6 @@ class TransactionNavContainer {
             matchesQuery && inDateRange
         }
 
-        // Load transactions via API
         LaunchedEffect(Unit) {
             isLoading = true
             errorMessage = null
@@ -106,6 +112,7 @@ class TransactionNavContainer {
                     Log.d("TransactionHistory", "TransactionResponse list: $transactionResponses")
                     transactions = transactionResponses.map { tr ->
                         Transaction(
+                            id = tr.id,
                             amount = tr.amount.toDouble(),
                             category_id = tr.categoryId,
                             transaction_type = tr.transactionType ?: "expense",
@@ -159,7 +166,6 @@ class TransactionNavContainer {
                     LazyColumn {
                         items(filteredTransactions) { transaction ->
                             TransactionListItem(transaction, onClick = {
-                                // Using the transaction date as an identifier.
                                 onTransactionClick(transaction.date)
                             })
                         }
@@ -269,25 +275,34 @@ class TransactionNavContainer {
         }
     }
 
+
     @Composable
     fun TransactionDetailScreen(
         transactionId: String,
         onBackClick: () -> Unit,
-        onSplitClick: () -> Unit // Parameter for handling the split bill navigation
+        onSplitClick: (Transaction) -> Unit // Parameter for handling the split bill navigation
     ) {
         var transaction: Transaction? by remember { mutableStateOf(null) }
         var isLoading by remember { mutableStateOf(true) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
 
+        // New state variables for edit mode.
+        var isEditMode by remember { mutableStateOf(false) }
+        var editedAmount by remember { mutableStateOf("") }
+        var editedNote by remember { mutableStateOf("") }
+
+        // Create a coroutine scope for API calls.
+        val coroutineScope = rememberCoroutineScope()
+
         LaunchedEffect(transactionId) {
             try {
                 val token = UserSession.access_token ?: ""
-                val response: Response<List<TransactionResponse>> =
-                    RetrofitInstance.apiService.getTransactions(skip = 0, limit = 100)
+                val response = RetrofitInstance.apiService.getTransactions(skip = 0, limit = 100)
                 if (response.isSuccessful) {
                     val transactionResponses = response.body() ?: emptyList()
                     val transactions = transactionResponses.map { tr ->
                         Transaction(
+                            id = tr.id,
                             amount = tr.amount.toDouble(),
                             category_id = tr.categoryId,
                             transaction_type = tr.transactionType ?: "expense",
@@ -298,6 +313,8 @@ class TransactionNavContainer {
                     transaction = transactions.find { it.date == transactionId }
                     if (transaction == null) {
                         errorMessage = "Transaction not found."
+                    } else {
+                        Log.d("Transaction", "T: ${transaction}")
                     }
                 } else {
                     errorMessage = "Failed to load transaction details."
@@ -306,6 +323,13 @@ class TransactionNavContainer {
                 errorMessage = "Error: ${e.message}"
             } finally {
                 isLoading = false
+            }
+        }
+
+        LaunchedEffect(transaction) {
+            transaction?.let {
+                editedAmount = it.amount.toString()
+                editedNote = it.note
             }
         }
 
@@ -329,30 +353,122 @@ class TransactionNavContainer {
                     Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
                 }
                 else -> {
-                    transaction?.let {
-                        Text(text = "Amount: $${it.amount}", fontWeight = FontWeight.Bold)
-                        Text(text = "Category ID: ${it.category_id}", fontWeight = FontWeight.Bold)
-                        Text(text = "Type: ${it.transaction_type}", fontWeight = FontWeight.Bold)
-                        Text(text = "Note: ${it.note}", fontWeight = FontWeight.Bold)
-                        Text(text = "Date: ${it.date}", fontWeight = FontWeight.Bold)
+                    transaction?.let { tr ->
+                        if (isEditMode) {
+                            OutlinedTextField(
+                                value = editedAmount,
+                                onValueChange = { editedAmount = it },
+                                label = { Text("Amount") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = editedNote,
+                                onValueChange = { editedNote = it },
+                                label = { Text("Note") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            Text(text = "Amount: $${tr.amount}", fontWeight = FontWeight.Bold)
+                            Text(text = "Note: ${tr.note}", fontWeight = FontWeight.Bold)
+                        }
+                        Text(text = "Category ID: ${tr.category_id}", fontWeight = FontWeight.Bold)
+                        Text(text = "Type: ${tr.transaction_type}", fontWeight = FontWeight.Bold)
+                        Text(text = "Date: ${tr.date}", fontWeight = FontWeight.Bold)
                     } ?: Text(text = "Transaction not found.")
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            // Button to navigate to the bill splitting screen.
-            Button(
-                onClick = { onSplitClick() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF228B22))
-            ) {
-                Text("Split Bill")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = { onBackClick() }, modifier = Modifier.fillMaxWidth()) {
-                Text("Back to History")
+
+            if (isEditMode) {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            // Convert transactionId to Int (assumes it's convertible)
+                            val id = transaction?.id
+                            if (id == null) {
+                                Log.e("TransactionDetail", "Invalid transaction id: ${transactionId}")
+                                return@launch
+                            }
+                            try {
+                                val updatedTransaction = Transaction(
+                                    id = id,
+                                    amount = editedAmount.toDoubleOrNull() ?: transaction?.amount ?: 0.0,
+                                    category_id = transaction?.category_id ?: 0,
+                                    transaction_type = transaction?.transaction_type ?: "expense",
+                                    note = editedNote,
+                                    date = transaction?.date ?: "",
+                                    vendor = ""
+                                )
+                                val response = RetrofitInstance.apiService.updateTransaction(id, updatedTransaction)
+                                if (response.isSuccessful) {
+                                    isEditMode = false
+                                    transaction = updatedTransaction
+                                } else {
+                                    Log.e("TransactionDetail", "Update failed: ${response.errorBody()?.string()}, ${transaction}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("TransactionDetail", "Exception during update: ${e.message}")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Changes")
+                }
+            } else {
+                Button(
+                    onClick = {
+                        transaction?.let { onSplitClick(it) }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF228B22))
+                ) {
+                    Text("Split Bill")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { onBackClick() }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Back to History")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        isEditMode = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Edit")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            val id = transaction?.id
+                            if (id == null) {
+                                Log.e("TransactionDetail", "Invalid transaction id: ${transactionId}")
+                                return@launch
+                            }
+                            try {
+                                val response = RetrofitInstance.apiService.deleteTransaction(id)
+                                if (response.isSuccessful) {
+                                    // Deletion successful, navigate back to history.
+                                    onBackClick()
+                                } else {
+                                    Log.e("TransactionDetail", "Deletion failed: ${response.errorBody()?.string()}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("TransactionDetail", "Exception during deletion: ${e.message}")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Delete")
+                }
             }
         }
     }
+
 
     // Helper to format date (assumes ISO format "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private fun formatTransactionDate(isoDate: String): String {

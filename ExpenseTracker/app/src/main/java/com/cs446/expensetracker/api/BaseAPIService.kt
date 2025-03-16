@@ -19,6 +19,7 @@ import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
@@ -65,6 +66,14 @@ interface BaseAPIService {
         @Query("limit") limit: Int
     ): Response<List<TransactionResponse>>
 
+    @PUT("/transactions/{transaction_id}")
+    suspend fun updateTransaction(
+        @Path("transaction_id") transactionId: Int,
+        @Body transaction: Transaction
+    ): Response<Void>
+
+    @DELETE("/transactions/{transaction_id}")
+    suspend fun deleteTransaction(@Path("transaction_id") transactionId: Int): Response<Void>
 
     @Multipart
     @POST("/transactions/csv")

@@ -12,21 +12,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.ui.ui.theme.mainBackgroundColor
+import kotlinx.coroutines.launch
 
 @Composable
 fun SplitTransactionScreen(transaction: Transaction? = null) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    // If a transaction exists, use its amount; otherwise, allow user input.
     var amountInput by remember { mutableStateOf(transaction?.amount?.toString() ?: "") }
     var numberOfPeople by remember { mutableStateOf("") }
     var emailList by remember { mutableStateOf(listOf<String>()) }
-    val count = numberOfPeople.toIntOrNull() ?: 0
 
-    // Adjust the email list size whenever the count changes.
-    if (emailList.size != count) {
+    val count = numberOfPeople.toIntOrNull() ?: 0
+    val isExceeding = count > 10
+    val numberLabel = if (isExceeding) "Maximum number of people is 10" else "Enter number of people to split with"
+
+    if (!isExceeding && emailList.size != count) {
         emailList = List(count) { index -> emailList.getOrNull(index) ?: "" }
     }
 
@@ -36,7 +40,6 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
             .background(mainBackgroundColor)
             .padding(16.dp)
     ) {
-        // If a transaction exists, show its note and amount.
         Text(
             text = "Split Bill",
             style = MaterialTheme.typography.headlineMedium
@@ -47,7 +50,6 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
             Text(text = "Transaction: ${transaction.note}")
             Text(text = "Amount: $${transaction.amount}")
         } else {
-            // Allow user to input an amount if no transaction is provided.
             OutlinedTextField(
                 value = amountInput,
                 onValueChange = { amountInput = it },
@@ -58,39 +60,56 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Input for the number of people to split with.
         OutlinedTextField(
             value = numberOfPeople,
             onValueChange = { numberOfPeople = it },
-            label = { Text("Enter number of people to split with") },
+            label = { Text(numberLabel) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = isExceeding,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Dynamically create a text field for each email address.
-        repeat(count) { index ->
-            OutlinedTextField(
-                value = emailList.getOrNull(index) ?: "",
-                onValueChange = { newEmail ->
-                    emailList = emailList.toMutableList().also { it[index] = newEmail }
-                },
-                label = { Text("Email ${index + 1}") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+        if (!isExceeding) {
+            repeat(count) { index ->
+                OutlinedTextField(
+                    value = emailList.getOrNull(index) ?: "",
+                    onValueChange = { newEmail ->
+                        emailList = emailList.toMutableList().also { it[index] = newEmail }
+                    },
+                    label = { Text("Email ${index + 1}") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Send Email button that constructs a mailto URI and opens the email app.
         Button(
             onClick = {
-                // Use the amount from the transaction if available, otherwise the user input.
                 val parsedAmount = amountInput.toDoubleOrNull() ?: transaction?.amount ?: 0.0
-                if (count > 0) {
+                if (count > 0 && !isExceeding) {
                     val splitAmount = parsedAmount / (count + 1)
+
+                    coroutineScope.launch {
+                        transaction?.let { newTransaction ->
+                            val id = newTransaction.id
+                            if (id != null) {
+                                val updatedTransaction = newTransaction.copy(amount = splitAmount)
+                                try {
+                                    val updateResponse = RetrofitInstance.apiService.updateTransaction(id, updatedTransaction)
+                                    if (!updateResponse.isSuccessful) {
+                                        // TODO
+                                    }
+                                } catch (e: Exception) {
+                                    // TODO
+                                }
+                            }
+                        }
+                    }
+
                     val recipients = emailList.joinToString(separator = ",")
                     val subject = "E-Transfer request for ${transaction?.note ?: "Transaction"}"
                     val body = "Hello! Please E-Transfer this amount to the sender: $${"%.2f".format(splitAmount)}. Thank you!"
