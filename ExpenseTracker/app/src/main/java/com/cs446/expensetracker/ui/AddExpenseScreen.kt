@@ -33,6 +33,7 @@ import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.CustomCategoryRequest
 import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.OcrResponse
+import com.cs446.expensetracker.api.models.RecurringTransactionRequest
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
@@ -71,6 +72,14 @@ fun AddExpenseScreen(navController: NavController) {
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
 
+    // Recurrence Period
+    var recurrencePeriod by remember { mutableStateOf(7) } // Default to weekly (7 days)
+    var expanded by remember { mutableStateOf(false) }
+
+    // End Date
+    var endDate by remember { mutableStateOf("") }
+    var isEndDateValid by remember { mutableStateOf(true) } // Track if end date is valid
+
     // Date Picker State
     val calendar = Calendar.getInstance()
     val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
@@ -88,11 +97,37 @@ fun AddExpenseScreen(navController: NavController) {
         context,
         { _, year, month, dayOfMonth ->
             selectedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            // Reset end date when start date changes
+            endDate = ""
+            isEndDateValid = true
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
+
+    // End Date Picker Dialog
+
+    val endDatePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val selectedEndDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+
+            // Ensure end date is later than start date
+            if (selectedEndDate > selectedDate) {
+                endDate = selectedEndDate
+                isEndDateValid = true
+            } else {
+                isEndDateValid = false
+            }
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    ).apply {
+        // Prevent selecting an end date before the start date
+        datePicker.minDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)?.time ?: 0L
+    }
 
     // CSV Review State
     var parsedTransactions by remember { mutableStateOf<List<Transaction>?>(null) }
@@ -149,7 +184,6 @@ fun AddExpenseScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             try {
-                val token = UserSession.access_token ?: ""
                 val response = RetrofitInstance.apiService.getCategories()
                 if (response.isSuccessful) {
                     categories = response.body() ?: emptyList()
@@ -288,6 +322,73 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // End Date Picker
+        Text(text = "End Date", style = MaterialTheme.typography.bodyLarge)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .clickable { endDatePickerDialog.show() }
+                .padding(10.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(text = if (endDate.isNotEmpty()) endDate else "Select End Date (for Recurring Transaction)")
+        }
+
+        // Show error message if end date is invalid
+        if (!isEndDateValid) {
+            Text(
+                text = "End date must be later than the start date",
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Recurrence Period
+
+        Text("Recurrence Period")
+        Box (
+            modifier = Modifier.padding(10.dp)
+        ) {
+            Button(
+                onClick = { expanded = true },
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFF4B0C0C),
+                ),
+            ) {
+                Text(
+                    text = when (recurrencePeriod) {
+                        1 -> "Daily"
+                        7 -> "Weekly"
+                        30 -> "Monthly"
+                        365 -> "Yearly"
+                        else -> "Custom"
+                    }
+                )
+            }
+
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                listOf(
+                    "Daily" to 1,
+                    "Weekly" to 7,
+                    "Monthly" to 30,
+                    "Yearly" to 365
+                ).forEach { (label, days) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            recurrencePeriod = days
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         // Transaction Note
         OutlinedTextField(
             value = transactionNote,
@@ -320,7 +421,6 @@ fun AddExpenseScreen(navController: NavController) {
                             vendor = vendorName
                         )
 
-                        val token = UserSession.access_token ?: ""
                         val response =
                             RetrofitInstance.apiService.addTransaction(transaction)
                         if (response.isSuccessful) {
@@ -357,6 +457,62 @@ fun AddExpenseScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(10.dp))
+
+        // Save Recurring Transaction Button
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    isLoading = true
+                    errorMessage = null
+                    try {
+                        val amount = expenseAmount.toDoubleOrNull()
+                        if (amount == null || selectedCategory == null || endDate.isEmpty() || !isEndDateValid) {
+                            errorMessage = "Please fill in all fields correctly."
+                            return@launch
+                        }
+
+                        val recurringTransaction = RecurringTransactionRequest(
+                            start_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
+                            end_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(endDate)!!),
+                            note = transactionNote,
+                            period = recurrencePeriod,
+                            amount = amount,
+                            category_id = selectedCategory!!.id,
+                            transaction_type = "expense",
+                            vendor = vendorName
+                        )
+
+                        val response = RetrofitInstance.apiService.createRecurringTransaction(recurringTransaction)
+                        if (response.isSuccessful) {
+                            Toast.makeText(
+                                context,
+                                "Recurring transaction added successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.popBackStack()
+                        } else {
+                            errorMessage = "Failed to add transaction. Please try again."
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = "Error: ${e.message}"
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
+            enabled = !isLoading && endDate.isNotEmpty()
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text(text = "Save Recurring Transaction")
+            }
+        }
 
         // Upload CSV Button
         Button(
