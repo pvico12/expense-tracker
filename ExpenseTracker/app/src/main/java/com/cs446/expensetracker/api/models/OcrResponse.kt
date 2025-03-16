@@ -6,8 +6,3 @@ data class OcrResponse(
     val approx_fees: Double?,
     val total: Double?
 )
-
-data class OcrItem(
-    val descriptor: String,
-    val amount: Double
-)

@@ -13,9 +13,14 @@ import com.cs446.expensetracker.api.models.CategoryResponse
 import com.cs446.expensetracker.api.models.DealCreationRequest
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithUser
+import com.cs446.expensetracker.api.models.CustomCategoryRequest
+import com.cs446.expensetracker.api.models.SuggestionRequest
+import com.cs446.expensetracker.api.models.SuggestionResponse
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.OcrResponse
+import com.cs446.expensetracker.api.models.RecurringTransactionRequest
+import com.cs446.expensetracker.api.models.RecurringTransactionResponse
 import com.cs446.expensetracker.api.models.SpendingSummaryResponse
 import com.cs446.expensetracker.api.models.TempDealCreationRequest
 import com.cs446.expensetracker.api.models.Transaction
@@ -86,6 +91,13 @@ interface BaseAPIService {
     @POST("transactions/receipt/scan")
     suspend fun scanReceipt(@Part file: MultipartBody.Part): Response<OcrResponse>
 
+    // ================= Recurring Transactions ====================
+
+    @POST("transactions/recurring/")
+    suspend fun createRecurringTransaction(
+        @Body request: RecurringTransactionRequest
+    ): Response<RecurringTransactionResponse>
+
     // ====================== Categories ===========================
     @GET("/categories/")
     suspend fun getCategories(): Response<List<Category>>
@@ -125,8 +137,11 @@ interface BaseAPIService {
     @POST("/deals/cancel_vote/{deal_id}")
     suspend fun cancelvoteDeal(@Path("deal_id") dealId: String): Response<String>
 
+    @POST("categories/custom")
+    suspend fun createCustomCategory(@Body category: CustomCategoryRequest): Response<Category>
+
     // ====================== Tools ===========================
     @POST("tools/categories/suggestion")
-    suspend fun getCategorySuggestion(@Body request: CategoryRequest): Response<CategoryResponse>
+    suspend fun getCategorySuggestion(@Body request: SuggestionRequest): Response<SuggestionResponse>
 
 }

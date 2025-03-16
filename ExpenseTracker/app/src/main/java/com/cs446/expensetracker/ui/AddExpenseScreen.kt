@@ -6,11 +6,17 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -24,8 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.Category
-import com.cs446.expensetracker.api.models.CategoryRequest
+import com.cs446.expensetracker.api.models.CustomCategoryRequest
+import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.OcrResponse
+import com.cs446.expensetracker.api.models.RecurringTransactionRequest
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
@@ -54,12 +62,23 @@ fun AddExpenseScreen(navController: NavController) {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
 
+    // Show Custom Category Dialog
+    var showCustomCategoryDialog by remember { mutableStateOf(false) }
+
     // AI Suggestion Loading State
     var isAiLoading by remember { mutableStateOf(false) }
 
     // Bottom Sheet State
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
+
+    // Recurrence Period
+    var recurrencePeriod by remember { mutableStateOf(7) } // Default to weekly (7 days)
+    var expanded by remember { mutableStateOf(false) }
+
+    // End Date
+    var endDate by remember { mutableStateOf("") }
+    var isEndDateValid by remember { mutableStateOf(true) } // Track if end date is valid
 
     // Date Picker State
     val calendar = Calendar.getInstance()
@@ -78,11 +97,37 @@ fun AddExpenseScreen(navController: NavController) {
         context,
         { _, year, month, dayOfMonth ->
             selectedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            // Reset end date when start date changes
+            endDate = ""
+            isEndDateValid = true
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
+
+    // End Date Picker Dialog
+
+    val endDatePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val selectedEndDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+
+            // Ensure end date is later than start date
+            if (selectedEndDate > selectedDate) {
+                endDate = selectedEndDate
+                isEndDateValid = true
+            } else {
+                isEndDateValid = false
+            }
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    ).apply {
+        // Prevent selecting an end date before the start date
+        datePicker.minDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)?.time ?: 0L
+    }
 
     // CSV Review State
     var parsedTransactions by remember { mutableStateOf<List<Transaction>?>(null) }
@@ -139,7 +184,6 @@ fun AddExpenseScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             try {
-                val token = UserSession.access_token ?: ""
                 val response = RetrofitInstance.apiService.getCategories()
                 if (response.isSuccessful) {
                     categories = response.body() ?: emptyList()
@@ -197,7 +241,7 @@ fun AddExpenseScreen(navController: NavController) {
             onClick = {
                 coroutineScope.launch {
                     isAiLoading = true
-                    val response = RetrofitInstance.apiService.getCategorySuggestion(CategoryRequest(vendorName))
+                    val response = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(vendorName))
                     isAiLoading = false
                     if (response.isSuccessful) {
                         val aiCategory = response.body()
@@ -237,6 +281,32 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Button to Show Custom Category Dialog
+        Button(
+            onClick = { showCustomCategoryDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                Color(0xFF4B0C0C),
+            ),
+        ) {
+            Text("Add Custom Category")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Show Custom Category Popup
+        if (showCustomCategoryDialog) {
+            CustomCategoryDialog(
+                onDismiss = { showCustomCategoryDialog = false },
+                onSave = { newCategory ->
+                    // Add the new category to the list
+                    categories = categories + newCategory
+                    // Optionally, select the new category
+                    selectedCategory = newCategory
+                }
+            )
+        }
+
         // Date Picker
         Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
         Box(
@@ -248,6 +318,73 @@ fun AddExpenseScreen(navController: NavController) {
             contentAlignment = Alignment.CenterStart
         ) {
             Text(text = selectedDate)
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // End Date Picker
+        Text(text = "End Date", style = MaterialTheme.typography.bodyLarge)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .clickable { endDatePickerDialog.show() }
+                .padding(10.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(text = if (endDate.isNotEmpty()) endDate else "Select End Date (for Recurring Transaction)")
+        }
+
+        // Show error message if end date is invalid
+        if (!isEndDateValid) {
+            Text(
+                text = "End date must be later than the start date",
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Recurrence Period
+
+        Text("Recurrence Period")
+        Box (
+            modifier = Modifier.padding(10.dp)
+        ) {
+            Button(
+                onClick = { expanded = true },
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFF4B0C0C),
+                ),
+            ) {
+                Text(
+                    text = when (recurrencePeriod) {
+                        1 -> "Daily"
+                        7 -> "Weekly"
+                        30 -> "Monthly"
+                        365 -> "Yearly"
+                        else -> "Custom"
+                    }
+                )
+            }
+
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                listOf(
+                    "Daily" to 1,
+                    "Weekly" to 7,
+                    "Monthly" to 30,
+                    "Yearly" to 365
+                ).forEach { (label, days) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            recurrencePeriod = days
+                            expanded = false
+                        }
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -284,7 +421,6 @@ fun AddExpenseScreen(navController: NavController) {
                             vendor = vendorName
                         )
 
-                        val token = UserSession.access_token ?: ""
                         val response =
                             RetrofitInstance.apiService.addTransaction(transaction)
                         if (response.isSuccessful) {
@@ -321,6 +457,62 @@ fun AddExpenseScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(10.dp))
+
+        // Save Recurring Transaction Button
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    isLoading = true
+                    errorMessage = null
+                    try {
+                        val amount = expenseAmount.toDoubleOrNull()
+                        if (amount == null || selectedCategory == null || endDate.isEmpty() || !isEndDateValid) {
+                            errorMessage = "Please fill in all fields correctly."
+                            return@launch
+                        }
+
+                        val recurringTransaction = RecurringTransactionRequest(
+                            start_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
+                            end_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(endDate)!!),
+                            note = transactionNote,
+                            period = recurrencePeriod,
+                            amount = amount,
+                            category_id = selectedCategory!!.id,
+                            transaction_type = "expense",
+                            vendor = vendorName
+                        )
+
+                        val response = RetrofitInstance.apiService.createRecurringTransaction(recurringTransaction)
+                        if (response.isSuccessful) {
+                            Toast.makeText(
+                                context,
+                                "Recurring transaction added successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.popBackStack()
+                        } else {
+                            errorMessage = "Failed to add transaction. Please try again."
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = "Error: ${e.message}"
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
+            enabled = !isLoading && endDate.isNotEmpty()
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text(text = "Save Recurring Transaction")
+            }
+        }
 
         // Upload CSV Button
         Button(
@@ -496,7 +688,7 @@ suspend fun uploadReceipt(context: Context, uri: Uri, categories: List<Category>
 
             if (firstItemDescription != null) {
                 // Send item name to AI endpoint for category suggestion
-                val aiResponse = RetrofitInstance.apiService.getCategorySuggestion(CategoryRequest(firstItemDescription))
+                val aiResponse = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(firstItemDescription))
 
                 if (aiResponse.isSuccessful) {
                     val suggestedCategory = aiResponse.body()
@@ -523,4 +715,185 @@ fun uriToMultipart(context: Context, uri: Uri): MultipartBody.Part {
 
     val requestFile = file.asRequestBody("multipart/form-data".toMediaTypeOrNull())
     return MultipartBody.Part.createFormData("file", file.name, requestFile)
+}
+
+@Composable
+fun CustomCategoryDialog(
+    onDismiss: () -> Unit,
+    onSave: (Category) -> Unit, // Callback to notify parent about the new category
+    modifier: Modifier = Modifier
+) {
+    var categoryName by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf("#98Ceed") } // Default color
+    var showError by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) } // Loading state for API call
+    var apiErrorMessage by remember { mutableStateOf<String?>(null) } // Error message from API
+
+    val coroutineScope = rememberCoroutineScope()
+
+    // Predefined color options
+    val colorOptions = listOf(
+        "#98Ceed", "#FFCC99", "#FF6666", "#99CC99", "#CC99FF", "#FF99CC", "#99CCCC", "#FF9966"
+    )
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Create Custom Category", style = MaterialTheme.typography.headlineSmall) },
+        text = {
+            Column(modifier = Modifier.padding(8.dp)) {
+                // Category Name Input
+                OutlinedTextField(
+                    value = categoryName,
+                    onValueChange = { categoryName = it },
+                    label = { Text("Category Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = showError && categoryName.isBlank()
+                )
+
+                if (showError && categoryName.isBlank()) {
+                    Text(
+                        text = "Category name cannot be empty",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Color Picker Section
+                Text(
+                    text = "Select a Color",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Predefined Color Grid
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4), // Fixed 4 columns
+                    modifier = Modifier.height(120.dp)
+                ) {
+                    items(colorOptions) { color ->
+                        Box(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .size(40.dp)
+                                .background(Color(android.graphics.Color.parseColor(color)), CircleShape)
+                                .clickable { selectedColor = color }
+                                .border(
+                                    width = if (selectedColor == color) 2.dp else 0.dp,
+                                    color = Color.Black,
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Custom Hex Color Input (Optional)
+                OutlinedTextField(
+                    value = selectedColor,
+                    onValueChange = { selectedColor = it },
+                    label = { Text("Custom Color (Hex Code)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = showError && !isValidHexColor(selectedColor)
+                )
+
+                if (showError && !isValidHexColor(selectedColor)) {
+                    Text(
+                        text = "Invalid hex color code",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                // API Error Message
+                if (apiErrorMessage != null) {
+                    Text(
+                        text = apiErrorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (categoryName.isBlank() || !isValidHexColor(selectedColor)) {
+                        showError = true
+                    } else {
+                    // Create the custom category via API
+                    coroutineScope.launch {
+                        isLoading = true
+                        apiErrorMessage = null
+
+                        try {
+                            val customCategoryRequest = CustomCategoryRequest(
+                                name = categoryName,
+                                color = selectedColor
+                            )
+
+                            val response = RetrofitInstance.apiService.createCustomCategory(customCategoryRequest)
+                            if (response.isSuccessful) {
+                                val newCategory = response.body()
+                                if (newCategory != null) {
+                                    // Notify parent about the new category
+                                    onSave(newCategory)
+                                    onDismiss()
+                                } else {
+                                    apiErrorMessage = "Failed to create category."
+                                }
+                            } else {
+                                apiErrorMessage = "Failed to create category: ${response.message()}"
+                            }
+                        } catch (e: Exception) {
+                            apiErrorMessage = "Error: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                }
+        },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF4B0C0C),
+            contentColor = Color.White
+        ),
+        enabled = !isLoading
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        } else {
+            Text("Save")
+        }
+    }
+        },
+        dismissButton = {
+            Button(
+                onClick = { onDismiss() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.LightGray,
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+// Helper function to validate hex color codes
+fun isValidHexColor(color: String): Boolean {
+    return try {
+        android.graphics.Color.parseColor(color)
+        true
+    } catch (e: IllegalArgumentException) {
+        false
+    }
 }
