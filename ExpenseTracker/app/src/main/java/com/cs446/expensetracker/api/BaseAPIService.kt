@@ -8,8 +8,9 @@ import com.cs446.expensetracker.api.models.TokenRefreshRequest
 import com.cs446.expensetracker.api.models.TokenRefreshResponse
 import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.api.models.Category
-import com.cs446.expensetracker.api.models.CategoryRequest
-import com.cs446.expensetracker.api.models.CategoryResponse
+import com.cs446.expensetracker.api.models.CustomCategoryRequest
+import com.cs446.expensetracker.api.models.SuggestionRequest
+import com.cs446.expensetracker.api.models.SuggestionResponse
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.Transaction
@@ -84,8 +85,11 @@ interface BaseAPIService {
     @GET("/categories/")
     suspend fun getCategories(): Response<List<Category>>
 
+    @POST("categories/custom")
+    suspend fun createCustomCategory(@Body category: CustomCategoryRequest): Response<Category>
+
     // ====================== Tools ===========================
     @POST("tools/categories/suggestion")
-    suspend fun getCategorySuggestion(@Body request: CategoryRequest): Response<CategoryResponse>
+    suspend fun getCategorySuggestion(@Body request: SuggestionRequest): Response<SuggestionResponse>
 
 }
