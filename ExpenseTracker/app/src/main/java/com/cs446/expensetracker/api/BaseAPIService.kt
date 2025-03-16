@@ -13,6 +13,8 @@ import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.SuggestionResponse
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
 import com.cs446.expensetracker.api.models.OcrResponse
+import com.cs446.expensetracker.api.models.RecurringTransactionRequest
+import com.cs446.expensetracker.api.models.RecurringTransactionResponse
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.UserProfileUpdateRequest
@@ -66,7 +68,6 @@ interface BaseAPIService {
         @Query("limit") limit: Int
     ): Response<List<TransactionResponse>>
 
-
     @Multipart
     @POST("/transactions/csv")
     suspend fun uploadCsv(
@@ -80,6 +81,13 @@ interface BaseAPIService {
     @Multipart
     @POST("transactions/receipt/scan")
     suspend fun scanReceipt(@Part file: MultipartBody.Part): Response<OcrResponse>
+
+    // ================= Recurring Transactions ====================
+
+    @POST("transactions/recurring/")
+    suspend fun createRecurringTransaction(
+        @Body request: RecurringTransactionRequest
+    ): Response<RecurringTransactionResponse>
 
     // ====================== Categories ===========================
     @GET("/categories/")
