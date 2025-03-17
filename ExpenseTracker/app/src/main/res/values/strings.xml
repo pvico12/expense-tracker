@@ -4,4 +4,5 @@
     <string name="title_activity_login">LoginActivity</string>
     <string name="title_activity_signup">SignupActivity</string>
     <string name="title_activity_welcome">WelcomeActivity</string>
+    <string name="auto_complete_activity">AutocompleteActivity</string>
 </resources>
