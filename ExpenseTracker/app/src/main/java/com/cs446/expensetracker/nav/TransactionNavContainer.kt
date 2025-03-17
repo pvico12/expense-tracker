@@ -1,12 +1,17 @@
 package com.cs446.expensetracker.nav
 
 import android.app.DatePickerDialog
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +36,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class TransactionNavContainer {
 
@@ -48,7 +56,8 @@ class TransactionNavContainer {
             }
 
             composable("history/detail/{transactionId}") { backStackEntry ->
-                val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
+                val transactionIdStr = backStackEntry.arguments?.getString("transactionId") ?: ""
+                val transactionId = transactionIdStr.toIntOrNull() ?: 0  // Convert to Int, using 0 as a fallback
                 TransactionDetailScreen(
                     transactionId = transactionId,
                     onBackClick = { transactionNavController.popBackStack() },
@@ -56,11 +65,11 @@ class TransactionNavContainer {
                         transactionNavController.currentBackStackEntry
                             ?.savedStateHandle
                             ?.set("transactionToSplit", transaction)
-
                         transactionNavController.navigate("split")
                     }
                 )
             }
+
 
             composable("split") {
                 val transaction = transactionNavController.previousBackStackEntry
@@ -74,7 +83,7 @@ class TransactionNavContainer {
 
 
     @Composable
-    fun TransactionHistoryScreen(onTransactionClick: (String) -> Unit) {
+    fun TransactionHistoryScreen(onTransactionClick: (Int) -> Unit) {
         var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
         var isLoading by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -117,7 +126,8 @@ class TransactionNavContainer {
                             category_id = tr.categoryId,
                             transaction_type = tr.transactionType ?: "expense",
                             note = if (tr.note.toString().isEmpty()) "Transaction" else tr.note.toString(),
-                            date = tr.date ?: ""
+                            date = tr.date ?: "",
+                            vendor = tr.vendor
                         )
                     }
                     Log.d("Transactions", "Transactions list: $transactions")
@@ -166,7 +176,7 @@ class TransactionNavContainer {
                     LazyColumn {
                         items(filteredTransactions) { transaction ->
                             TransactionListItem(transaction, onClick = {
-                                onTransactionClick(transaction.date)
+                                onTransactionClick(transaction.id ?: -1)
                             })
                         }
                     }
@@ -256,12 +266,12 @@ class TransactionNavContainer {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(text = transaction.note, fontWeight = FontWeight.Bold)
-                    Text(
-                        text = formatTransactionDate(transaction.date),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
+                    Text(text = transaction.vendor ?: transaction.note, fontWeight = FontWeight.Bold)
+//                    Text(
+//                        text = formatTransactionDate(transaction.date),
+//                        style = MaterialTheme.typography.bodySmall,
+//                        color = MaterialTheme.colorScheme.secondary
+//                    )
                 }
                 Text(
                     text = "$${transaction.amount}",
@@ -278,7 +288,7 @@ class TransactionNavContainer {
 
     @Composable
     fun TransactionDetailScreen(
-        transactionId: String,
+        transactionId: Int,
         onBackClick: () -> Unit,
         onSplitClick: (Transaction) -> Unit // Parameter for handling the split bill navigation
     ) {
@@ -289,7 +299,7 @@ class TransactionNavContainer {
         // New state variables for edit mode.
         var isEditMode by remember { mutableStateOf(false) }
         var editedAmount by remember { mutableStateOf("") }
-        var editedNote by remember { mutableStateOf("") }
+        var editedVendor by remember { mutableStateOf("") }
 
         // Create a coroutine scope for API calls.
         val coroutineScope = rememberCoroutineScope()
@@ -307,10 +317,11 @@ class TransactionNavContainer {
                             category_id = tr.categoryId,
                             transaction_type = tr.transactionType ?: "expense",
                             note = if (tr.note.toString().isEmpty()) "Transaction" else tr.note.toString(),
-                            date = tr.date ?: ""
+                            date = tr.date ?: "",
+                            vendor = tr.vendor
                         )
                     }
-                    transaction = transactions.find { it.date == transactionId }
+                    transaction = transactions.find { it.id == transactionId }
                     if (transaction == null) {
                         errorMessage = "Transaction not found."
                     } else {
@@ -329,7 +340,7 @@ class TransactionNavContainer {
         LaunchedEffect(transaction) {
             transaction?.let {
                 editedAmount = it.amount.toString()
-                editedNote = it.note
+                editedVendor = it.vendor ?: ""
             }
         }
 
@@ -339,11 +350,59 @@ class TransactionNavContainer {
                 .background(mainBackgroundColor)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Transaction Details",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Transaction Details",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = {
+                        isEditMode = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Edit Transaction"
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            val id = transaction?.id
+                            if (id == null) {
+                                Log.e("TransactionDetail", "Invalid transaction id: ${transactionId}")
+                                return@launch
+                            }
+                            try {
+                                val response = RetrofitInstance.apiService.deleteTransaction(id)
+                                if (response.isSuccessful) {
+                                    // Deletion successful, navigate back to history.
+                                    onBackClick()
+                                } else {
+                                    Log.e("TransactionDetail", "Deletion failed: ${response.errorBody()?.string()}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("TransactionDetail", "Exception during deletion: ${e.message}")
+                            }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete Transaction"
+                    )
+                }
+
+
+            }
+
+
             Spacer(modifier = Modifier.height(16.dp))
             when {
                 isLoading -> {
@@ -363,18 +422,17 @@ class TransactionNavContainer {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
-                                value = editedNote,
-                                onValueChange = { editedNote = it },
-                                label = { Text("Note") },
+                                value = editedVendor,
+                                onValueChange = { editedVendor = it },
+                                label = { Text("Vendor") },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         } else {
                             Text(text = "Amount: $${tr.amount}", fontWeight = FontWeight.Bold)
-                            Text(text = "Note: ${tr.note}", fontWeight = FontWeight.Bold)
+                            Text(text = "Vendor: ${tr.vendor}", fontWeight = FontWeight.Bold)
+                            Text(text = "Type: ${tr.transaction_type}", fontWeight = FontWeight.Bold)
+                            Text(text = "Date: ${formatDateTime(tr.date)}", fontWeight = FontWeight.Bold)
                         }
-                        Text(text = "Category ID: ${tr.category_id}", fontWeight = FontWeight.Bold)
-                        Text(text = "Type: ${tr.transaction_type}", fontWeight = FontWeight.Bold)
-                        Text(text = "Date: ${tr.date}", fontWeight = FontWeight.Bold)
                     } ?: Text(text = "Transaction not found.")
                 }
             }
@@ -396,9 +454,9 @@ class TransactionNavContainer {
                                     amount = editedAmount.toDoubleOrNull() ?: transaction?.amount ?: 0.0,
                                     category_id = transaction?.category_id ?: 0,
                                     transaction_type = transaction?.transaction_type ?: "expense",
-                                    note = editedNote,
+                                    vendor = editedVendor,
                                     date = transaction?.date ?: "",
-                                    vendor = ""
+                                    note = transaction?.note ?: ""
                                 )
                                 val response = RetrofitInstance.apiService.updateTransaction(id, updatedTransaction)
                                 if (response.isSuccessful) {
@@ -431,40 +489,6 @@ class TransactionNavContainer {
                     Text("Back to History")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        isEditMode = true
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Edit")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            val id = transaction?.id
-                            if (id == null) {
-                                Log.e("TransactionDetail", "Invalid transaction id: ${transactionId}")
-                                return@launch
-                            }
-                            try {
-                                val response = RetrofitInstance.apiService.deleteTransaction(id)
-                                if (response.isSuccessful) {
-                                    // Deletion successful, navigate back to history.
-                                    onBackClick()
-                                } else {
-                                    Log.e("TransactionDetail", "Deletion failed: ${response.errorBody()?.string()}")
-                                }
-                            } catch (e: Exception) {
-                                Log.e("TransactionDetail", "Exception during deletion: ${e.message}")
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Delete")
-                }
             }
         }
     }
@@ -489,6 +513,24 @@ class TransactionNavContainer {
             inputFormat.parse(isoDate)
         } catch (e: Exception) {
             null
+        }
+    }
+
+    private fun formatDateTime(dateString: String): String {
+        return try {
+            // Define the input and output date formats
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+            // Parse the input string and format it into the desired output string
+            val date = inputFormat.parse(dateString)
+            if (date != null) {
+                outputFormat.format(date)
+            } else {
+                dateString
+            }
+        } catch (e: Exception) {
+            // Fallback to the original string in case of error
+            dateString
         }
     }
 

@@ -47,7 +47,7 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
         Spacer(modifier = Modifier.height(16.dp))
 
         if (transaction != null) {
-            Text(text = "Transaction: ${transaction.note}")
+            Text(text = "Vendor: ${transaction.vendor ?: ""}")
             Text(text = "Amount: $${transaction.amount}")
         } else {
             OutlinedTextField(
