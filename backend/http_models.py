@@ -160,6 +160,7 @@ class DealCreationRequest(BaseModel):
 class DealUpdateRequest(BaseModel):
     name: Optional[str]
     description: Optional[str]
+    vendor: Optional[str]
     price: Optional[float]
     date: Optional[datetime.datetime]
     address: Optional[str]
