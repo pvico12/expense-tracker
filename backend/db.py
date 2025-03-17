@@ -101,7 +101,6 @@ def add_predefined_categories(user_id: int):
         {"name": "Entertainment", "color": "#FF5733"},
         {"name": "Food & Drinks", "color": "#33FF57"},
         {"name": "Housing", "color": "#3357FF"},
-        {"name": "Income", "color": "#FF33A1"},
         {"name": "Lifestyle", "color": "#FF8C33"},
         {"name": "Miscellaneous", "color": "#8C33FF"},
         {"name": "Savings", "color": "#33FFF5"},
@@ -137,32 +136,28 @@ def add_sample_transactions():
         # Define sample transactions for each category
         sample_transactions_data = {
             "Food & Drinks": [
-                {"amount": 50.75, "note": "Dinner at Italian Restaurant"},
-                {"amount": 20.00, "note": "Lunch at Cafe"},
-                {"amount": 15.50, "note": "Groceries"}
-            ],
-            "Income": [
-                {"amount": 3000.00, "note": "Monthly Salary"},
-                {"amount": 200.00, "note": "Freelance Work"}
+                {"amount": 50.75, "note": "Dinner at Italian Restaurant", "vendor": "Italian Bistro"},
+                {"amount": 20.00, "note": "Lunch at Cafe", "vendor": "Cafe Delight"},
+                {"amount": 15.50, "note": "Groceries", "vendor": "Supermarket"}
             ],
             "Entertainment": [
-                {"amount": 200.00, "note": "Concert tickets"},
-                {"amount": 50.00, "note": "Movie night"},
-                {"amount": 30.00, "note": "Amusement park"}
+                {"amount": 200.00, "note": "Concert tickets", "vendor": "Concert Hall"},
+                {"amount": 50.00, "note": "Movie night", "vendor": "Cinema"},
+                {"amount": 30.00, "note": "Amusement park", "vendor": "Fun Park"}
             ],
             "Transportation": [
-                {"amount": 75.00, "note": "Gas for car"},
-                {"amount": 50.00, "note": "Bus pass"},
-                {"amount": 100.00, "note": "Car maintenance"}
+                {"amount": 75.00, "note": "Gas for car", "vendor": "Gas Station"},
+                {"amount": 50.00, "note": "Bus pass", "vendor": "City Transport"},
+                {"amount": 100.00, "note": "Car maintenance", "vendor": "Auto Shop"}
             ],
             "Housing": [
-                {"amount": 1200.00, "note": "Monthly Rent"},
-                {"amount": 100.00, "note": "Utilities"},
-                {"amount": 50.00, "note": "Home repairs"}
+                {"amount": 1200.00, "note": "Monthly Rent", "vendor": "Landlord"},
+                {"amount": 100.00, "note": "Utilities", "vendor": "Utility Company"},
+                {"amount": 50.00, "note": "Home repairs", "vendor": "Repair Service"}
             ],
             "Savings": [
-                {"amount": 300.00, "note": "Savings deposit"},
-                {"amount": 500.00, "note": "Emergency fund"}
+                {"amount": 300.00, "note": "Savings deposit", "vendor": "Bank"},
+                {"amount": 500.00, "note": "Emergency fund", "vendor": "Bank"}
             ]
         }
 
@@ -183,9 +178,10 @@ def add_sample_transactions():
                         user_id=user.id,
                         amount=transaction_info["amount"],
                         category_id=user_categories[category_name].id,
-                        transaction_type=TransactionType.EXPENSE if category_name != "Income" else TransactionType.INCOME,
+                        transaction_type=TransactionType.EXPENSE,
                         note=transaction_info["note"],
-                        date=datetime.datetime.utcnow()
+                        date=datetime.datetime.utcnow(),
+                        vendor=transaction_info["vendor"]
                     )
                     db_session.add(sample_transaction)
 
