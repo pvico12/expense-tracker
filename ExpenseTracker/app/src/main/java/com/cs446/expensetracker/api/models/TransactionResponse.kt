@@ -7,5 +7,6 @@ data class TransactionResponse(
     val categoryId: Int,
     val transactionType: String?,
     val note: String?,
-    val date: String?
+    val date: String?,
+    val vendor: String?
 )

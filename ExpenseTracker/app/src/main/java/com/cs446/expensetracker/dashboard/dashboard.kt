@@ -5,7 +5,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.icu.text.DecimalFormat
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,12 +28,15 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -48,6 +54,10 @@ import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.mockData.dashboard_mock_expense
 import com.cs446.expensetracker.api.models.Category
+import com.cs446.expensetracker.api.models.CategoryBreakdown
+import com.cs446.expensetracker.api.models.DealRetrievalResponse
+import com.cs446.expensetracker.api.models.SpendingSummaryResponse
+import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
 import com.github.mikephil.charting.animation.Easing
@@ -58,16 +68,77 @@ import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.utils.MPPointF
 import kotlinx.coroutines.launch
+import retrofit2.Response
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.math.round
 
 class Dashboard {
-    val format = DecimalFormat("#,###.00")
 
+    private fun formatCurrency(amount: Double): String {
+        if (amount == 0.0) { return "0.00"}
+        val format = DecimalFormat("#,###.00")
+        return format.format(amount)
+    }
+
+    private val default_colors = arrayOf("#FF9A3B3B", "#FFC08261", "#FFDBAD8C", "#FFDBAD8C", "#FFFFEBCF", "#FFFFCFAC", "#FFFFDADA", "#FFD6CBAF", "#FF8D5F2E")
+
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun DashboardHost() {
         val scrollState = rememberScrollState()
         val coroutineScope = rememberCoroutineScope()
-        var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+        var spendingSummary by remember { mutableStateOf<List<CategoryBreakdown>>(emptyList()) }
+        var totalSpending by remember { mutableDoubleStateOf(0.0) }
         var errorMessage = ""
+        var isLoading by remember { mutableStateOf(true) }
+
+        // Load transactions via API
+        LaunchedEffect(Unit) {
+            isLoading = true
+            errorMessage = ""
+            try {
+                val token = UserSession.access_token ?: ""
+                val currentDate = LocalDateTime.now()
+                val stringCurrentDate = currentDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                val oneYearAgo = LocalDateTime.now().minusYears(1)
+                val stringOneYearAgoDate = oneYearAgo.format(DateTimeFormatter.ISO_DATE_TIME)
+                val response: Response<SpendingSummaryResponse> =
+                    RetrofitInstance.apiService.getSpendingSummary(startDate = stringOneYearAgoDate, endDate = stringCurrentDate)
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+                    totalSpending = responseBody?.total_spend ?: 0.0
+                    Log.d("Response", "Summary Spend Response: $responseBody for $stringOneYearAgoDate to $stringCurrentDate")
+                    spendingSummary = responseBody?.category_breakdown?.map { x ->
+                        CategoryBreakdown(
+                            category_name = x.category_name,
+                            total_amount = x.total_amount.toDouble(),
+                            percentage = x.percentage.toDouble(),
+                            custom_color = null //TODO: change backend
+                        )
+                    } ?: emptyList()
+                    var color_iter = -1
+                    for (expense in spendingSummary) {
+                        if (expense.custom_color == null) {
+                            if (color_iter < default_colors.size) {
+                                color_iter += 1
+                            } else {
+                                color_iter = 0
+                            }
+                            expense.custom_color = default_colors[color_iter]
+                        }
+                    }
+                } else {
+                    errorMessage = "Failed to load data."
+                    Log.d("Error", "Summary Spend API Response Was Unsuccessful: $response")
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error: ${e.message}"
+                Log.d("Error", "Error Calling Summary Spend API: $errorMessage")
+            } finally {
+                isLoading = false
+            }
+        }
 
         Log.d("FCM Token", UserSession.fcmToken)
 
@@ -106,76 +177,87 @@ class Dashboard {
                     )
                 }
             }
-            Piechart()
-            Text(
-                text = "This Month's Expenses",
-                color = mainTextColor,
-                style = Typography.titleLarge,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 16.dp)
-            )
-            Text(
-                text = "Total Spending: $${format.format(dashboard_mock_expense.total_spending)}",
-                color = mainTextColor,
-                style = Typography.titleLarge,
-                fontSize = 27.sp,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 8.dp, bottom = 16.dp)
-            )
-            for(expense in dashboard_mock_expense.categories) {
-                Card(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .fillMaxSize()
-                    ,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                    colors = CardDefaults.cardColors(containerColor = tileColor)
-                ) {
-                    Box (
+            when {
+                isLoading -> {
+                    CircularProgressIndicator()
+                }
+                errorMessage != "" -> {
+                    Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
+                }
+                else -> {
+                    Piechart(spendingSummary)
+                    Text(
+                        text = "This Month's Expenses",
+                        color = mainTextColor,
+                        style = Typography.titleLarge,
                         modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        Box(
+                            .padding(start = 16.dp, top = 16.dp)
+                    )
+                    Text(
+                        text = "Total Spending: $${formatCurrency(totalSpending)}",
+                        color = mainTextColor,
+                        style = Typography.titleLarge,
+                        fontSize = 27.sp,
+                        modifier = Modifier
+                            .padding(start = 16.dp, top = 8.dp, bottom = 16.dp)
+                    )
+                    for(expense in spendingSummary) {
+                        Card(
                             modifier = Modifier
-                                .size(40.dp)
-                                .padding(start = 10.dp, top = 10.dp, bottom = 10.dp, end = 10.dp)
-                                .clip(CircleShape)
-                                .background(expense.customColor as Color)
-                                .align(Alignment.CenterStart)
-                        )
-                        Text(
-                            text = "${expense.category}: ",
-                            color = mainTextColor,
-                            style = Typography.labelSmall,
-                            modifier = Modifier
-                                .padding(start=40.dp,top=8.dp,bottom=8.dp,end=8.dp)
-                        )
-                        Spacer(Modifier.fillMaxWidth(0.2f))
-                        Text(
-                            text = "${expense.percentage}%",
-                            color = PurpleGrey40,
-                            style = Typography.labelSmall,
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .align(Alignment.Center)
-                        )
-                        Text(
-                            text = "$${format.format(expense.amount)}",
-                            color = PurpleGrey40,
-                            style = Typography.labelSmall,
-                            modifier = Modifier
-                                .padding(start=1.dp,top=8.dp,bottom=8.dp,end=20.dp)
-                                .align(Alignment.CenterEnd)
-                        )
-                    }
+                                .padding(4.dp)
+                                .fillMaxSize()
+                            ,
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                            colors = CardDefaults.cardColors(containerColor = tileColor)
+                        ) {
+                            Box (
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .padding(start = 10.dp, top = 10.dp, bottom = 10.dp, end = 10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(android.graphics.Color.parseColor((expense.custom_color))))
+                                        .align(Alignment.CenterStart)
+                                )
+                                Text(
+                                    text = "${expense.category_name}: ",
+                                    color = mainTextColor,
+                                    style = Typography.labelSmall,
+                                    modifier = Modifier
+                                        .padding(start=40.dp,top=8.dp,bottom=8.dp,end=8.dp)
+                                )
+                                Spacer(Modifier.fillMaxWidth(0.2f))
+                                Text(
+                                    text = "${round(expense.percentage)}%",
+                                    color = PurpleGrey40,
+                                    style = Typography.labelSmall,
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .align(Alignment.Center)
+                                )
+                                Text(
+                                    text = "$${formatCurrency(expense.total_amount)}",
+                                    color = PurpleGrey40,
+                                    style = Typography.labelSmall,
+                                    modifier = Modifier
+                                        .padding(start=1.dp,top=8.dp,bottom=8.dp,end=20.dp)
+                                        .align(Alignment.CenterEnd)
+                                )
+                            }
 
+                        }
+                    }
+                    Spacer(Modifier.height(85.dp))
                 }
             }
         }
     }
 
     @Composable
-    private fun Piechart() {
+    private fun Piechart(spendingSummary: List<CategoryBreakdown>) {
         AndroidView(
             modifier = Modifier
                 .fillMaxWidth()
@@ -205,15 +287,14 @@ class Dashboard {
 
                     legend.isEnabled = false
 
-                    // TODO: if we need more colors, add a color jitterer
                     val colors: ArrayList<Int> = ArrayList()
 
                     // on below line we are creating array list and
                     // adding data to it to display in pie chart
                     val entries: ArrayList<PieEntry> = ArrayList()
-                    for(expense in dashboard_mock_expense.categories) {
-                        entries.add(PieEntry(expense.percentage, expense.category))
-                        colors.add((expense.customColor as Color).toArgb())
+                    for(expense in spendingSummary) {
+                        entries.add(PieEntry(expense.percentage.toFloat(), expense.category_name))
+                        colors.add(Color(android.graphics.Color.parseColor((expense.custom_color))).toArgb())
                     }
 
                     setNoDataText("Add your first transactions to see the pie chart")

@@ -106,6 +106,9 @@ dependencies {
 
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.maps.android:maps-compose:2.13.0")
+    implementation("com.google.android.libraries.places:places:4.1.0")
+    implementation ("com.google.maps.android:places-ktx:3.1.1")
+    implementation ("com.google.android.material:material:1.11.0")
 
     implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
     implementation("com.google.firebase:firebase-messaging")
