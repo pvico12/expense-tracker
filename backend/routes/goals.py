@@ -2,13 +2,12 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from http_models import GoalCreateRequest, GoalUpdateRequest, GoalResponse, GoalsStatisticsResponse
-from models import Goal, Category, User
+from models import Goal, Category, User, Transaction
 from dependencies.auth import get_current_user
 from db import get_db
-import datetime
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import func
-from models import Transaction
+import datetime
+from middlewares.goal_utils import calculate_percentage_goal_progress
 
 router = APIRouter(
     prefix="/goals",
@@ -24,18 +23,17 @@ def get_goal_by_id(goal_id: int, current_user: User = Depends(get_current_user),
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     if goal.category_id:
-        actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
-            Transaction.category_id == goal.category_id,
-            Transaction.date >= goal.start_date,
-            Transaction.date <= goal.end_date
-        ).scalar() or 0
         if goal.goal_type == "percentage":
-            if goal.limit and goal.limit > 0:
-                goal.amount_spent = (actual_amount_spent / goal.limit) * 100
-            else:
-                goal.amount_spent = 0
+            progress, on_track = calculate_percentage_goal_progress(db, current_user.id, goal)
+            goal.amount_spent = progress
+            goal.on_track = on_track
         else:
-            goal.amount_spent = actual_amount_spent
+            amount_spent = db.query(func.sum(Transaction.amount)).filter(
+                Transaction.category_id == goal.category_id,
+                Transaction.date >= goal.start_date,
+                Transaction.date <= goal.end_date
+            ).scalar() or 0
+            goal.amount_spent = amount_spent
     else:
         goal.amount_spent = None
     return goal
@@ -66,18 +64,19 @@ def get_goals(
 
     for goal in goals:
         if goal.category_id:
-            actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
-                Transaction.category_id == goal.category_id,
-                Transaction.date >= goal.start_date,
-                Transaction.date <= goal.end_date
-            ).scalar() or 0
             if goal.goal_type == "percentage":
-                if goal.limit and goal.limit > 0:
-                    goal.amount_spent = (actual_amount_spent / goal.limit) * 100
-                else:
-                    goal.amount_spent = 0
+                progress, on_track, current_amount, previous_period_amount = calculate_percentage_goal_progress(db, current_user.id, goal)
+                goal.amount_spent = progress
+                goal.on_track = on_track
+                print(f"current_amount: {current_amount}")
+                print(f"previous_period_amount: {previous_period_amount}")
             else:
-                goal.amount_spent = actual_amount_spent
+                amount_spent = db.query(func.sum(Transaction.amount)).filter(
+                    Transaction.category_id == goal.category_id,
+                    Transaction.date >= goal.start_date,
+                    Transaction.date <= goal.end_date
+                ).scalar() or 0
+                goal.amount_spent = amount_spent
         else:
             goal.amount_spent = None
 
@@ -117,7 +116,7 @@ def create_goal(
         goal_type=goal.goal_type,
         limit=goal.limit,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
     )
     db.add(new_goal)
     db.commit()
@@ -153,9 +152,9 @@ def update_goal(goal_id: int, goal_update: GoalUpdateRequest, current_user: User
             Transaction.date <= goal.end_date
         ).scalar() or 0
         if goal.goal_type == "percentage":
-            computed_percentage = (actual_amount_spent / goal.limit) * 100 if goal.limit > 0 else 0
-            goal.amount_spent = computed_percentage
-            goal.on_track = computed_percentage <= 100
+            progress, on_track = calculate_percentage_goal_progress(db, current_user.id, goal)
+            goal.amount_spent = progress
+            goal.on_track = on_track
         else:
             goal.amount_spent = actual_amount_spent
             goal.on_track = actual_amount_spent <= goal.limit
