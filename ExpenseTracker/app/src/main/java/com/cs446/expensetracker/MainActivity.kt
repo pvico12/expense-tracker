@@ -16,11 +16,9 @@ import androidx.compose.material.icons.automirrored.filled.Grading
 import androidx.compose.material.icons.automirrored.outlined.Grading
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -43,7 +41,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Color
 import com.cs446.expensetracker.nav.DealsContainer
 import com.cs446.expensetracker.nav.TransactionNavContainer
-import com.cs446.expensetracker.nav.SettingsNavContainer
+import com.cs446.expensetracker.nav.settings.AdminPageContainer
+import com.cs446.expensetracker.nav.settings.ProfilePageContainer
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.AddExpenseScreen
 import com.cs446.expensetracker.ui.WelcomeActivity
@@ -128,13 +127,16 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         floatingActionButton = {
-                            if (navBackStackEntry?.destination?.route != "settings") {
+                            if (navBackStackEntry?.destination?.route?.contains("settings") != true) {
                                 FloatingActionButton(
                                     onClick = { rootNavController.navigate("addExpense") },
                                     containerColor = Color(0xFF4B0C0C),
                                     contentColor = Color(0xFFF6F3F3)
                                 ) {
-                                    Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Expense")
+                                    Icon(
+                                        imageVector = Icons.Filled.Add,
+                                        contentDescription = "Add Expense"
+                                    )
                                 }
                             }
                         }
@@ -147,11 +149,7 @@ class MainActivity : ComponentActivity() {
                             NavHost(rootNavController, startDestination = "home") {
                                 composable("home") {
                                     val homeNavContainer = HomeNavContainer()
-                                    homeNavContainer.HomeNavHost()
-                                }
-                                composable("settings") {
-                                    val settingsNavContainer = SettingsNavContainer()
-                                    settingsNavContainer.SettingsNavHost()
+                                    homeNavContainer.HomeScreen(rootNavController)
                                 }
                                 composable("history") {
                                     val transactionNavContainer = TransactionNavContainer()
@@ -163,6 +161,15 @@ class MainActivity : ComponentActivity() {
                                 }
                                 composable("addExpense") {
                                     AddExpenseScreen(navController = rootNavController)
+                                }
+                                composable("settings/admin-page") {
+                                    val adminPageContainer = AdminPageContainer()
+                                    adminPageContainer.AdminPageScreen(onBackClick = { rootNavController.popBackStack() })
+                                }
+
+                                composable("settings/profile") {
+                                    val profilePageContainer = ProfilePageContainer()
+                                    profilePageContainer.ProfilePageScreen(onBackClick = { rootNavController.popBackStack() })
                                 }
                             }
                         }
@@ -184,11 +191,6 @@ val navItems = listOf(
         title = "Home",
         selectedIcon = Icons.Filled.Home,
         unselectedIcon = Icons.Outlined.Home,
-    ),
-    BottomNavigationItem(
-        title = "Settings",
-        selectedIcon = Icons.Filled.Settings,
-        unselectedIcon = Icons.Outlined.Settings,
     ),
     BottomNavigationItem(
         title = "History",

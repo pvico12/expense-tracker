@@ -36,13 +36,16 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,7 +62,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -96,6 +98,13 @@ import retrofit2.Response
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.round
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 
 class Dashboard {
 
@@ -107,9 +116,10 @@ class Dashboard {
 
     private val default_colors = arrayOf("#FF9A3B3B", "#FFC08261", "#FFDBAD8C", "#FFDBAD8C", "#FFFFEBCF", "#FFFFCFAC", "#FFFFDADA", "#FFD6CBAF", "#FF8D5F2E")
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun DashboardHost(dashboardNavController: NavController) {
+    fun DashboardScreen(dashboardNavController: NavController, drawerState: DrawerState) {
         val scrollState = rememberScrollState()
         val coroutineScope = rememberCoroutineScope()
         var spendingSummary by remember { mutableStateOf<List<CategoryBreakdown>>(emptyList()) }
@@ -120,6 +130,7 @@ class Dashboard {
         var viewSpendingOrGoals by rememberSaveable { mutableStateOf("View Goals") }
 
         val currentDate = LocalDateTime.now().plusHours(4) // plus 4 for utv
+        val monthName = currentDate.format(DateTimeFormatter.ofPattern("MMMM"))
         val stringCurrentDate = currentDate.format(DateTimeFormatter.ISO_DATE_TIME)
         val oneYearAgo = currentDate.minusMonths(1)
         val stringOneYearAgoDate = oneYearAgo.format(DateTimeFormatter.ISO_DATE_TIME)
@@ -135,12 +146,14 @@ class Dashboard {
             errorMessage = ""
             try {
                 val token = UserSession.access_token ?: ""
+                val firstDayOfMonth = currentDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE_TIME)
+                val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).format(DateTimeFormatter.ISO_DATE_TIME)
                 val response: Response<SpendingSummaryResponse> =
-                    RetrofitInstance.apiService.getSpendingSummary(startDate = stringOneYearAgoDate, endDate = stringCurrentDate)
+                    RetrofitInstance.apiService.getSpendingSummary(startDate = firstDayOfMonth, endDate = lastDayOfMonth)
                 if (response.isSuccessful) {
                     val responseBody = response.body()
                     totalSpending = responseBody?.total_spend ?: 0.0
-                    Log.d("Response", "Summary Spend Response: $responseBody for $stringOneYearAgoDate to $stringCurrentDate")
+                    Log.d("Response", "Summary Spend Response: $responseBody for $firstDayOfMonth to $lastDayOfMonth")
                     spendingSummary = responseBody?.category_breakdown?.map { x ->
                         CategoryBreakdown(
                             category_name = x.category_name,
@@ -173,6 +186,9 @@ class Dashboard {
         }
 
         Log.d("FCM Token", UserSession.fcmToken)
+
+        val dollars = totalSpending.toInt()
+        val cents = ((totalSpending - dollars) * 100).toInt()
 
         fun apiFetchGoals(startDate: String, endDate: String) {
             // Load deals via API
@@ -513,7 +529,7 @@ class Dashboard {
             factory = { context ->
                 PieChart(context).apply {
                     // Customize the PieChart here
-                    setExtraOffsets(5f, 10f, 5f, 5f)
+                    setExtraOffsets(5f, 0f, 5f, 5f)
                     setDragDecelerationFrictionCoef(0.95f)
                     getDescription().setEnabled(false)
 
