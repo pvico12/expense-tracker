@@ -118,25 +118,30 @@ class HomeNavContainer {
                             ),
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                         )
-                        NavigationDrawerItem(
-                            icon = {
-                                Icon(
-                                    Icons.Filled.BarChart,
-                                    contentDescription = null
-                                )
-                            },
-                            label = { Text("Admin Testing", color = tileColor) },
-                            selected = false,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                homeNavController.navigate("settings/admin-page")
-                            },
-                            colors = NavigationDrawerItemDefaults.colors(
-                                unselectedIconColor = tileColor,
-                                unselectedContainerColor = Color.Transparent
-                            ),
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                        )
+
+                        // only for admin user
+                        if (UserSession.userId == 1) {
+                            NavigationDrawerItem(
+                                icon = {
+                                    Icon(
+                                        Icons.Filled.BarChart,
+                                        contentDescription = null
+                                    )
+                                },
+                                label = { Text("Admin Testing", color = tileColor) },
+                                selected = false,
+                                onClick = {
+                                    coroutineScope.launch { drawerState.close() }
+                                    homeNavController.navigate("settings/admin-page")
+                                },
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    unselectedIconColor = tileColor,
+                                    unselectedContainerColor = Color.Transparent
+                                ),
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
+
                         NavigationDrawerItem(
                             icon = { Icon(LogOut, contentDescription = null) },
                             label = { Text("Logout", color = tileColor) },
