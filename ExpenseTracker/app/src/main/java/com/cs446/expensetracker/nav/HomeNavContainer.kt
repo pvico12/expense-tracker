@@ -61,7 +61,7 @@ class HomeNavContainer {
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun HomeScreen(homeNavController: NavHostController) {
-//        val homeNavController = rememberNavController()
+        val homeNavController = rememberNavController()
         val coroutineScope = rememberCoroutineScope()
         val drawerState = rememberDrawerState(DrawerValue.Closed)
         val dashboard = Dashboard()
