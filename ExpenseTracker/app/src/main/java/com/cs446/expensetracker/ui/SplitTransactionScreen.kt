@@ -69,16 +69,22 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
         false
     } else {
         if (isSplitEqually) {
-            // Compute the equal share among (count+1) people.
+            // Compute the equal share among (count+1) people and ensure it's > 0.
             val computedShare = if (count > 0) totalAmount / (count + 1) else 0.0
             val calculatedTotal = computedShare * (count + 1)
-            kotlin.math.abs(calculatedTotal - totalAmount) <= 0.01
+            kotlin.math.abs(calculatedTotal - totalAmount) <= 0.01 && computedShare > 0.0
         } else {
             val userAmt = userAmountInput.toDoubleOrNull() ?: 0.0
-            val recipientsTotal = recipientAmounts.mapNotNull { it.toDoubleOrNull() }.sum()
-            kotlin.math.abs(userAmt + recipientsTotal - totalAmount) <= 0.01
+            val recipientsValues = recipientAmounts.mapNotNull { it.toDoubleOrNull() }
+            // If any amount (user or recipient) is 0 or less, mark as invalid.
+            if (userAmt <= 0.0 || recipientsValues.any { it <= 0.0 }) {
+                false
+            } else {
+                kotlin.math.abs(userAmt + recipientsValues.sum() - totalAmount) <= 0.01
+            }
         }
     }
+
 
     Column(
         modifier = Modifier
@@ -149,7 +155,8 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
                 onValueChange = { userAmountInput = it },
                 label = { Text("Enter Your Amount") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                isError = userAmountInput.isNotBlank() && (userAmountInput.toDoubleOrNull() == 0.0)
             )
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -189,7 +196,8 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
                         label = { Text("Amount for Email ${index + 1}") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
-                        isError = allAmountsEntered && !isAmountsValid
+                        isError = (recipientAmounts.getOrNull(index)?.toDoubleOrNull() == 0.0)
+                                || (allAmountsEntered && !isAmountsValid)
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -252,8 +260,16 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
                         val emailDetails = emailList.mapIndexed { index, email ->
                             "$email: $${"%.2f".format(computedShare)}"
                         }.joinToString(separator = "\n")
-                        val subject = "E-Transfer request for ${transaction?.note ?: "Transaction"}"
-                        val body = "Hello!\nPlease E-Transfer the following amount to the sender:\n$emailDetails\nThank you!"
+                        val subject = "E-Transfer request for ${transaction?.vendor ?: "Transaction"}"
+                        var body = ""
+                        if(isSplitEqually) {
+                            body = "Hello!\nPlease E-Transfer the following amount to the sender:\n$emailDetails\nThank you!"
+                        } else {
+                            body = emailList.mapIndexed { index, email ->
+                                val amt = recipientAmounts.getOrNull(index)?.toDoubleOrNull() ?: 0.0
+                                "$email please e-transfer $${"%.2f".format(amt)} to sender"
+                            }.joinToString(separator = "\n")
+                        }
                         val recipients = emailList.joinToString(separator = ",")
                         val mailtoUri = "mailto:$recipients" +
                                 "?subject=${Uri.encode(subject)}" +

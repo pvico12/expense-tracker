@@ -5,10 +5,12 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -24,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cs446.expensetracker.api.RetrofitInstance
+import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
@@ -304,6 +307,11 @@ class TransactionNavContainer {
         // Create a coroutine scope for API calls.
         val coroutineScope = rememberCoroutineScope()
 
+        // State for categories list and selected category.
+        var categoriesList by remember { mutableStateOf<List<Category>>(emptyList()) }
+        var selectedCategory: Category? by remember { mutableStateOf(null) }
+        var expanded by remember { mutableStateOf(false) }
+
         // Date Picker State
         val calendar = Calendar.getInstance()
         val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
@@ -353,6 +361,18 @@ class TransactionNavContainer {
                 } else {
                     errorMessage = "Failed to load transaction details."
                 }
+                // Fetch categories and set the selected one based on transaction.category_id
+                val categoriesResponse = RetrofitInstance.apiService.getCategories()
+                if (categoriesResponse.isSuccessful) {
+                    val catList = categoriesResponse.body() ?: emptyList()
+                    categoriesList = catList
+                    transaction?.let { t ->
+                        selectedCategory = catList.find { it.id == t.category_id }
+                    }
+                } else {
+                    errorMessage = "Failed to load categories."
+                }
+
             } catch (e: Exception) {
                 errorMessage = "Error: ${e.message}"
             } finally {
@@ -465,9 +485,35 @@ class TransactionNavContainer {
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(text = "Category", style = MaterialTheme.typography.bodyLarge)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { expanded = true }
+                                    .border(1.dp, Color.Gray, shape = RoundedCornerShape(4.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Text(text = selectedCategory?.name ?: "Select Category")
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                categoriesList.forEach { category ->
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            selectedCategory = category
+                                            expanded = false
+                                        },
+                                        text = { Text(text = category.name) }
+                                    )
+                                }
+                            }
                         } else {
                             Text(text = "Amount: $${tr.amount}", fontWeight = FontWeight.Bold)
                             Text(text = "Vendor: ${tr.vendor}", fontWeight = FontWeight.Bold)
+                            Text(text = "Category: ${selectedCategory?.name ?: "N/A"}", fontWeight = FontWeight.Bold)
                             Text(text = "Date: ${formatDateTime(tr.date)}", fontWeight = FontWeight.Bold)
                         }
                     } ?: Text(text = "Transaction not found.")
@@ -489,10 +535,10 @@ class TransactionNavContainer {
                                 val updatedTransaction = Transaction(
                                     id = id,
                                     amount = editedAmount.toDoubleOrNull() ?: transaction?.amount ?: 0.0,
-                                    category_id = transaction?.category_id ?: 0,
+                                    category_id = selectedCategory?.id ?: transaction?.category_id ?: 0,
                                     transaction_type = transaction?.transaction_type ?: "expense",
                                     vendor = editedVendor,
-                                    date = selectedDate,
+                                    date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
                                     note = transaction?.note ?: ""
                                 )
                                 val response = RetrofitInstance.apiService.updateTransaction(id, updatedTransaction)
@@ -530,19 +576,6 @@ class TransactionNavContainer {
         }
     }
 
-
-    // Helper to format date (assumes ISO format "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    private fun formatTransactionDate(isoDate: String): String {
-        return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val date = inputFormat.parse(isoDate)
-            outputFormat.format(date ?: Date())
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
     // Helper to parse an ISO date string to a Date object.
     private fun parseIsoDate(isoDate: String): Date? {
         return try {
@@ -569,13 +602,5 @@ class TransactionNavContainer {
             // Fallback to the original string in case of error
             dateString
         }
-    }
-
-    // Dummy helper to get a Transaction by its ID.
-    // Replace this with your own implementation or repository lookup.
-    private fun getTransactionById(transactionId: String): Transaction? {
-        // For now, simply return null so that the SplitTransactionScreen
-        // shows an empty amount text field for user input.
-        return null
     }
 }
