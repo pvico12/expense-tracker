@@ -127,7 +127,7 @@ class TransactionNavContainer {
                             transaction_type = tr.transactionType ?: "expense",
                             note = if (tr.note.toString().isEmpty()) "Transaction" else tr.note.toString(),
                             date = tr.date ?: "",
-                            vendor = tr.vendor
+                            vendor = if (tr.vendor == null) "N/A" else tr.vendor
                         )
                     }
                     Log.d("Transactions", "Transactions list: $transactions")
@@ -304,6 +304,29 @@ class TransactionNavContainer {
         // Create a coroutine scope for API calls.
         val coroutineScope = rememberCoroutineScope()
 
+        // Date Picker State
+        val calendar = Calendar.getInstance()
+        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        var selectedDate by remember {
+            mutableStateOf(
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                ).format(calendar.time)
+            )
+        }
+        val context = LocalContext.current
+        // Date Picker Dialog
+        val datePickerDialog = DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                selectedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+
         LaunchedEffect(transactionId) {
             try {
                 val token = UserSession.access_token ?: ""
@@ -318,7 +341,7 @@ class TransactionNavContainer {
                             transaction_type = tr.transactionType ?: "expense",
                             note = if (tr.note.toString().isEmpty()) "Transaction" else tr.note.toString(),
                             date = tr.date ?: "",
-                            vendor = tr.vendor
+                            vendor = if (tr.vendor == null) "N/A" else tr.vendor
                         )
                     }
                     transaction = transactions.find { it.id == transactionId }
@@ -427,10 +450,24 @@ class TransactionNavContainer {
                                 label = { Text("Vendor") },
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            // Date Picker
+                            Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .clickable { datePickerDialog.show() }
+                                    .padding(10.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Text(text = selectedDate)
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
                         } else {
                             Text(text = "Amount: $${tr.amount}", fontWeight = FontWeight.Bold)
                             Text(text = "Vendor: ${tr.vendor}", fontWeight = FontWeight.Bold)
-                            Text(text = "Type: ${tr.transaction_type}", fontWeight = FontWeight.Bold)
                             Text(text = "Date: ${formatDateTime(tr.date)}", fontWeight = FontWeight.Bold)
                         }
                     } ?: Text(text = "Transaction not found.")
@@ -455,7 +492,7 @@ class TransactionNavContainer {
                                     category_id = transaction?.category_id ?: 0,
                                     transaction_type = transaction?.transaction_type ?: "expense",
                                     vendor = editedVendor,
-                                    date = transaction?.date ?: "",
+                                    date = selectedDate,
                                     note = transaction?.note ?: ""
                                 )
                                 val response = RetrofitInstance.apiService.updateTransaction(id, updatedTransaction)
