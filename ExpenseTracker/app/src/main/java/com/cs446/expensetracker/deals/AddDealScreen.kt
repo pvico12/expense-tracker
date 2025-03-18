@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.ui
+package com.cs446.expensetracker.deals
 
 import android.app.DatePickerDialog
 import android.os.Build
@@ -21,29 +21,17 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.DealCreationRequest
-import com.cs446.expensetracker.api.models.DealLocation
-import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
-import com.cs446.expensetracker.api.models.TempDealCreationRequest
-import com.cs446.expensetracker.deals.AutoComplete
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
 import com.cs446.expensetracker.ui.ui.theme.mainTextColor
 import com.cs446.expensetracker.ui.ui.theme.secondTextColor
-import com.google.android.gms.tasks.Task
-import com.google.android.libraries.places.api.model.AutocompletePrediction
-import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.api.net.FetchPlaceRequest
-import com.google.android.libraries.places.api.net.FetchPlaceResponse
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 
@@ -197,12 +185,14 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
         Spacer(modifier = Modifier.height(10.dp))
 
         AutoComplete(address) {
-            try {
-                address = it.address
-                latlngPrediction = it.latLng
-                Log.d("TAG", "AutoComplete: $it")
-            } catch (e: Exception) {
-                Log.d("TAG", "Error getting Location from Autocomplete: $e")
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    address = it.address
+                    latlngPrediction = it.latLng
+                    Log.d("TAG", "AutoComplete: $it")
+                } catch (e: Exception) {
+                    Log.d("TAG", "Error getting Location from Autocomplete: $e")
+                }
             }
         }
 
@@ -277,33 +267,7 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                             errorMessage += "Please pick an address from the autocomplete dropdown\n"
                         }
 
-                        if(editVersion != -1) {
-                            val deal = TempDealCreationRequest (
-                                name = itemName,
-                                description = description,
-                                price = price.toDouble(),
-                                date = selectedDate, // ISO 8601 format
-                                address = address,
-                                longitude = latlngPrediction?.longitude ?: -80.495064,
-                                latitude = latlngPrediction?.latitude ?: 43.452969
-                            )
-                            Log.d("Response", "Edit Deal Request: ${deal}")
-
-                            val token = UserSession.access_token ?: ""
-                            val response =
-                                RetrofitInstance.apiService.updateDeal(editVersion.toString(), deal)
-                            if (response.isSuccessful) {
-                                goBack = true
-                                Log.d("Response", "Edit Deal Response: ${response}")
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Failed to edit deal. Please try again",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                Log.d("Response", "Api request to edit deal failed: ${response.body()}")
-                            }
-                        } else {
+                        if(errorMessage == null) {
                             val deal = DealCreationRequest (
                                 name = itemName,
                                 description = description,
@@ -315,19 +279,49 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                                 latitude = latlngPrediction?.latitude ?: 43.452969
                             )
 
-                            val token = UserSession.access_token ?: ""
-                            val response =
-                                RetrofitInstance.apiService.addDeal(deal)
-                            if (response.isSuccessful) {
-                                goBack = true
-                                Log.d("Response", "Add Deal Response: ${response}")
+                            if(editVersion != -1) {
+                                Log.d("Response", "Edit Deal Request: ${deal}")
+
+                                val token = UserSession.access_token ?: ""
+                                val response =
+                                    RetrofitInstance.apiService.updateDeal(editVersion.toString(), deal)
+                                if (response.isSuccessful) {
+                                    goBack = true
+                                    Log.d("Response", "Edit Deal Response: ${response}")
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to edit deal. Please try again",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    Log.d("Response", "Api request to edit deal failed: ${response.body()}")
+                                }
                             } else {
-                                Toast.makeText(
-                                    context,
-                                    "Failed to add deal. Please try again",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                Log.d("Response", "Api request to add deal failed: ${response.body()}")
+                                val deal = DealCreationRequest (
+                                    name = itemName,
+                                    description = description,
+                                    vendor = vendor,
+                                    price = price.toDouble(),
+                                    date = selectedDate, // ISO 8601 format
+                                    address = address,
+                                    longitude = latlngPrediction?.longitude ?: -80.495064,
+                                    latitude = latlngPrediction?.latitude ?: 43.452969
+                                )
+
+                                val token = UserSession.access_token ?: ""
+                                val response =
+                                    RetrofitInstance.apiService.addDeal(deal)
+                                if (response.isSuccessful) {
+                                    goBack = true
+                                    Log.d("Response", "Add Deal Response: ${response}")
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to add deal. Please try again",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    Log.d("Response", "Api request to add deal failed: ${response.body()}")
+                                }
                             }
                         }
                     } catch (e: Exception) {
@@ -349,7 +343,7 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                Text(text = "Save Transaction")
+                Text(text = "Save Deal")
             }
         }
         if (goBack) {

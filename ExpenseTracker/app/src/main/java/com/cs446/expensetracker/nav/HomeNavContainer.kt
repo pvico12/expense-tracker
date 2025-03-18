@@ -33,6 +33,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.UserProfileResponse
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.cs446.expensetracker.dashboard.AddGoalScreen
 import com.cs446.expensetracker.dashboard.Dashboard
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Pink40
@@ -45,7 +49,11 @@ import LogOut
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.cs446.expensetracker.dashboard.AddGoalScreen
 import com.cs446.expensetracker.ui.LoginActivity
+import com.cs446.expensetracker.deals.AddDealScreen
 
 
 class HomeNavContainer {
@@ -53,7 +61,7 @@ class HomeNavContainer {
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun HomeScreen(homeNavController: NavHostController) {
-//        val homeNavController = rememberNavController()
+        val homeNavController = rememberNavController()
         val coroutineScope = rememberCoroutineScope()
         val drawerState = rememberDrawerState(DrawerValue.Closed)
         val dashboard = Dashboard()
@@ -168,7 +176,16 @@ class HomeNavContainer {
             }
         ) {
             BackHandler(enabled = drawerState.isOpen, onBack = closeDrawer)
-            dashboard.DashboardScreen(drawerState)
+            dashboard.DashboardScreen(homeNavController, drawerState)
+            NavHost(homeNavController, startDestination = "home") {
+                composable("home") {
+                    dashboard.DashboardScreen(homeNavController, drawerState)
+                }
+                composable("addGoalScreen/{editVersion}") { backStackEntry ->
+                    AddGoalScreen(navController = homeNavController, editVersion=backStackEntry.arguments?.getString("editVersion")?.toInt() ?: -1)
+                }
+
+            }
         }
 
 
