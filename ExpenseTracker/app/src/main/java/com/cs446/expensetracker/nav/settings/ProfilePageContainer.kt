@@ -135,7 +135,7 @@ class ProfilePageContainer {
                         .fillMaxSize()
                         .padding(padding)
                 ) {
-                    username?.let {
+                    username.let {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
@@ -149,7 +149,7 @@ class ProfilePageContainer {
                             )
                         }
                     }
-                    firstname?.let {
+                    firstname.let {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
@@ -163,7 +163,7 @@ class ProfilePageContainer {
                             )
                         }
                     }
-                    lastname?.let{
+                    lastname.let{
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()

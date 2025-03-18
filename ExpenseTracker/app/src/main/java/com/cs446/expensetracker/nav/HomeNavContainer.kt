@@ -31,14 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.dashboard.Dashboard
-import com.cs446.expensetracker.nav.settings.AdminPageContainer
-import com.cs446.expensetracker.nav.settings.ProfilePageContainer
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Pink40
 import com.cs446.expensetracker.ui.ui.theme.Pink80
@@ -49,6 +44,7 @@ import retrofit2.Response
 import LogOut
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavHostController
 import com.cs446.expensetracker.ui.LoginActivity
 
 
@@ -56,8 +52,8 @@ class HomeNavContainer {
 
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun HomeNavHost() {
-        val homeNavController = rememberNavController()
+    fun HomeScreen(homeNavController: NavHostController) {
+//        val homeNavController = rememberNavController()
         val coroutineScope = rememberCoroutineScope()
         val drawerState = rememberDrawerState(DrawerValue.Closed)
         val dashboard = Dashboard()
@@ -97,7 +93,7 @@ class HomeNavContainer {
                         Text(
                             text = "$firstname $lastname",
                             color = tileColor,
-                            style = Typography.titleLarge,
+                            style = Typography.headlineMedium,
                             modifier = Modifier
                                 .padding(start = 16.dp, top = 16.dp)
                         )
@@ -167,22 +163,7 @@ class HomeNavContainer {
             }
         ) {
             BackHandler(enabled = drawerState.isOpen, onBack = closeDrawer)
-
-            NavHost(homeNavController, startDestination = "home") {
-                composable("home") {
-                    dashboard.DashboardScreen(drawerState)
-                }
-
-                composable("settings/admin-page") {
-                    val adminPageContainer = AdminPageContainer()
-                    adminPageContainer.AdminPageScreen(onBackClick = { homeNavController.popBackStack() })
-                }
-
-                composable("settings/profile") {
-                    val profilePageContainer = ProfilePageContainer()
-                    profilePageContainer.ProfilePageScreen(onBackClick = { homeNavController.popBackStack() })
-                }
-            }
+            dashboard.DashboardScreen(drawerState)
         }
 
 
