@@ -89,8 +89,6 @@ def create_initial_users():
             db_session.commit()
             db_session.refresh(user)  # Refresh to get the user's ID
             add_predefined_categories(user.id)  # Assign predefined categories to each team user
-
-        print("Admin and team users created successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error creating users: {e}")
@@ -115,12 +113,10 @@ def add_predefined_categories(user_id: int):
                 user_id=user_id
             ).first()
             if not category:
-                print(f"Creating category for user {user_id}: {category_info['name']}")
                 category = Category(name=category_info["name"], color=category_info["color"], user_id=user_id)
                 db_session.add(category)
 
         db_session.commit()
-        print(f"Predefined categories assigned to user {user_id} successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error assigning categories to user {user_id}: {e}")
@@ -174,19 +170,19 @@ def add_sample_transactions():
             # Add transactions using the category IDs belonging to that specific user
             for category_name, transactions in sample_transactions_data.items():
                 for transaction_info in transactions:
-                    sample_transaction = Transaction(
-                        user_id=user.id,
-                        amount=transaction_info["amount"],
-                        category_id=user_categories[category_name].id,
-                        transaction_type=TransactionType.EXPENSE,
-                        note=transaction_info["note"],
-                        date=datetime.datetime.utcnow(),
-                        vendor=transaction_info["vendor"]
-                    )
-                    db_session.add(sample_transaction)
+                    for month in range(1, 13):
+                        sample_transaction = Transaction(
+                            user_id=user.id,
+                            amount=transaction_info["amount"],
+                            category_id=user_categories[category_name].id,
+                            transaction_type=TransactionType.EXPENSE,
+                            note=transaction_info["note"],
+                            date=datetime.datetime(datetime.datetime.utcnow().year, month, 1),
+                            vendor=transaction_info["vendor"]
+                        )
+                        db_session.add(sample_transaction)
 
         db_session.commit()
-        print("Sample transactions added successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error adding sample transactions: {e}")
@@ -267,8 +263,6 @@ def create_sample_deals():
             for user_id in user_ids:
                 db_session.add(DealVote(deal_id=deal.id, user_id=user_id, vote=random.choice([1, -1])))
         db_session.commit()
-
-        print("Sample deals created successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error creating sample deals: {e}")
