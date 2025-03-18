@@ -6,11 +6,39 @@ from models import Goal, Category, User
 from dependencies.auth import get_current_user
 from db import get_db
 import datetime
+from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(
     prefix="/goals",
     tags=["goals"]
 )
+
+@router.get("/{goal_id}", response_model=GoalResponse, status_code=status.HTTP_200_OK)
+def get_goal_by_id(goal_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieve a specific goal for the authenticated user by its ID.
+    """
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    if goal.category_id:
+        from sqlalchemy import func
+        from models import Transaction
+        actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.category_id == goal.category_id,
+            Transaction.date >= goal.start_date,
+            Transaction.date <= goal.end_date
+        ).scalar() or 0
+        if goal.goal_type == "percentage":
+            if goal.limit and goal.limit > 0:
+                goal.amount_spent = (actual_amount_spent / goal.limit) * 100
+            else:
+                goal.amount_spent = 0
+        else:
+            goal.amount_spent = actual_amount_spent
+    else:
+        goal.amount_spent = None
+    return goal
 
 @router.get("/", response_model=GoalsStatisticsResponse)
 def get_goals(
@@ -23,7 +51,8 @@ def get_goals(
     Retrieve goals for the authenticated user.
     Optionally filter goals based on start_date and end_date.
     If only start_date is provided, use that date up until now.
-    Returns additional statistics including the number of completed and incompleted goals.
+    Returns additional statistics including the number of completed and incompleted goals,
+    as well as, for each goal, an amount_spent_in_category field (either in dollars or percentage).
     """
     query = db.query(Goal).filter(Goal.user_id == current_user.id)
     effective_end = end_date
@@ -34,6 +63,25 @@ def get_goals(
     if effective_end:
          query = query.filter(Goal.end_date <= effective_end)
     goals = query.all()
+
+    for goal in goals:
+        if goal.category_id:
+            from sqlalchemy import func
+            from models import Transaction
+            actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
+                Transaction.category_id == goal.category_id,
+                Transaction.date >= goal.start_date,
+                Transaction.date <= goal.end_date
+            ).scalar() or 0
+            if goal.goal_type == "percentage":
+                if goal.limit and goal.limit > 0:
+                    goal.amount_spent = (actual_amount_spent / goal.limit) * 100
+                else:
+                    goal.amount_spent = 0
+            else:
+                goal.amount_spent = actual_amount_spent
+        else:
+            goal.amount_spent = None
 
     now = datetime.datetime.utcnow()
     completed_count = sum(1 for goal in goals if goal.end_date <= now and goal.on_track)
@@ -83,6 +131,15 @@ def update_goal(goal_id: int, goal_update: GoalUpdateRequest, current_user: User
     goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
+    if goal_update.category_id is not None:
+        category = db.query(Category).filter(
+            Category.id == goal_update.category_id,
+            (Category.user_id == current_user.id) | (Category.user_id.is_(None))
+        ).first()
+        if not category:
+            raise HTTPException(status_code=404, detail="Category not found")
+        goal.category_id = goal_update.category_id
+
     if goal_update.goal_type is not None:
         goal.goal_type = goal_update.goal_type
     if goal_update.limit is not None:
@@ -91,6 +148,24 @@ def update_goal(goal_id: int, goal_update: GoalUpdateRequest, current_user: User
         goal.start_date = goal_update.start_date
     if goal_update.end_date is not None:
         goal.end_date = goal_update.end_date
+    if goal.category_id:
+        from sqlalchemy import func
+        from models import Transaction
+        actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.category_id == goal.category_id,
+            Transaction.date >= goal.start_date,
+            Transaction.date <= goal.end_date
+        ).scalar() or 0
+        if goal.goal_type == "percentage":
+            computed_percentage = (actual_amount_spent / goal.limit) * 100 if goal.limit > 0 else 0
+            goal.amount_spent = computed_percentage
+            goal.on_track = computed_percentage <= 100
+        else:
+            goal.amount_spent = actual_amount_spent
+            goal.on_track = actual_amount_spent <= goal.limit
+    else:
+        goal.amount_spent = None
+        goal.on_track = True
     db.commit()
     db.refresh(goal)
     return goal
