@@ -7,6 +7,8 @@ from dependencies.auth import get_current_user
 from db import get_db
 import datetime
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy import func
+from models import Transaction
 
 router = APIRouter(
     prefix="/goals",
@@ -22,8 +24,6 @@ def get_goal_by_id(goal_id: int, current_user: User = Depends(get_current_user),
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     if goal.category_id:
-        from sqlalchemy import func
-        from models import Transaction
         actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
             Transaction.category_id == goal.category_id,
             Transaction.date >= goal.start_date,
@@ -66,8 +66,6 @@ def get_goals(
 
     for goal in goals:
         if goal.category_id:
-            from sqlalchemy import func
-            from models import Transaction
             actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
                 Transaction.category_id == goal.category_id,
                 Transaction.date >= goal.start_date,
@@ -149,8 +147,6 @@ def update_goal(goal_id: int, goal_update: GoalUpdateRequest, current_user: User
     if goal_update.end_date is not None:
         goal.end_date = goal_update.end_date
     if goal.category_id:
-        from sqlalchemy import func
-        from models import Transaction
         actual_amount_spent = db.query(func.sum(Transaction.amount)).filter(
             Transaction.category_id == goal.category_id,
             Transaction.date >= goal.start_date,

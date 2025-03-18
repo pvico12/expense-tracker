@@ -25,9 +25,7 @@ def recalc_goal_progress(db: Session, user_id: int, category_id: Optional[int] =
         if goal.goal_type == "amount":
             goal.on_track = total_spent <= goal.limit
         elif goal.goal_type == "percentage":
-            # You can implement a custom percentage logic here.
             goal.on_track = True
-        
         db.add(goal)
     
     db.commit()
