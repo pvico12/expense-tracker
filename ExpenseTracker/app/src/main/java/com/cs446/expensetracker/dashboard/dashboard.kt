@@ -12,7 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,14 +50,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.cs446.expensetracker.api.RetrofitInstance
-import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.mockData.dashboard_mock_expense
 import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.CategoryBreakdown
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.SpendingSummaryResponse
-import com.cs446.expensetracker.api.models.TransactionResponse
-import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
 import com.github.mikephil.charting.animation.Easing
@@ -75,6 +71,10 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.round
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 
 class Dashboard {
 
@@ -98,6 +98,8 @@ class Dashboard {
         var totalSpending by remember { mutableDoubleStateOf(0.0) }
         var errorMessage = ""
         var isLoading by remember { mutableStateOf(true) }
+        val currentDate = LocalDateTime.now()
+        val monthName = currentDate.format(DateTimeFormatter.ofPattern("MMMM"))
 
         // Load transactions via API
         LaunchedEffect(Unit) {
@@ -105,7 +107,6 @@ class Dashboard {
             errorMessage = ""
             try {
                 val token = UserSession.access_token ?: ""
-                val currentDate = LocalDateTime.now()
                 val stringCurrentDate = currentDate.format(DateTimeFormatter.ISO_DATE_TIME)
                 val oneYearAgo = LocalDateTime.now().minusYears(1)
                 val stringOneYearAgoDate = oneYearAgo.format(DateTimeFormatter.ISO_DATE_TIME)
@@ -148,57 +149,79 @@ class Dashboard {
 
         Log.d("FCM Token", UserSession.fcmToken)
 
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                drawerState.open()
-                            }
-                        }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "")
-                        }
+        val dollars = totalSpending.toInt()
+        val cents = ((totalSpending - dollars) * 100).toInt()
+
+        when {
+            isLoading -> {
+                CircularProgressIndicator()
+            }
+            errorMessage != "" -> {
+                Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
+            }
+
+            else -> {
+                Scaffold(
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            navigationIcon = {
+                                IconButton(onClick = {
+                                    coroutineScope.launch {
+                                        drawerState.open()
+                                    }
+                                }) {
+                                    Icon(Icons.Filled.Menu, contentDescription = "")
+                                }
+                            },
+                            title = {
+                                Text(
+                                    monthName.uppercase(),
+                                    style = Typography.headlineSmall,
+                                    color = mainTextColor
+                                )
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(containerColor = mainBackgroundColor)
+                        )
                     },
-                    title = { Text("Dashboard") }
-                )
-            },
-        ) {
-            padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(mainBackgroundColor)
-                    .verticalScroll(scrollState)
-                    .padding(padding),
-                verticalArrangement = Arrangement.Top
-            ) {
-                when {
-                    isLoading -> {
-                        CircularProgressIndicator()
-                    }
-
-                    errorMessage != "" -> {
-                        Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
-                    }
-
-                    else -> {
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(mainBackgroundColor)
+                            .verticalScroll(scrollState)
+                            .padding(padding),
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(start = 16.dp, top = 8.dp)
+                        ) {
+                            Text(
+                                text = "$",
+                                style = Typography.titleMedium,
+                                color = Pink40,
+                                modifier = Modifier
+                                    .padding(end = 6.dp)
+                            )
+                            Text(
+                                text = "$dollars",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Default,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 40.sp,
+                                    lineHeight = 24.sp,
+                                    letterSpacing = 0.sp
+                                ),
+                                color = mainTextColor
+                            )
+                            Text(
+                                text = ".$cents",
+                                style = Typography.titleMedium,
+                                color = Pink40
+                            )
+                        }
                         Piechart(spendingSummary)
-                        Text(
-                            text = "This Month's Expenses",
-                            color = mainTextColor,
-                            style = Typography.titleLarge,
-                            modifier = Modifier
-                                .padding(start = 16.dp, top = 16.dp)
-                        )
-                        Text(
-                            text = "Total Spending: $${formatCurrency(totalSpending)}",
-                            color = mainTextColor,
-                            style = Typography.titleLarge,
-                            fontSize = 27.sp,
-                            modifier = Modifier
-                                .padding(start = 16.dp, top = 8.dp, bottom = 16.dp)
-                        )
                         for (expense in spendingSummary) {
                             Card(
                                 modifier = Modifier
@@ -279,7 +302,7 @@ class Dashboard {
             factory = { context ->
                 PieChart(context).apply {
                     // Customize the PieChart here
-                    setExtraOffsets(5f, 10f, 5f, 5f)
+                    setExtraOffsets(5f, 0f, 5f, 5f)
                     setDragDecelerationFrictionCoef(0.95f)
                     getDescription().setEnabled(false)
 

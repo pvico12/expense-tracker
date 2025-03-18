@@ -146,7 +146,6 @@ class HomeNavContainer {
                             label = { Text("Logout", color = tileColor) },
                             selected = false,
                             onClick = {
-                                println("LOGOUT")
                                 coroutineScope.launch { drawerState.close() }
                                 UserSession.isLoggedIn = false
                                 UserSession.userId = -1
