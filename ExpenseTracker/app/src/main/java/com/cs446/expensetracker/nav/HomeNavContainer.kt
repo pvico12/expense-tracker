@@ -168,7 +168,7 @@ class HomeNavContainer {
             }
         ) {
             BackHandler(enabled = drawerState.isOpen, onBack = closeDrawer)
-            dashboard.DashboardScreen(drawerState)
+            dashboard.DashboardScreen(drawerState, homeNavController)
         }
 
 

@@ -72,9 +72,74 @@ import kotlin.math.round
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import com.cs446.expensetracker.api.models.GoalRetrievalGoals
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.AddToPhotos
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavController
+import com.cs446.expensetracker.api.models.Transaction
+import com.cs446.expensetracker.mockData.dashboard_mock_expense
+import com.cs446.expensetracker.api.models.DealLocation
+import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
+import com.cs446.expensetracker.api.models.GoalRetrievalResponse
+import com.cs446.expensetracker.api.models.TransactionResponse
+import com.cs446.expensetracker.ui.ui.theme.*
+import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.round
+
 
 class Dashboard {
 
@@ -90,7 +155,8 @@ class Dashboard {
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun DashboardScreen(
-        drawerState: DrawerState
+        drawerState: DrawerState,
+        dashboardNavController: NavController
     ) {
         val scrollState = rememberScrollState()
         val coroutineScope = rememberCoroutineScope()
@@ -100,6 +166,12 @@ class Dashboard {
         var isLoading by remember { mutableStateOf(true) }
         val currentDate = LocalDateTime.now()
         val monthName = currentDate.format(DateTimeFormatter.ofPattern("MMMM"))
+
+        var viewSpendingOrGoals by rememberSaveable { mutableStateOf("View Goals") }
+        var listOfGoals by remember { mutableStateOf<List<GoalRetrievalGoals>>(emptyList()) }
+
+        var deleteConfirmationDialogue by remember { mutableStateOf(false)}
+        var idToDelete by remember { mutableStateOf(-1)}
 
         // Load transactions via API
         LaunchedEffect(Unit) {
@@ -147,6 +219,113 @@ class Dashboard {
         }
 
         Log.d("FCM Token", UserSession.fcmToken)
+
+        fun apiFetchGoals(startDate: String, endDate: String) {
+            // Load deals via API
+            Log.d("Response", "Api fetch was called, but request not necessarily sent")
+            CoroutineScope(Dispatchers.IO).launch {
+//                isLoading = true
+//                errorMessage = ""
+                try {
+                    val token = UserSession.access_token ?: ""
+                    val response: Response<GoalRetrievalResponse> =
+                        RetrofitInstance.apiService.getGoals()
+                    Log.d("Response", "Fetch Goals API Request actually called")
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+                        Log.d("Response", "Goals Response: $responseBody")
+                        listOfGoals = responseBody?.goals?.map { x ->
+                            GoalRetrievalGoals(
+                                id = x.id,
+                                category_id = x.category_id,
+                                goal_type = x.goal_type,
+                                limit = x.limit,
+                                start_date = x.start_date,
+                                end_date = x.end_date,
+                                period = x.period,
+                                on_track = x.on_track,
+                                time_left = x.time_left,
+                            )
+                        } ?: emptyList()
+                    } else {
+                        errorMessage = "Failed to load data."
+                        Log.d("Error", "Deals API Response Was Unsuccessful: $response")
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "Error: ${e.message}"
+                    Log.d("Error", "Error Calling Deals API: $errorMessage")
+                } finally {
+//                    isLoading = false
+                }
+            }
+        }
+
+        fun onConfirm(id: Int, context: Context) {
+            deleteConfirmationDialogue = false
+            CoroutineScope(Dispatchers.IO).launch {
+                val firstDayOfMonth = currentDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE_TIME)
+                val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).format(DateTimeFormatter.ISO_DATE_TIME)
+                isLoading = true
+                try {
+                    val token = UserSession.access_token ?: ""
+                    val response: Response<String> =
+                        RetrofitInstance.apiService.deleteGoal(id.toString())
+                    Log.d("Response", "Fetch Goals API Request actually called")
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+                        Log.d("Response", "Goals Response: $responseBody")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Goal Deleted",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        Log.d("Error", "Goals API Response Was Unsuccessful: $response")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Failed to Delete Goal, Please Try Again",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                    apiFetchGoals(firstDayOfMonth, lastDayOfMonth)
+                } catch (e: Exception) {
+                    Log.d("Error", "Error Calling Deals API: $e")
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
+
+        if (deleteConfirmationDialogue) {
+            AlertDialog(
+                onDismissRequest = { deleteConfirmationDialogue = false },
+                title = { Text("Are you sure?") },
+                text = { Text("Do you really want to delete?") },
+                confirmButton = {
+                    val context = LocalContext.current
+                    TextButton(onClick = { onConfirm(idToDelete, context) }) {
+                        Text("Proceed")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteConfirmationDialogue = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        fun onEditButtonClick(id: Int) {
+            dashboardNavController.navigate("addGoalScreen/$id")
+        }
+        fun onDeleteButtonClick(id: Int) {
+            idToDelete = id
+            deleteConfirmationDialogue = true
+        }
 
         val dollars = totalSpending.toInt()
         val cents = ((totalSpending - dollars) * 100).toInt()
@@ -221,67 +400,154 @@ class Dashboard {
                             )
                         }
                         Piechart(spendingSummary)
-                        for (expense in spendingSummary) {
-                            Card(
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Button(
                                 modifier = Modifier
-                                    .padding(4.dp)
-                                    .fillMaxSize(),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                                colors = CardDefaults.cardColors(containerColor = tileColor)
+                                    .padding(0.dp),
+                                onClick = {
+                                    if(viewSpendingOrGoals == "View Goals") {
+                                        viewSpendingOrGoals = "View Spending"
+                                    } else {
+                                        viewSpendingOrGoals = "View Goals"
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = mainTextColor)
                             ) {
-                                Box(
+                                Text(text = viewSpendingOrGoals, modifier = Modifier.padding(0.dp))
+                            }
+
+                        }
+                        if(viewSpendingOrGoals == "View Goals") {
+                            for(expense in spendingSummary) {
+                                expenseCategoryCard(expense)
+                            }
+                        } else {
+                            val firstDayOfMonth = currentDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE_TIME)
+                            val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).format(DateTimeFormatter.ISO_DATE_TIME)
+                            Row(modifier = Modifier
+                                .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(
+                                    text = "Goals:",
+                                    color = mainTextColor,
+                                    style = Typography.titleLarge,
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .padding(start = 16.dp, top = 16.dp)
+                                )
+                                TextButton(
+                                    shape = CircleShape,
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .padding(end = 12.dp, top = 12.dp),
+                                    contentPadding = PaddingValues(0.dp),
+                                    onClick = {
+                                        dashboardNavController.navigate("addGoalScreen/${(-1)}")
+                                    },
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .padding(
-                                                start = 10.dp,
-                                                top = 10.dp,
-                                                bottom = 10.dp,
-                                                end = 10.dp
-                                            )
-                                            .clip(CircleShape)
-                                            .background(Color(android.graphics.Color.parseColor((expense.custom_color))))
-                                            .align(Alignment.CenterStart)
-                                    )
-                                    Text(
-                                        text = "${expense.category_name}: ",
-                                        color = mainTextColor,
-                                        style = Typography.labelSmall,
-                                        modifier = Modifier
-                                            .padding(
-                                                start = 40.dp,
-                                                top = 8.dp,
-                                                bottom = 8.dp,
-                                                end = 8.dp
-                                            )
-                                    )
-                                    Spacer(Modifier.fillMaxWidth(0.2f))
-                                    Text(
-                                        text = "${round(expense.percentage)}%",
-                                        color = PurpleGrey40,
-                                        style = Typography.labelSmall,
-                                        modifier = Modifier
-                                            .padding(8.dp)
-                                            .align(Alignment.Center)
-                                    )
-                                    Text(
-                                        text = "$${formatCurrency(expense.total_amount)}",
-                                        color = PurpleGrey40,
-                                        style = Typography.labelSmall,
-                                        modifier = Modifier
-                                            .padding(
-                                                start = 1.dp,
-                                                top = 8.dp,
-                                                bottom = 8.dp,
-                                                end = 20.dp
-                                            )
-                                            .align(Alignment.CenterEnd)
+                                    Icon(
+                                        imageVector = Icons.Filled.AddToPhotos,
+                                        contentDescription = "Add New Deal",
+                                        modifier = Modifier.size(40.dp),
+                                        tint = mainTextColor
                                     )
                                 }
-
+                            }
+                            apiFetchGoals(firstDayOfMonth, lastDayOfMonth)
+                            for((i, goal) in listOfGoals.withIndex()) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = tileColor,
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Row(modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 12.dp, end = 12.dp, top = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween) {
+                                        TextButton(
+                                            onClick = { onDeleteButtonClick(goal.id) },
+                                            shape = CircleShape,
+                                            modifier = Modifier.size(30.dp),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Delete,
+                                                contentDescription = "delete",
+                                                modifier = Modifier.size(20.dp),
+                                                tint = Color(0xFF9D9D9D)
+                                            )
+                                        }
+                                        TextButton(
+                                            onClick = { onEditButtonClick(goal.id) },
+                                            shape = CircleShape,
+                                            modifier = Modifier.size(30.dp),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Edit,
+                                                contentDescription = "edit",
+                                                modifier = Modifier.size(20.dp),
+                                                tint = Color(0xFF9D9D9D)
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                start = 16.dp,
+                                                end = 16.dp,
+                                                top = 4.dp,
+                                                bottom = 16.dp
+                                            ),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        var type_of_goal_string = ""
+                                        if(goal.goal_type == "amount") {
+                                            type_of_goal_string = "$" + formatCurrency(goal.limit)
+                                        } else {
+                                            type_of_goal_string = formatCurrency(goal.limit) + "%"
+                                        }
+                                        Column {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(text ="Spend less than ${type_of_goal_string} on Entertainment", fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall)
+                                            }
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                            ) {
+                                                Text(text = "Time Left: ${goal.period} days", fontWeight = FontWeight.Bold, color= secondTextColor, modifier = Modifier.padding(end=14.dp), style = MaterialTheme.typography.titleLarge)
+                                                Spacer(modifier = Modifier.weight(2f))
+                                            }
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                            ) {
+                                                Text(
+                                                    text = "   Current Spending this week: $54.39",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    color = MaterialTheme.colorScheme.secondary,
+                                                    textAlign = TextAlign.Right,
+                                                    modifier = Modifier.padding(top=2.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         Spacer(Modifier.height(85.dp))
