@@ -3,12 +3,14 @@ package com.cs446.expensetracker.nav.settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -21,12 +23,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.api.models.UserProfileUpdateRequest
 import com.cs446.expensetracker.session.UserSession
+import com.cs446.expensetracker.ui.ui.theme.*
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -38,6 +42,8 @@ class ProfilePageContainer {
     fun ProfilePageScreen(modifier: Modifier = Modifier, onBackClick: () -> Unit) {
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
+
+        val textFieldShape = RoundedCornerShape(12.dp)
 
         var username by remember { mutableStateOf("") }
         var firstname by remember { mutableStateOf("") }
@@ -82,7 +88,7 @@ class ProfilePageContainer {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("User Profile") },
+                    title = { Text("User Profile", color = mainTextColor) },
                     navigationIcon = {
                         IconButton(onClick = {
                             if (hasUnsavedChanges) {
@@ -90,18 +96,20 @@ class ProfilePageContainer {
                             } else {
                                 onBackClick()
                             }
-                        }) {
+                        }, colors = IconButtonDefaults.iconButtonColors(contentColor = mainTextColor)) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = mainBackgroundColor)
                 )
             },
             bottomBar = {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(mainBackgroundColor)
                         .padding(16.dp),
-                    contentAlignment = Alignment.CenterEnd
+                    contentAlignment = Alignment.CenterEnd,
                 ) {
                     Button(
                         onClick = {
@@ -123,7 +131,8 @@ class ProfilePageContainer {
                                     Toast.makeText(context, "Failed to save profile. Please try again.", Toast.LENGTH_SHORT).show()
                                 }
                             }
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = mainTextColor, contentColor = Color(0xFFF6F3F3))
                     ) {
                         Text("Save")
                     }
@@ -134,6 +143,7 @@ class ProfilePageContainer {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
+                        .background(mainBackgroundColor)
                 ) {
                     username.let {
                         Row(
@@ -141,11 +151,18 @@ class ProfilePageContainer {
                             modifier = Modifier.fillMaxWidth()
                                 .padding(10.dp)
                         ) {
-                            Text(text = "Username", modifier = Modifier.weight(1f))
+                            Text(text = "Username", color = mainTextColor, modifier = Modifier.weight(1f))
                             TextField(
                                 value = it,
                                 onValueChange = { username = it.replace("\n", "") },
-                                singleLine = true
+                                singleLine = true,
+                                shape = textFieldShape,
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedContainerColor = Color(0xFFFAF2ED),
+                                    focusedContainerColor = Color(0xFFFAF2ED),
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                )
                             )
                         }
                     }
@@ -155,11 +172,18 @@ class ProfilePageContainer {
                             modifier = Modifier.fillMaxWidth()
                                 .padding(10.dp)
                         ) {
-                            Text(text = "First Name", modifier = Modifier.weight(1f))
+                            Text(text = "First Name", color = mainTextColor, modifier = Modifier.weight(1f))
                             TextField(
                                 value = it,
                                 onValueChange = { firstname = it.replace("\n", "") },
-                                singleLine = true
+                                singleLine = true,
+                                shape = textFieldShape,
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedContainerColor = Color(0xFFFAF2ED),
+                                    focusedContainerColor = Color(0xFFFAF2ED),
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                )
                             )
                         }
                     }
@@ -169,11 +193,18 @@ class ProfilePageContainer {
                             modifier = Modifier.fillMaxWidth()
                                 .padding(10.dp)
                         ) {
-                            Text(text = "Last Name", modifier = Modifier.weight(1f))
+                            Text(text = "Last Name", color = mainTextColor, modifier = Modifier.weight(1f))
                             TextField(
                                 value = it,
                                 onValueChange = { lastname = it.replace("\n", "") },
-                                singleLine = true
+                                singleLine = true,
+                                shape = textFieldShape,
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedContainerColor = Color(0xFFFAF2ED),
+                                    focusedContainerColor = Color(0xFFFAF2ED),
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                )
                             )
                         }
                     }
@@ -185,18 +216,23 @@ class ProfilePageContainer {
         if (showUnsavedChangesDialog) {
             AlertDialog(
                 onDismissRequest = { showUnsavedChangesDialog = false },
-                title = { Text("Unsaved Changes") },
-                text = { Text("You have unsaved changes. Are you sure you want to go back?") },
+                title = { Text("Unsaved Changes", color = mainTextColor) },
+                text = { Text("You have unsaved changes. Are you sure you want to go back?", color = mainTextColor) },
                 dismissButton = {
-                    Button(onClick = { showUnsavedChangesDialog = false }) {
+                    Button(
+                        onClick = { showUnsavedChangesDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = mainTextColor, contentColor = Color(0xFFF6F3F3))
+                    ) {
                         Text("Cancel")
                     }
                 },
                 confirmButton = {
-                    Button(onClick = {
-                        showUnsavedChangesDialog = false
-                        onBackClick()
-                    }) {
+                    Button(
+                        onClick = {
+                            showUnsavedChangesDialog = false
+                            onBackClick()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = mainTextColor, contentColor = Color(0xFFF6F3F3))) {
                         Text("Yes, go back")
                     }
                 }
