@@ -239,6 +239,7 @@ suspend fun login(username: String, password: String): Boolean {
                 UserSession.isLoggedIn = true
                 UserSession.access_token = loginResponse.access_token
                 UserSession.refresh_token = loginResponse.refresh_token
+                UserSession.role = loginResponse.role
 
                 // decode access token to retrieve user id
                 val jwt = JWT.decode(loginResponse.access_token)

@@ -120,7 +120,7 @@ class HomeNavContainer {
                         )
 
                         // only for admin user
-                        if (UserSession.userId == 1) {
+                        if (UserSession.role == "admin") {
                             NavigationDrawerItem(
                                 icon = {
                                     Icon(

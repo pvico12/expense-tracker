@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 object UserSession {
     var isLoggedIn: Boolean = false
     var userId: Int = -1
+    var role: String = ""
     var access_token: String = ""
     var refresh_token: String = ""
     var fcmToken: String = ""
