@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from http_models import TransactionResponse
 import utils
-from models import Deal, DealVote, User, Category, Transaction, TransactionType, Base
+from models import Deal, DealVote, Goal, User, Category, Transaction, TransactionType, Base
 from typing import List, Optional
 import datetime
 from sqlalchemy.exc import SQLAlchemyError
@@ -52,7 +52,9 @@ def fill_tables():
     create_sample_deals()
     print("DB SETUP: Sample deals created successfully.")
     
-    
+    print("DB SETUP: Populating sample goals")
+    create_sample_goals()
+    print("DB SETUP: Sample goals created successfully.")
 
 def create_initial_users():
     """Create initial admin and team users."""
@@ -89,8 +91,6 @@ def create_initial_users():
             db_session.commit()
             db_session.refresh(user)  # Refresh to get the user's ID
             add_predefined_categories(user.id)  # Assign predefined categories to each team user
-
-        print("Admin and team users created successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error creating users: {e}")
@@ -101,7 +101,6 @@ def add_predefined_categories(user_id: int):
         {"name": "Entertainment", "color": "#FF5733"},
         {"name": "Food & Drinks", "color": "#33FF57"},
         {"name": "Housing", "color": "#3357FF"},
-        {"name": "Income", "color": "#FF33A1"},
         {"name": "Lifestyle", "color": "#FF8C33"},
         {"name": "Miscellaneous", "color": "#8C33FF"},
         {"name": "Savings", "color": "#33FFF5"},
@@ -116,12 +115,10 @@ def add_predefined_categories(user_id: int):
                 user_id=user_id
             ).first()
             if not category:
-                print(f"Creating category for user {user_id}: {category_info['name']}")
                 category = Category(name=category_info["name"], color=category_info["color"], user_id=user_id)
                 db_session.add(category)
 
         db_session.commit()
-        print(f"Predefined categories assigned to user {user_id} successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error assigning categories to user {user_id}: {e}")
@@ -137,32 +134,38 @@ def add_sample_transactions():
         # Define sample transactions for each category
         sample_transactions_data = {
             "Food & Drinks": [
-                {"amount": 50.75, "note": "Dinner at Italian Restaurant"},
-                {"amount": 20.00, "note": "Lunch at Cafe"},
-                {"amount": 15.50, "note": "Groceries"}
-            ],
-            "Income": [
-                {"amount": 3000.00, "note": "Monthly Salary"},
-                {"amount": 200.00, "note": "Freelance Work"}
+                {"amount": 50.75, "note": "Dinner at Italian Restaurant", "vendor": "Italian Bistro"},
+                {"amount": 20.00, "note": "Lunch at Cafe", "vendor": "Cafe Delight"},
+                {"amount": 15.50, "note": "Groceries", "vendor": "Supermarket"}
             ],
             "Entertainment": [
-                {"amount": 200.00, "note": "Concert tickets"},
-                {"amount": 50.00, "note": "Movie night"},
-                {"amount": 30.00, "note": "Amusement park"}
+                {"amount": 200.00, "note": "Concert tickets", "vendor": "Concert Hall"},
+                {"amount": 50.00, "note": "Movie night", "vendor": "Cinema"},
+                {"amount": 30.00, "note": "Amusement park", "vendor": "Fun Park"}
             ],
             "Transportation": [
-                {"amount": 75.00, "note": "Gas for car"},
-                {"amount": 50.00, "note": "Bus pass"},
-                {"amount": 100.00, "note": "Car maintenance"}
+                {"amount": 75.00, "note": "Gas for car", "vendor": "Gas Station"},
+                {"amount": 50.00, "note": "Bus pass", "vendor": "City Transport"},
+                {"amount": 100.00, "note": "Car maintenance", "vendor": "Auto Shop"}
             ],
             "Housing": [
-                {"amount": 1200.00, "note": "Monthly Rent"},
-                {"amount": 100.00, "note": "Utilities"},
-                {"amount": 50.00, "note": "Home repairs"}
+                {"amount": 1200.00, "note": "Monthly Rent", "vendor": "Landlord"},
+                {"amount": 100.00, "note": "Utilities", "vendor": "Utility Company"},
+                {"amount": 50.00, "note": "Home repairs", "vendor": "Repair Service"}
             ],
             "Savings": [
-                {"amount": 300.00, "note": "Savings deposit"},
-                {"amount": 500.00, "note": "Emergency fund"}
+                {"amount": 300.00, "note": "Savings deposit", "vendor": "Bank"},
+                {"amount": 500.00, "note": "Emergency fund", "vendor": "Bank"}
+            ],
+            "Miscellaneous": [
+                {"amount": 20.00, "note": "Stationery", "vendor": "Office Supplies"},
+                {"amount": 10.00, "note": "Gift", "vendor": "Gift Shop"},
+                {"amount": 5.00, "note": "Charity donation", "vendor": "Charity"}
+            ],
+            "Lifestyle": [
+                {"amount": 50.00, "note": "Gym membership", "vendor": "Gym"},
+                {"amount": 30.00, "note": "Spa treatment", "vendor": "Spa"},
+                {"amount": 25.00, "note": "Haircut", "vendor": "Salon"}
             ]
         }
 
@@ -179,18 +182,19 @@ def add_sample_transactions():
             # Add transactions using the category IDs belonging to that specific user
             for category_name, transactions in sample_transactions_data.items():
                 for transaction_info in transactions:
-                    sample_transaction = Transaction(
-                        user_id=user.id,
-                        amount=transaction_info["amount"],
-                        category_id=user_categories[category_name].id,
-                        transaction_type=TransactionType.EXPENSE if category_name != "Income" else TransactionType.INCOME,
-                        note=transaction_info["note"],
-                        date=datetime.datetime.utcnow()
-                    )
-                    db_session.add(sample_transaction)
+                    for month in range(1, 13):
+                        sample_transaction = Transaction(
+                            user_id=user.id,
+                            amount=transaction_info["amount"],
+                            category_id=user_categories[category_name].id,
+                            transaction_type=TransactionType.EXPENSE,
+                            note=transaction_info["note"],
+                            date=datetime.datetime(datetime.datetime.utcnow().year, month, 15), # 15th day of the month
+                            vendor=transaction_info["vendor"]
+                        )
+                        db_session.add(sample_transaction)
 
         db_session.commit()
-        print("Sample transactions added successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error adding sample transactions: {e}")
@@ -271,11 +275,57 @@ def create_sample_deals():
             for user_id in user_ids:
                 db_session.add(DealVote(deal_id=deal.id, user_id=user_id, vote=random.choice([1, -1])))
         db_session.commit()
-
-        print("Sample deals created successfully.")
     except Exception as e:
         db_session.rollback()
         print(f"Error creating sample deals: {e}")
+
+def create_sample_goals():
+    """Create a few sample goals for each user."""
+    try:
+        users = db_session.query(User).all()
+        if not users:
+            raise ValueError("No users found in the database.")
+        
+        sample_goals = [
+            # 10% less on Entertainment this month
+            {
+                "goal_type": "percentage",
+                "limit": 10,
+                "category_name": "Entertainment",
+                "start_date": datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+                "end_date": datetime.datetime.utcnow().replace(day=1, hour=23, minute=59, second=59, microsecond=999999).replace(month=datetime.datetime.utcnow().month + 1) - datetime.timedelta(days=1)
+            },
+            # less than 20 this week on food and drink
+            {
+                "goal_type": "amount",
+                "limit": 20,
+                "category_name": "Food & Drinks",
+                "start_date": datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0),
+                "end_date": datetime.datetime.utcnow().replace(hour=23, minute=59, second=59, microsecond=999999) + datetime.timedelta(days=7)
+            },
+        ]
+
+        for user in users:
+            for goal_info in sample_goals:
+                # find category id with the category name
+                category = db_session.query(Category).filter_by(name=goal_info["category_name"], user_id=user.id).first()
+                if not category:
+                    raise ValueError(f"Category {goal_info['category_name']} does not exist for user {user.id}.")
+                
+                goal = Goal(
+                    user_id=user.id,
+                    category_id=category.id,
+                    goal_type=goal_info["goal_type"],
+                    limit=goal_info["limit"],
+                    start_date=goal_info["start_date"],
+                    end_date=goal_info["end_date"]
+                )
+                db_session.add(goal)
+        
+        db_session.commit()
+    except Exception as e:
+        db_session.rollback()
+        print(f"Error creating sample goals: {e}")
 
 def init_db():
     """Initialize and populate the database."""
@@ -317,10 +367,19 @@ def add_transaction(user_id: int, amount: float, category_id: int,
         print(f"Error adding transaction: {e}")
         raise
 
-def get_transactions(user_id: int, limit: int = 100, offset: int = 0) -> List[TransactionResponse]:
-    """Retrieve transactions for a user, including category names."""
+def get_transactions(user_id: int, limit: int = 100, offset: int = 0, 
+                     start_date: Optional[datetime.datetime] = None, 
+                     end_date: Optional[datetime.datetime] = None) -> List[TransactionResponse]:
+    """Retrieve transactions for a user, including category names, with optional date filters."""
     try:
-        return db_session.query(Transaction).filter_by(user_id=user_id).order_by(Transaction.date.desc()).limit(limit).offset(offset).all()
+        query = db_session.query(Transaction).filter_by(user_id=user_id)
+        
+        if start_date:
+            query = query.filter(Transaction.date >= start_date)
+        if end_date:
+            query = query.filter(Transaction.date <= end_date)
+        
+        return query.order_by(Transaction.date.desc()).limit(limit).offset(offset).all()
     except SQLAlchemyError as e:
         print(f"Error fetching transactions: {e}")
         return []

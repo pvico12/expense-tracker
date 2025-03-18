@@ -8,10 +8,19 @@ import com.cs446.expensetracker.api.models.TokenRefreshRequest
 import com.cs446.expensetracker.api.models.TokenRefreshResponse
 import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.api.models.Category
-import com.cs446.expensetracker.api.models.CategoryRequest
-import com.cs446.expensetracker.api.models.CategoryResponse
+import com.cs446.expensetracker.api.models.DealCreationRequest
+import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
+import com.cs446.expensetracker.api.models.DealRetrievalRequestWithUser
+import com.cs446.expensetracker.api.models.CustomCategoryRequest
+import com.cs446.expensetracker.api.models.SuggestionRequest
+import com.cs446.expensetracker.api.models.SuggestionResponse
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
+import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.OcrResponse
+import com.cs446.expensetracker.api.models.RecurringTransactionRequest
+import com.cs446.expensetracker.api.models.RecurringTransactionResponse
+import com.cs446.expensetracker.api.models.SpendingSummaryResponse
+import com.cs446.expensetracker.api.models.TempDealCreationRequest
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.UserProfileUpdateRequest
@@ -89,12 +98,57 @@ interface BaseAPIService {
     @POST("transactions/receipt/scan")
     suspend fun scanReceipt(@Part file: MultipartBody.Part): Response<OcrResponse>
 
+    // ================= Recurring Transactions ====================
+
+    @POST("transactions/recurring/")
+    suspend fun createRecurringTransaction(
+        @Body request: RecurringTransactionRequest
+    ): Response<RecurringTransactionResponse>
+
     // ====================== Categories ===========================
     @GET("/categories/")
     suspend fun getCategories(): Response<List<Category>>
 
+    // ====================== Statistics ===========================
+    @GET("/statistics/summary_spend")
+    suspend fun getSpendingSummary(
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String
+    ): Response<SpendingSummaryResponse>
+
+    // ====================== Deals ===========================
+    @POST("/deals/list")
+    suspend fun getDeals(@Body DealRetrievalRequestWithUser: DealRetrievalRequestWithUser): Response<List<DealRetrievalResponse>>
+
+    @POST("/deals/list")
+    suspend fun getDeals(@Body DealRetrievalRequestWithLocation: DealRetrievalRequestWithLocation): Response<List<DealRetrievalResponse>>
+
+    @GET("/deals/{deal_id}")
+    suspend fun getSpecificDeal(@Path("deal_id") dealId: String): Response<DealRetrievalResponse>
+
+    @DELETE("/deals/{deal_id}")
+    suspend fun deleteDeal(@Path("deal_id") dealId: String): Response<String>
+
+    @PUT("/deals/{deal_id}")
+    suspend fun updateDeal(@Path("deal_id") dealId: String, @Body TempDealCreationRequest: TempDealCreationRequest): Response<String>
+
+    @POST("/deals/")
+    suspend fun addDeal(@Body DealCreationRequest: DealCreationRequest): Response<String>
+
+    @POST("/deals/upvote/{deal_id}")
+    suspend fun upvoteDeal(@Path("deal_id") dealId: String): Response<String>
+
+    @POST("/deals/downvote/{deal_id}")
+    suspend fun downvoteDeal(@Path("deal_id") dealId: String): Response<String>
+
+    @POST("/deals/cancel_vote/{deal_id}")
+    suspend fun cancelvoteDeal(@Path("deal_id") dealId: String): Response<String>
+
+    @POST("categories/custom")
+    suspend fun createCustomCategory(@Body category: CustomCategoryRequest): Response<Category>
+
     // ====================== Tools ===========================
     @POST("tools/categories/suggestion")
-    suspend fun getCategorySuggestion(@Body request: CategoryRequest): Response<CategoryResponse>
+    suspend fun getCategorySuggestion(@Body request: SuggestionRequest): Response<SuggestionResponse>
 
 }
