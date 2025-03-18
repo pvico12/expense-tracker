@@ -68,13 +68,21 @@ def create_transaction(
 def read_transactions(
     skip: int = 0,
     limit: int = 100,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Retrieve transactions for the authenticated user.
     """
-    transactions = db_get_transactions(user_id=current_user.id, limit=limit, offset=skip)
+    transactions = db_get_transactions(
+        user_id=current_user.id, 
+        limit=limit, 
+        offset=skip, 
+        start_date=start_date, 
+        end_date=end_date
+    )
     return [TransactionResponse.from_orm(tx) for tx in transactions]
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
