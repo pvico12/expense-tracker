@@ -40,13 +40,3 @@ data class DealCreationRequest (
     val longitude: Double,
     val latitude: Double
 )
-
-data class TempDealCreationRequest (
-    val name: String,
-    val description: String,
-    val price: Double,
-    val date: String, // ISO 8601 format
-    val address: String,
-    val longitude: Double,
-    val latitude: Double
-)
