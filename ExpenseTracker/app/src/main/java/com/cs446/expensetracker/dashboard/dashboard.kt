@@ -24,15 +24,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -58,6 +58,7 @@ import com.cs446.expensetracker.api.models.CategoryBreakdown
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.SpendingSummaryResponse
 import com.cs446.expensetracker.api.models.TransactionResponse
+import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
 import com.github.mikephil.charting.animation.Easing
@@ -72,6 +73,8 @@ import retrofit2.Response
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.round
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerState
 
 class Dashboard {
 
@@ -83,9 +86,12 @@ class Dashboard {
 
     private val default_colors = arrayOf("#FF9A3B3B", "#FFC08261", "#FFDBAD8C", "#FFDBAD8C", "#FFFFEBCF", "#FFFFCFAC", "#FFFFDADA", "#FFD6CBAF", "#FF8D5F2E")
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun DashboardHost() {
+    fun DashboardScreen(
+        drawerState: DrawerState
+    ) {
         val scrollState = rememberScrollState()
         val coroutineScope = rememberCoroutineScope()
         var spendingSummary by remember { mutableStateOf<List<CategoryBreakdown>>(emptyList()) }
@@ -142,115 +148,122 @@ class Dashboard {
 
         Log.d("FCM Token", UserSession.fcmToken)
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(mainBackgroundColor)
-                .verticalScroll(scrollState)
-            ,
-            verticalArrangement = Arrangement.Top
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(0.dp),
-            ) {
-                Text(
-                    text = "Home Dashboard",
-                    color = mainTextColor,
-                    style = Typography.titleLarge,
-                    modifier = Modifier
-                        .padding(start = 16.dp, top = 16.dp)
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            coroutineScope.launch {
+                                drawerState.open()
+                            }
+                        }) {
+                            Icon(Icons.Filled.Menu, contentDescription = "")
+                        }
+                    },
+                    title = { Text("Dashboard") }
                 )
-                Spacer(Modifier.weight(1f))
-                TextButton(
-                    onClick = { /* ... */ },
-                    shape = CircleShape,
-                    modifier = Modifier.size(70.dp).padding(bottom=5.dp),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = "Favorite",
-                        modifier = Modifier.size(45.dp),
-                        tint = mainTextColor
-                    )
-                }
-            }
-            when {
-                isLoading -> {
-                    CircularProgressIndicator()
-                }
-                errorMessage != "" -> {
-                    Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
-                }
-                else -> {
-                    Piechart(spendingSummary)
-                    Text(
-                        text = "This Month's Expenses",
-                        color = mainTextColor,
-                        style = Typography.titleLarge,
-                        modifier = Modifier
-                            .padding(start = 16.dp, top = 16.dp)
-                    )
-                    Text(
-                        text = "Total Spending: $${formatCurrency(totalSpending)}",
-                        color = mainTextColor,
-                        style = Typography.titleLarge,
-                        fontSize = 27.sp,
-                        modifier = Modifier
-                            .padding(start = 16.dp, top = 8.dp, bottom = 16.dp)
-                    )
-                    for(expense in spendingSummary) {
-                        Card(
+            },
+        ) {
+            padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(mainBackgroundColor)
+                    .verticalScroll(scrollState)
+                    .padding(padding),
+                verticalArrangement = Arrangement.Top
+            ) {
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator()
+                    }
+
+                    errorMessage != "" -> {
+                        Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
+                    }
+
+                    else -> {
+                        Piechart(spendingSummary)
+                        Text(
+                            text = "This Month's Expenses",
+                            color = mainTextColor,
+                            style = Typography.titleLarge,
                             modifier = Modifier
-                                .padding(4.dp)
-                                .fillMaxSize()
-                            ,
-                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                            colors = CardDefaults.cardColors(containerColor = tileColor)
-                        ) {
-                            Box (
+                                .padding(start = 16.dp, top = 16.dp)
+                        )
+                        Text(
+                            text = "Total Spending: $${formatCurrency(totalSpending)}",
+                            color = mainTextColor,
+                            style = Typography.titleLarge,
+                            fontSize = 27.sp,
+                            modifier = Modifier
+                                .padding(start = 16.dp, top = 8.dp, bottom = 16.dp)
+                        )
+                        for (expense in spendingSummary) {
+                            Card(
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .padding(4.dp)
+                                    .fillMaxSize(),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                                colors = CardDefaults.cardColors(containerColor = tileColor)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
-                                        .padding(start = 10.dp, top = 10.dp, bottom = 10.dp, end = 10.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(android.graphics.Color.parseColor((expense.custom_color))))
-                                        .align(Alignment.CenterStart)
-                                )
-                                Text(
-                                    text = "${expense.category_name}: ",
-                                    color = mainTextColor,
-                                    style = Typography.labelSmall,
-                                    modifier = Modifier
-                                        .padding(start=40.dp,top=8.dp,bottom=8.dp,end=8.dp)
-                                )
-                                Spacer(Modifier.fillMaxWidth(0.2f))
-                                Text(
-                                    text = "${round(expense.percentage)}%",
-                                    color = PurpleGrey40,
-                                    style = Typography.labelSmall,
-                                    modifier = Modifier
-                                        .padding(8.dp)
-                                        .align(Alignment.Center)
-                                )
-                                Text(
-                                    text = "$${formatCurrency(expense.total_amount)}",
-                                    color = PurpleGrey40,
-                                    style = Typography.labelSmall,
-                                    modifier = Modifier
-                                        .padding(start=1.dp,top=8.dp,bottom=8.dp,end=20.dp)
-                                        .align(Alignment.CenterEnd)
-                                )
-                            }
+                                        .fillMaxWidth()
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .padding(
+                                                start = 10.dp,
+                                                top = 10.dp,
+                                                bottom = 10.dp,
+                                                end = 10.dp
+                                            )
+                                            .clip(CircleShape)
+                                            .background(Color(android.graphics.Color.parseColor((expense.custom_color))))
+                                            .align(Alignment.CenterStart)
+                                    )
+                                    Text(
+                                        text = "${expense.category_name}: ",
+                                        color = mainTextColor,
+                                        style = Typography.labelSmall,
+                                        modifier = Modifier
+                                            .padding(
+                                                start = 40.dp,
+                                                top = 8.dp,
+                                                bottom = 8.dp,
+                                                end = 8.dp
+                                            )
+                                    )
+                                    Spacer(Modifier.fillMaxWidth(0.2f))
+                                    Text(
+                                        text = "${round(expense.percentage)}%",
+                                        color = PurpleGrey40,
+                                        style = Typography.labelSmall,
+                                        modifier = Modifier
+                                            .padding(8.dp)
+                                            .align(Alignment.Center)
+                                    )
+                                    Text(
+                                        text = "$${formatCurrency(expense.total_amount)}",
+                                        color = PurpleGrey40,
+                                        style = Typography.labelSmall,
+                                        modifier = Modifier
+                                            .padding(
+                                                start = 1.dp,
+                                                top = 8.dp,
+                                                bottom = 8.dp,
+                                                end = 20.dp
+                                            )
+                                            .align(Alignment.CenterEnd)
+                                    )
+                                }
 
+                            }
                         }
+                        Spacer(Modifier.height(85.dp))
                     }
-                    Spacer(Modifier.height(85.dp))
                 }
             }
         }

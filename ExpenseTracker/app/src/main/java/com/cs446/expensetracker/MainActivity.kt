@@ -49,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.cs446.expensetracker.nav.DealsContainer
 import com.cs446.expensetracker.nav.TransactionNavContainer
-import com.cs446.expensetracker.nav.SettingsNavContainer
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.AddDealScreen
 import com.cs446.expensetracker.ui.AddExpenseScreen
@@ -135,14 +134,12 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         floatingActionButton = {
-                            if (navBackStackEntry?.destination?.route != "settings") {
-                                FloatingActionButton(
-                                    onClick = { rootNavController.navigate("addExpense") },
-                                    containerColor = Color(0xFF4B0C0C),
-                                    contentColor = Color(0xFFF6F3F3)
-                                ) {
-                                    Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Expense")
-                                }
+                            FloatingActionButton(
+                                onClick = { rootNavController.navigate("addExpense") },
+                                containerColor = Color(0xFF4B0C0C),
+                                contentColor = Color(0xFFF6F3F3)
+                            ) {
+                                Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Expense")
                             }
                         }
                     ) { padding ->
@@ -155,10 +152,6 @@ class MainActivity : ComponentActivity() {
                                 composable("home") {
                                     val homeNavContainer = HomeNavContainer()
                                     homeNavContainer.HomeNavHost()
-                                }
-                                composable("settings") {
-                                    val settingsNavContainer = SettingsNavContainer()
-                                    settingsNavContainer.SettingsNavHost()
                                 }
                                 composable("history") {
                                     val transactionNavContainer = TransactionNavContainer()
@@ -191,11 +184,6 @@ val navItems = listOf(
         title = "Home",
         selectedIcon = Icons.Filled.Home,
         unselectedIcon = Icons.Outlined.Home,
-    ),
-    BottomNavigationItem(
-        title = "Settings",
-        selectedIcon = Icons.Filled.Settings,
-        unselectedIcon = Icons.Outlined.Settings,
     ),
     BottomNavigationItem(
         title = "History",
