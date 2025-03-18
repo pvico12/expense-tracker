@@ -107,15 +107,14 @@ class Dashboard {
             errorMessage = ""
             try {
                 val token = UserSession.access_token ?: ""
-                val stringCurrentDate = currentDate.format(DateTimeFormatter.ISO_DATE_TIME)
-                val oneYearAgo = LocalDateTime.now().minusYears(1)
-                val stringOneYearAgoDate = oneYearAgo.format(DateTimeFormatter.ISO_DATE_TIME)
+                val firstDayOfMonth = currentDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE_TIME)
+                val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).format(DateTimeFormatter.ISO_DATE_TIME)
                 val response: Response<SpendingSummaryResponse> =
-                    RetrofitInstance.apiService.getSpendingSummary(startDate = stringOneYearAgoDate, endDate = stringCurrentDate)
+                    RetrofitInstance.apiService.getSpendingSummary(startDate = firstDayOfMonth, endDate = lastDayOfMonth)
                 if (response.isSuccessful) {
                     val responseBody = response.body()
                     totalSpending = responseBody?.total_spend ?: 0.0
-                    Log.d("Response", "Summary Spend Response: $responseBody for $stringOneYearAgoDate to $stringCurrentDate")
+                    Log.d("Response", "Summary Spend Response: $responseBody for $firstDayOfMonth to $lastDayOfMonth")
                     spendingSummary = responseBody?.category_breakdown?.map { x ->
                         CategoryBreakdown(
                             category_name = x.category_name,
