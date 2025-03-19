@@ -297,14 +297,15 @@ class GoalsStatisticsResponse(BaseModel):
     goals: List[GoalResponse]
     stats: Dict[str, int]
 
-class GoalSubscription:
+class HttpDealLocationSubscription(BaseModel):
     id: int
     user_id: int
     longitude: float
     latitude: float
-class GoalSubscriptionResponse(BaseModel):
-    subs: List[GoalSubscription]
+    
+class DealSubscriptionResponse(BaseModel):
+    subs: List[HttpDealLocationSubscription]
 
-class GoalSubscriptionLocation(BaseModel):
+class DealSubscriptionLocation(BaseModel):
     longitude: float
     latitude: float
