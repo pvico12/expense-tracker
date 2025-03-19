@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,17 +42,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.cs446.expensetracker.api.RetrofitInstance
-import com.cs446.expensetracker.mockData.dashboard_mock_expense
 import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.CategoryBreakdown
-import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.SpendingSummaryResponse
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
@@ -68,7 +64,6 @@ import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.math.round
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.TopAppBarDefaults
@@ -79,66 +74,26 @@ import androidx.compose.ui.text.font.FontWeight
 import com.cs446.expensetracker.api.models.GoalRetrievalGoals
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.AddToPhotos
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
-import com.cs446.expensetracker.api.models.Transaction
-import com.cs446.expensetracker.mockData.dashboard_mock_expense
-import com.cs446.expensetracker.api.models.DealLocation
-import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
 import com.cs446.expensetracker.api.models.GoalRetrievalResponse
-import com.cs446.expensetracker.api.models.TransactionResponse
-import com.cs446.expensetracker.ui.ui.theme.*
-import com.google.android.gms.maps.model.LatLng
+import com.cs446.expensetracker.api.models.GoalRetrievalStats
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.round
 
 
 class Dashboard {
@@ -172,6 +127,10 @@ class Dashboard {
 
         var deleteConfirmationDialogue by remember { mutableStateOf(false)}
         var idToDelete by remember { mutableStateOf(-1)}
+
+        var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
+
+        var goalStats by remember { mutableStateOf<GoalRetrievalStats?>(null) }
 
         // Load transactions via API
         LaunchedEffect(Unit) {
@@ -220,6 +179,21 @@ class Dashboard {
 
         Log.d("FCM Token", UserSession.fcmToken)
 
+        LaunchedEffect(Unit) {
+            coroutineScope.launch {
+                try {
+                    val response = RetrofitInstance.apiService.getCategories()
+                    if (response.isSuccessful) {
+                        categories = response.body() ?: emptyList()
+                    } else {
+                        errorMessage = "Failed to load categories."
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "Error: ${e.message}"
+                }
+            }
+        }
+
         fun apiFetchGoals(startDate: String, endDate: String) {
             // Load deals via API
             Log.d("Response", "Api fetch was called, but request not necessarily sent")
@@ -234,6 +208,7 @@ class Dashboard {
                     if (response.isSuccessful) {
                         val responseBody = response.body()
                         Log.d("Response", "Goals Response: $responseBody")
+                        goalStats = responseBody?.stats
                         listOfGoals = responseBody?.goals?.map { x ->
                             GoalRetrievalGoals(
                                 id = x.id,
@@ -245,6 +220,7 @@ class Dashboard {
                                 period = x.period,
                                 on_track = x.on_track,
                                 time_left = x.time_left,
+                                amount = x.amount,
                             )
                         } ?: emptyList()
                     } else {
@@ -456,7 +432,61 @@ class Dashboard {
                                     )
                                 }
                             }
-                            apiFetchGoals(firstDayOfMonth, lastDayOfMonth)
+                            Row(modifier = Modifier
+                                .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                Row(modifier = Modifier
+                                    .padding(start=12.dp, end=12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Check,
+                                        contentDescription = "Favorite",
+                                        modifier = Modifier.size(35.dp),
+                                        tint = Color(0xFF69A42D)
+                                    )
+                                    Text(
+                                        text = ": ${goalStats?.completed}",
+                                        color = secondTextColor,
+                                        style = Typography.titleMedium,
+                                        modifier = Modifier
+                                            .padding(start = 16.dp)
+                                    )
+                                }
+                                Row(modifier = Modifier
+                                    .padding(start=12.dp, end=15.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Circle,
+                                        contentDescription = "Favorite",
+                                        modifier = Modifier.size(35.dp),
+                                        tint = Color(0xFFCC8658)
+                                    )
+                                    Text(
+                                        text = ": ${goalStats?.in_progress}",
+                                        color = secondTextColor,
+                                        style = Typography.titleMedium,
+                                        modifier = Modifier
+                                            .padding(start = 16.dp)
+                                    )
+                                }
+                                Row(modifier = Modifier
+                                    .padding(start=12.dp, end=15.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Favorite",
+                                        modifier = Modifier.size(35.dp),
+                                        tint = Color(0xFFD5030A)
+                                    )
+                                    Text(
+                                        text = ": ${goalStats?.incompleted}",
+                                        color = secondTextColor,
+                                        style = Typography.titleMedium,
+                                        modifier = Modifier
+                                            .padding(start = 16.dp)
+                                    )
+                                }
+                            }
+                            LaunchedEffect(categories) {
+                                apiFetchGoals(firstDayOfMonth, lastDayOfMonth)
+                            }
                             for((i, goal) in listOfGoals.withIndex()) {
                                 Card(
                                     modifier = Modifier
@@ -510,11 +540,19 @@ class Dashboard {
                                             ),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        var type_of_goal_string = ""
+                                        var main_goal_text: String
+                                        var secondary_goal_text: String
+                                        var category_string = categories.find { it.id == goal.category_id }?.name ?: "Deleted Category"
+                                        var period_length = "week"
+                                        if (goal.period != 7) {
+                                            period_length = "month"
+                                        }
                                         if(goal.goal_type == "amount") {
-                                            type_of_goal_string = "$" + formatCurrency(goal.limit)
+                                            main_goal_text = "Spend less than $" + formatCurrency(goal.limit) + " on $category_string"
+                                            secondary_goal_text = "$${formatCurrency(goal.amount)} amount spent this $period_length so far"
                                         } else {
-                                            type_of_goal_string = formatCurrency(goal.limit) + "%"
+                                            main_goal_text = "Spend " + formatCurrency(goal.limit) + "% less than last $period_length on $category_string"
+                                            secondary_goal_text = "${formatCurrency(goal.amount)}% less spent than last $period_length so far"
                                         }
                                         Column {
                                             Row(
@@ -522,27 +560,36 @@ class Dashboard {
                                                     .fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
-                                                Text(text ="Spend less than ${type_of_goal_string} on Entertainment", fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall)
+                                                Text(text = main_goal_text, fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall)
                                             }
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text(text = "Time Left: ${goal.period} days", fontWeight = FontWeight.Bold, color= secondTextColor, modifier = Modifier.padding(end=14.dp), style = MaterialTheme.typography.titleLarge)
-                                                Spacer(modifier = Modifier.weight(2f))
-                                            }
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                            ) {
-                                                Text(
-                                                    text = "   Current Spending this week: $54.39",
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    color = MaterialTheme.colorScheme.secondary,
-                                                    textAlign = TextAlign.Right,
-                                                    modifier = Modifier.padding(top=2.dp)
+                                                Column() {
+                                                    Text(text = "Time Left: ${goal.period} days", fontWeight = FontWeight.Bold, color= secondTextColor, modifier = Modifier.padding(end=14.dp), style = MaterialTheme.typography.titleLarge)
+                                                    Text(
+                                                        text = secondary_goal_text,
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = MaterialTheme.colorScheme.secondary,
+                                                        textAlign = TextAlign.Left,
+                                                        modifier = Modifier.padding(top=2.dp)
+                                                    )
+                                                    Text(
+                                                        text = "${goal.start_date.substringBefore("T")} to ${goal.end_date.substringBefore("T")}",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.secondary,
+                                                        textAlign = TextAlign.Right,
+                                                        modifier = Modifier.padding(top=3.dp)
+                                                    )
+                                                }
+                                                Icon(
+                                                    imageVector = if(goal.on_track) Icons.Filled.Circle else Icons.Filled.Close,
+                                                    contentDescription = "Favorite",
+                                                    modifier = Modifier.size(35.dp),
+                                                    tint = if(goal.on_track) Color(0xFFCC8658) else Color(0xFFD5030A)
                                                 )
                                             }
                                         }

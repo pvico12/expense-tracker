@@ -10,10 +10,12 @@ data class GoalRetrievalGoals (
     val period: Int,
     val on_track: Boolean,
     val time_left: Int,
+    val amount: Double,
 )
 
 data class GoalRetrievalStats (
     val completed: Int,
+    val in_progress: Int,
     val incompleted: Int,
 )
 

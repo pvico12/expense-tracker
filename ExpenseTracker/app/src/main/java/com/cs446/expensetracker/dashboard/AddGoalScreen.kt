@@ -136,6 +136,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                             period = x.period,
                             on_track = x.on_track,
                             time_left = x.time_left,
+                            amount = x.amount,
                         )
                     } ?: emptyList()
                     for (goal in listOfGoals) {
@@ -154,6 +155,11 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                 //                    isLoading = false
             }
             period = specificGoalToEdit?.period.toString()
+            if(period == "31") {
+                period = "Month"
+            } else {
+                period = "Week"
+            }
             goal_type = specificGoalToEdit?.goal_type ?: ""
             limit = specificGoalToEdit?.limit.toString()
             selectedDate = specificGoalToEdit?.start_date ?: ""
@@ -199,6 +205,37 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
     }
 
     @Composable
+    fun PeriodTypeDropdownMenu() {
+        var expanded by remember { mutableStateOf(false) }
+        Text(text = "Time Period:", color = mainTextColor)
+        Box(
+        ) {
+            Button(onClick = { expanded = !expanded },
+                modifier = Modifier
+                    .border(1.dp, mainTextColor, shape = RoundedCornerShape(3.dp)), colors = ButtonDefaults.buttonColors(containerColor = Color(
+                    0xFFE7E0EC
+                )
+                ), shape = RoundedCornerShape(3.dp)) {
+                Text(text = period, color = Color(0xFF606060))
+                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "More options", tint = mainTextColor)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Week") },
+                    onClick = { period="Week" }
+                )
+                DropdownMenuItem(
+                    text = { Text("Month") },
+                    onClick = { period="Month" }
+                )
+            }
+        }
+    }
+
+    @Composable
     fun allFieldInputs() {
         // Category Box (Tap to Open Bottom Sheet)
         Text(text = "Category", style = MaterialTheme.typography.bodyLarge)
@@ -216,17 +253,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
         Spacer(modifier = Modifier.height(10.dp))
 
         GoalTypeDropdownMenu()
-
-        OutlinedTextField(
-            value = period,
-            onValueChange = { period = it },
-            label = { Text("Period") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = secondTextColor,
-                unfocusedIndicatorColor = mainTextColor)
-        )
+        PeriodTypeDropdownMenu()
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -301,6 +328,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
         // Save Expense Button
         Button(
             onClick = {
+                Log.d("Period", "Period is ${period}")
                 CoroutineScope(Dispatchers.IO).launch {
 //                    isLoading = true
                     errorMessage = null
@@ -323,10 +351,9 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                             errorMessage = errorMessage ?: ""
                             errorMessage += "If using percentage, please add a limit less than 100%\n"
                         }
-                        var nullCheckPeriod = period.toDoubleOrNull()
-                        if (nullCheckPeriod == null) {
+                        if (period != "Week" && period != "Month") {
                             errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add a numerical period\n"
+                            errorMessage += "Please pick a time period\n"
                         }
                         if (selectedDate == "") {
                             errorMessage = errorMessage ?: ""
@@ -334,15 +361,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                         }
 
                         if(errorMessage == null) {
-                            val goal = GoalCreationRequest (
-                                category_id=selectedCategory?.id ?: 0,
-                                goal_type= goal_type,
-                                limit=limit.toDouble(),
-                                start_date=selectedDate,
-                                period=period.toDouble(),
-                            )
                             if(editVersion != -1) {
-                                Log.d("Response", "Edit Goal Request: ${goal}")
 
                                 val updateGoalRequest = GoalUpdateRequest (
                                     limit=limit.toDouble(),
@@ -350,6 +369,8 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                                     end_date=selectedDate,
                                     goal_type= goal_type,
                                 )
+
+                                Log.d("Response", "Edit Goal Request: ${updateGoalRequest}")
 
                                 val token = UserSession.access_token ?: ""
                                 val response =
@@ -366,6 +387,14 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                                     Log.d("Response", "Api request to edit goal failed: ${response.body()}")
                                 }
                             } else {
+                                val goal = GoalCreationRequest (
+                                    category_id=selectedCategory?.id ?: 0,
+                                    goal_type= goal_type,
+                                    limit=limit.toDouble(),
+                                    start_date=selectedDate,
+                                    period= if(period == "Week") 7.0 else 31.0,
+                                )
+                                Log.d("Response", "Create Goal Request: ${goal}")
                                 val token = UserSession.access_token ?: ""
                                 val response: Response<GoalRetrievalResponse> =
                                     RetrofitInstance.apiService.addGoal(goal)
