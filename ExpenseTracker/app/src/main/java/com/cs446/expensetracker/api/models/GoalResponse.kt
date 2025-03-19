@@ -10,7 +10,7 @@ data class GoalRetrievalGoals (
     val period: Int,
     val on_track: Boolean,
     val time_left: Int,
-    val amount: Double,
+    val amount_spent: Double,
 )
 
 data class GoalRetrievalStats (

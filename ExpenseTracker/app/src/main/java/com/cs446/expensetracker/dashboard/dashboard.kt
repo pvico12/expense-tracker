@@ -221,7 +221,7 @@ class Dashboard {
                                 period = x.period,
                                 on_track = x.on_track,
                                 time_left = x.time_left,
-                                amount = x.amount,
+                                amount_spent = x.amount_spent,
                             )
                         } ?: emptyList()
                     } else {
@@ -550,10 +550,10 @@ class Dashboard {
                                         }
                                         if(goal.goal_type == "amount") {
                                             main_goal_text = "Spend less than $" + formatCurrency(goal.limit) + " on $category_string"
-                                            secondary_goal_text = "$${formatCurrency(goal.amount)} amount spent this $period_length so far"
+                                            secondary_goal_text = "$${formatCurrency(goal.amount_spent)} amount spent this $period_length so far"
                                         } else {
                                             main_goal_text = "Spend " + formatCurrency(goal.limit) + "% less than last $period_length on $category_string"
-                                            secondary_goal_text = "${formatCurrency(goal.amount)}% less spent than last $period_length so far"
+                                            secondary_goal_text = "${formatCurrency(goal.amount_spent)}% less spent than last $period_length so far"
                                         }
                                         Column {
                                             Row(
@@ -570,7 +570,7 @@ class Dashboard {
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Column() {
-                                                    Text(text = "Time Left: ${goal.period} days", fontWeight = FontWeight.Bold, color= secondTextColor, modifier = Modifier.padding(end=14.dp), style = MaterialTheme.typography.titleLarge)
+                                                    Text(text = "Time Left: ${goal.time_left} days", fontWeight = FontWeight.Bold, color= secondTextColor, modifier = Modifier.padding(end=14.dp), style = MaterialTheme.typography.titleLarge)
                                                     Text(
                                                         text = secondary_goal_text,
                                                         style = MaterialTheme.typography.titleMedium,

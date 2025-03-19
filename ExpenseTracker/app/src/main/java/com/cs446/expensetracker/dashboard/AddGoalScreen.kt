@@ -136,7 +136,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                             period = x.period,
                             on_track = x.on_track,
                             time_left = x.time_left,
-                            amount = x.amount,
+                            amount_spent = x.amount_spent,
                         )
                     } ?: emptyList()
                     for (goal in listOfGoals) {
