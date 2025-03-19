@@ -1,4 +1,4 @@
-from notifications import push_notification_healthcheck
+from notifications import push_notification_healthcheck, send_goal_notifications
 from fastapi import FastAPI
 from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction, goals
 from db import test_connection, init_db
@@ -44,6 +44,9 @@ async def startup():
     
     # Start the healthcheck thread
     asyncio.create_task(push_notification_healthcheck())
+    
+    # start goal notification thread
+    asyncio.create_task(send_goal_notifications())
     
 if __name__ == '__main__':
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
