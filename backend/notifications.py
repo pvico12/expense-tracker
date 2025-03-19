@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import time
-from models import FcmToken
+from middlewares.goal_utils import get_mid_period_notifications, get_post_period_notifications
+from models import FcmToken, Goal
 import json
 import requests
 from google.oauth2 import service_account
@@ -89,3 +90,27 @@ async def push_notification_healthcheck():
         # fcm.send_multiple_notifications(fcm_tokens, "Healthcheck", "This is a test notification")
         
         await asyncio.sleep(3600)  # sleep for 1 hour
+        
+async def send_goal_notifications():
+    fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
+    
+    while True:
+        fcm_tokens = []
+        
+        # get goal notifications
+        mid_period_notifications = get_mid_period_notifications(db_session, 1)
+        post_period_notifications = get_post_period_notifications(db_session, 1)
+        all_notifications = mid_period_notifications + post_period_notifications
+        for goal_notifaction in all_notifications:
+            # get goal data by id
+            goal_id = goal_notifaction["goal_id"]
+            user_id = db_session.query(Goal).filter(Goal.id == goal_id).first().user_id
+            
+            # get FCM tokens with this user_id
+            tokens = db_session.query(FcmToken).filter(FcmToken.user_id == user_id).all()
+            fcm_tokens.extend([token.token for token in tokens])
+            
+            # send notifications
+            fcm.send_multiple_notifications(fcm_tokens, "Expense Tracker Goal!", goal_notifaction["message"])
+        
+        await asyncio.sleep(120)  # sleep for 2 minutes

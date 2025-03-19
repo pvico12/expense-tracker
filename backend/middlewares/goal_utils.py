@@ -66,15 +66,15 @@ def get_mid_period_notifications(db: Session, user_id: int) -> List[Dict[str, An
                 if total_spent <= goal.limit:
                     remaining_pct = ((goal.limit - total_spent) / goal.limit) * 100
                     message = (
-                        f"Goal {goal.id}: You are {remaining_pct:.1f}% away from breaking your spending limit."
+                        f"Budget Goal: You are {remaining_pct:.1f}% away from breaking your spending limit."
                     )
                 else:
                     exceeded_pct = ((total_spent - goal.limit) / goal.limit) * 100
                     message = (
-                        f"Goal {goal.id}: You have exceeded your spending limit by {exceeded_pct:.1f}%."
+                        f"Budget Goal: You have exceeded your spending limit by {exceeded_pct:.1f}%."
                     )
             else:
-                message = f"Goal {goal.id}: Percentage goal notifications are not implemented yet."
+                message = f"Budget Goal: Percentage goal notifications are not implemented yet."
             notifications.append({"goal_id": goal.id, "message": message})
     return notifications
 
@@ -95,15 +95,15 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
             if total_spent <= goal.limit:
                 margin_pct = ((goal.limit - total_spent) / goal.limit) * 100
                 message = (
-                    f"Goal {goal.id}: Completed successfully with a {margin_pct:.1f}% margin remaining."
+                    f"Budget Goal: Completed successfully with a {margin_pct:.1f}% margin remaining."
                 )
             else:
                 excess_pct = ((total_spent - goal.limit) / goal.limit) * 100
                 message = (
-                    f"Goal {goal.id}: Failed, exceeded the goal by {excess_pct:.1f}%."
+                    f"Budget Goal: Failed, exceeded the goal by {excess_pct:.1f}%."
                 )
         else:
-            message = f"Goal {goal.id}: Percentage goal notifications are not implemented yet."
+            message = f"Budget Goal: Percentage goal notifications are not implemented yet."
         notifications.append({"goal_id": goal.id, "message": message})
     return notifications
 
