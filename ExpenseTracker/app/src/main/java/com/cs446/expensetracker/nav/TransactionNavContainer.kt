@@ -315,14 +315,14 @@ class TransactionNavContainer {
             ) {
                 Column {
                     Text(text = transaction.vendor ?: transaction.note, fontWeight = FontWeight.Bold)
-//                    Text(
-//                        text = formatTransactionDate(transaction.date),
-//                        style = MaterialTheme.typography.bodySmall,
-//                        color = MaterialTheme.colorScheme.secondary
-//                    )
+                    Text(
+                        text = formatDate(transaction.date),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
                 }
                 Text(
-                    text = "$${transaction.amount}",
+                    text = "$${"%.2f".format(transaction.amount)}",
                     fontWeight = FontWeight.Bold,
                     color = if (transaction.transaction_type == "expense")
                         MaterialTheme.colorScheme.primary
@@ -583,10 +583,10 @@ class TransactionNavContainer {
                                 }
                             }
                         } else {
-                            Text(text = "Amount: $${tr.amount}", fontWeight = FontWeight.Bold)
+                            Text(text = "Amount: $${"%.2f".format(tr.amount)}", fontWeight = FontWeight.Bold)
                             Text(text = "Vendor: ${tr.vendor}", fontWeight = FontWeight.Bold)
                             Text(text = "Category: ${selectedCategory?.name ?: "N/A"}", fontWeight = FontWeight.Bold)
-                            Text(text = "Date: ${formatDateTime(tr.date)}", fontWeight = FontWeight.Bold)
+                            Text(text = "Date: ${formatDate(tr.date)}", fontWeight = FontWeight.Bold)
                         }
                     } ?: Text(text = "Transaction not found.")
                 }
@@ -655,6 +655,21 @@ class TransactionNavContainer {
             inputFormat.parse(isoDate)
         } catch (e: Exception) {
             null
+        }
+    }
+
+    fun formatDate(dateString: String): String {
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val date = inputFormat.parse(dateString)
+            if (date != null) {
+                outputFormat.format(date)
+            } else {
+                dateString
+            }
+        } catch (e: Exception) {
+            dateString
         }
     }
 
