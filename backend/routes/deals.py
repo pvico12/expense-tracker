@@ -2,13 +2,13 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 
-from models import DealVote, User, Deal
+from models import DealLocationSubscription, DealVote, User, Deal
 from utils import get_coordinate_distance, predict_category, get_category_by_name
 from dependencies.auth import get_current_user
 from db import add_deal, get_db, get_single_deal
 from db import get_deals as db_get_deals
 from typing import List
-from http_models import DealCreationRequest, DealRetrievalRequest, DealUpdateRequest, DealVoteResponse, HttpDeal, LocationFilter
+from http_models import DealCreationRequest, DealRetrievalRequest, DealSubscriptionLocation, DealSubscriptionLocationUpdateRequest, DealUpdateRequest, DealVoteResponse, HttpDeal, HttpDealLocationSubscription, LocationFilter
 
 router = APIRouter(
     prefix="/deals",
@@ -283,5 +283,110 @@ def cancel_vote(
         else:
             raise Exception("You have not voted on this deal.")
         
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@router.get("/subscription/{deal_sub_id}", response_model=HttpDealLocationSubscription, status_code=status.HTTP_200_OK)
+def get_single_deal_subscription(
+    deal_sub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a single deal subscription.
+    """
+    try:
+        # find subscription with this user id
+        subscription = db.query(DealLocationSubscription).filter(DealLocationSubscription.id == deal_sub_id).first()
+        
+        if not subscription:
+            raise Exception("Subscription not found.")
+        
+        return HttpDealLocationSubscription.from_orm(subscription)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@router.get("/subscriptions/all", response_model=List[HttpDealLocationSubscription], status_code=status.HTTP_200_OK)
+def get_deal_subscriptions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all deal subscriptions for a user.
+    """
+    try:
+        # find all subscriptions with this user id
+        subscriptions = db.query(DealLocationSubscription).filter(DealLocationSubscription.user_id == current_user.id).all()
+        
+        return [HttpDealLocationSubscription.from_orm(sub) for sub in subscriptions]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@router.post("/subscription", response_model=HttpDealLocationSubscription, status_code=status.HTTP_201_CREATED)
+def create_deal_subscription(
+    data: DealSubscriptionLocation,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a deal subscription.
+    """
+    try:
+        # create subscription
+        new_subscription = DealLocationSubscription(user_id=current_user.id, address=data.address,longitude=data.longitude, latitude=data.latitude)
+        db.add(new_subscription)
+        db.commit()
+        db.refresh(new_subscription)
+        
+        return HttpDealLocationSubscription.from_orm(new_subscription)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/subscription/{deal_sub_id}", response_model=HttpDealLocationSubscription, status_code=status.HTTP_200_OK)
+def update_deal_subscription(
+    deal_sub_id: int,
+    data: DealSubscriptionLocationUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update a deal subscription.
+    """
+    try:
+        # find subscription with this id
+        subscription = db.query(DealLocationSubscription).filter(DealLocationSubscription.id == deal_sub_id).first()
+        
+        if not subscription:
+            raise Exception("Subscription not found.")
+        
+        # update the subscription
+        for key, value in data.dict(exclude_unset=True).items():
+            setattr(subscription, key, value)
+        db.commit()
+        db.refresh(subscription)
+        
+        return HttpDealLocationSubscription.from_orm(subscription)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@router.delete("/subscription/{deal_sub_id}", response_model=None, status_code=status.HTTP_200_OK)
+def delete_deal_subscription(
+    deal_sub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a deal subscription.
+    """
+    try:
+        # find subscription with this id
+        subscription = db.query(DealLocationSubscription).filter(DealLocationSubscription.id == deal_sub_id).first()
+        
+        if not subscription:
+            raise Exception("Subscription not found.")
+        
+        # delete the subscription
+        db.delete(subscription)
+        db.commit()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
