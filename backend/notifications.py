@@ -74,21 +74,25 @@ class FirebaseHTTPV1:
         return results
 
 
+def send_push_notification_healthcheck():
+    fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
+    # get all FCM tokens from fcm_tokens table
+    fcm_tokens = db_session.query(FcmToken).all()
+    logger.info(f"Sending healthcheck notification to {len(fcm_tokens)} devices")
+    
+    # send a test notification to each device
+    fcm.send_multiple_notifications([token.token for token in fcm_tokens], "Healthcheck", "This is a test notification")
+    
+    # FOR TESTING
+    # fcm_tokens = ["dnAFw0TDTvCPhzV2YhJeYl:APA91bGiM-YlnIDDEelSp5bZ8O3QxxRgjMghEQwcZHrKDUvnGrRwP8M--pM1AwqJfOCjxQAR3AxCl6kqdeqNh7Nh8P5mXoipnvyopJNq3SqyLOOVgjtlmqo"]
+    # fcm.send_multiple_notifications(fcm_tokens, "Healthcheck", "This is a test notification")
+        
+
 async def push_notification_healthcheck():
     fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
     
     while True:
-        # get all FCM tokens from fcm_tokens table
-        fcm_tokens = db_session.query(FcmToken).all()
-        logger.info(f"Sending healthcheck notification to {len(fcm_tokens)} devices")
-        
-        # send a test notification to each device
-        fcm.send_multiple_notifications([token.token for token in fcm_tokens], "Healthcheck", "This is a test notification")
-        
-        # FOR TESTING
-        # fcm_tokens = ["dnAFw0TDTvCPhzV2YhJeYl:APA91bGiM-YlnIDDEelSp5bZ8O3QxxRgjMghEQwcZHrKDUvnGrRwP8M--pM1AwqJfOCjxQAR3AxCl6kqdeqNh7Nh8P5mXoipnvyopJNq3SqyLOOVgjtlmqo"]
-        # fcm.send_multiple_notifications(fcm_tokens, "Healthcheck", "This is a test notification")
-        
+        send_push_notification_healthcheck()
         await asyncio.sleep(3600)  # sleep for 1 hour
         
 async def send_goal_notifications():
@@ -108,6 +112,8 @@ async def send_goal_notifications():
         post_period_notifications = get_post_period_notifications(db_session, 1)
         all_notifications = mid_period_notifications + post_period_notifications
         for goal_notifaction in all_notifications:
+            logger.info(f"Sending goal notification for goal {goal_notifaction['goal_id']}")
+            
             # get goal data by id
             goal_id = goal_notifaction["goal_id"]
             user_id = db_session.query(Goal).filter(Goal.id == goal_id).first().user_id
