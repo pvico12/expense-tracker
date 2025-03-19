@@ -95,6 +95,31 @@ class TransactionNavContainer {
         var startDate by remember { mutableStateOf<Date?>(null) }
         var endDate by remember { mutableStateOf<Date?>(null) }
 
+        // dates
+        val calendar = Calendar.getInstance()
+        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        var selectedEndDate by remember {
+            mutableStateOf(
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                ).format(calendar.time)
+            )
+        }
+        val context = LocalContext.current
+        var selectedStartDate by remember {
+            mutableStateOf(
+                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                    Calendar.getInstance().apply { add(Calendar.MONTH, -1) }.time
+                )
+            )
+        }
+
+        val inputDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val startDateTime = isoFormat.format(inputDateFormat.parse(selectedStartDate)!!)
+        val endDateTime = isoFormat.format(inputDateFormat.parse(selectedEndDate)!!)
+
+
         val filteredTransactions = transactions.filter { transaction ->
             val matchesQuery = if (searchQuery.isNotBlank())
                 transaction.note.contains(searchQuery, ignoreCase = true)
@@ -118,7 +143,10 @@ class TransactionNavContainer {
             try {
                 val token = UserSession.access_token ?: ""
                 val response: Response<List<TransactionResponse>> =
-                    RetrofitInstance.apiService.getTransactions(skip = 0, limit = 100)
+                    RetrofitInstance.apiService.getTransactions(skip = 0,
+                        limit = 100,
+                        startDate = startDateTime,
+                        endDate = endDateTime)
                 if (response.isSuccessful) {
                     val transactionResponses = response.body() ?: emptyList()
                     Log.d("TransactionHistory", "TransactionResponse list: $transactionResponses")
@@ -335,10 +363,37 @@ class TransactionNavContainer {
             calendar.get(Calendar.DAY_OF_MONTH)
         )
 
+        // dates
+        var selectedEndDate by remember {
+            mutableStateOf(
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                ).format(calendar.time)
+            )
+        }
+
+        var selectedStartDate by remember {
+            mutableStateOf(
+                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                    Calendar.getInstance().apply { add(Calendar.MONTH, -1) }.time
+                )
+            )
+        }
+
+        val inputDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val startDateTime = isoFormat.format(inputDateFormat.parse(selectedStartDate)!!)
+        val endDateTime = isoFormat.format(inputDateFormat.parse(selectedEndDate)!!)
+
         LaunchedEffect(transactionId) {
             try {
                 val token = UserSession.access_token ?: ""
-                val response = RetrofitInstance.apiService.getTransactions(skip = 0, limit = 100)
+                val response = RetrofitInstance.apiService.getTransactions(
+                    skip = 0,
+                    limit = 100,
+                    startDate = startDateTime,
+                    endDate = endDateTime
+                )
                 if (response.isSuccessful) {
                     val transactionResponses = response.body() ?: emptyList()
                     val transactions = transactionResponses.map { tr ->

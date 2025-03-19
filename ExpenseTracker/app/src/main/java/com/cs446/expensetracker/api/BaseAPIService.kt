@@ -72,7 +72,9 @@ interface BaseAPIService {
     @GET("/transactions/")
     suspend fun getTransactions(
         @Query("skip") skip: Int,
-        @Query("limit") limit: Int
+        @Query("limit") limit: Int,
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String,
     ): Response<List<TransactionResponse>>
 
     @PUT("/transactions/{transaction_id}")
