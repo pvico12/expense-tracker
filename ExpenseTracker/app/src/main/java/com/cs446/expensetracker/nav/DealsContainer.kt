@@ -52,7 +52,7 @@ import com.cs446.expensetracker.mockData.Deal
 import com.cs446.expensetracker.mockData.*
 import com.cs446.expensetracker.mockData.mockTransactions
 import com.cs446.expensetracker.session.UserSession
-import com.cs446.expensetracker.ui.AddDealScreen
+import com.cs446.expensetracker.deals.AddDealScreen
 import com.cs446.expensetracker.ui.ui.theme.*
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
