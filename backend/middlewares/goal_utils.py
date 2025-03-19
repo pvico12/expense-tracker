@@ -16,20 +16,20 @@ def recalc_goal_progress(db: Session, user_id: int, category_id: Optional[int] =
         goals = db.query(Goal).filter(Goal.user_id == user_id, Goal.category_id == category_id).all()
     
     for goal in goals:
-        total_spent = db.query(func.sum(Transaction.amount)).filter(
-            Transaction.user_id == user_id,
-            Transaction.date >= goal.start_date,
-            Transaction.date <= goal.end_date
-        ).scalar() or 0.0
-        
         if goal.goal_type == "amount":
+            total_spent = db.query(func.sum(Transaction.amount)).filter(
+                Transaction.user_id == user_id,
+                Transaction.date >= goal.start_date,
+                Transaction.date <= goal.end_date
+            ).scalar() or 0.0
             goal.on_track = total_spent <= goal.limit
+            goal.amount_spent = total_spent
+        ## modify this to use the new calculate_percentage_goal_progress function
         elif goal.goal_type == "percentage":
-            # You can implement a custom percentage logic here.
-            goal.on_track = True
-        
+            progress, on_track = calculate_percentage_goal_progress(db, user_id, goal)
+            goal.amount_spent = progress
+            goal.on_track = on_track
         db.add(goal)
-    
     db.commit()
 
 
@@ -107,3 +107,38 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
         notifications.append({"goal_id": goal.id, "message": message})
     return notifications
 
+
+def calculate_percentage_goal_progress(db: Session, user_id: int, goal: Goal) -> tuple[float, bool, float, float]:
+    """
+    Calculates the current period spending progress for a percentage goal.
+    For a percentage goal, the 'limit' field represents the percentage reduction target relative to the previous period.
+    The previous period is defined as the period of the same length immediately preceding the goal's start date.
+    """
+    ## I didn't store period in the goal object, so I'm recalcultating it
+    period = goal.end_date - goal.start_date
+    previous_period_start_date = goal.start_date - period
+    previous_period_end_date = goal.start_date
+
+    # previous_period_amount 
+    previous_period_amount = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.category_id == goal.category_id,
+        Transaction.date >= previous_period_start_date,
+        Transaction.date < previous_period_end_date
+    ).scalar() or 0.0
+
+    # current_amount
+    current_amount = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.category_id == goal.category_id,
+        Transaction.date >= goal.start_date,
+        Transaction.date <= goal.end_date
+    ).scalar() or 0.0
+
+    # Avoid division by zero
+    if previous_period_amount > 0:
+        # example: 500 - 300 / 500 * 100 = 40
+        progress_percentage = ((previous_period_amount - current_amount) / previous_period_amount) * 100
+    else:
+        progress_percentage = 0 if current_amount == 0 else 100
+
+    on_track = progress_percentage >= goal.limit
+    return progress_percentage, on_track, current_amount, previous_period_amount
