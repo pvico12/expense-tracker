@@ -65,11 +65,9 @@ def get_goals(
     for goal in goals:
         if goal.category_id:
             if goal.goal_type == "percentage":
-                progress, on_track, current_amount, previous_period_amount = calculate_percentage_goal_progress(db, current_user.id, goal)
+                progress, on_track = calculate_percentage_goal_progress(db, current_user.id, goal)
                 goal.amount_spent = progress
                 goal.on_track = on_track
-                print(f"current_amount: {current_amount}")
-                print(f"previous_period_amount: {previous_period_amount}")
             else:
                 amount_spent = db.query(func.sum(Transaction.amount)).filter(
                     Transaction.category_id == goal.category_id,
