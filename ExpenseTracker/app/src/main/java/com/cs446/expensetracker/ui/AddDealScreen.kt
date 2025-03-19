@@ -258,6 +258,10 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                             errorMessage = errorMessage ?: ""
                             errorMessage += "Please add a numerical price\n"
                         }
+                        if (amount != null && amount < 0.0) {
+                            errorMessage = errorMessage ?: ""
+                            errorMessage += "Please have price be above 0\n"
+                        }
                         if (selectedDate == "") {
                             errorMessage = errorMessage ?: ""
                             errorMessage += "Please add a date\n"

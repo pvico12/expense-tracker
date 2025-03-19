@@ -56,7 +56,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
     val scrollState = rememberScrollState()
 
     var limit by remember { mutableStateOf("") }
-    var period by remember { mutableStateOf("") }
+    var period by remember { mutableStateOf("Week") }
     var goal_type by remember { mutableStateOf("amount") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -194,11 +194,17 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
             ) {
                 DropdownMenuItem(
                     text = { Text("amount") },
-                    onClick = { goal_type="amount" }
+                    onClick = {
+                        goal_type="amount"
+                        expanded = !expanded
+                    }
                 )
                 DropdownMenuItem(
                     text = { Text("percentage") },
-                    onClick = { goal_type="percentage" }
+                    onClick = {
+                        goal_type="percentage"
+                        expanded = !expanded
+                    }
                 )
             }
         }
@@ -225,11 +231,17 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
             ) {
                 DropdownMenuItem(
                     text = { Text("Week") },
-                    onClick = { period="Week" }
+                    onClick = {
+                        period="Week"
+                        expanded = !expanded
+                    }
                 )
                 DropdownMenuItem(
                     text = { Text("Month") },
-                    onClick = { period="Month" }
+                    onClick = {
+                        period="Month"
+                        expanded = !expanded
+                    }
                 )
             }
         }
@@ -346,6 +358,10 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                         if (nullCheckLimit == null) {
                             errorMessage = errorMessage ?: ""
                             errorMessage += "Please add a numerical limit\n"
+                        }
+                        if(nullCheckLimit != null && nullCheckLimit < 0) {
+                            errorMessage = errorMessage ?: ""
+                            errorMessage += "Please add a limit greater than 0"
                         }
                         if(nullCheckLimit != null && (nullCheckLimit > 100 && goal_type == "percentage")) {
                             errorMessage = errorMessage ?: ""

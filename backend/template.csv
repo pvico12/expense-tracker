@@ -1,4 +1,6 @@
-amount,category,transaction_type,note,date
-100.50,Food & Drinks,EXPENSE,Groceries,2025-03-01
-200.00,Miscellaneous,INCOME,Salary,2025-03-02
-50.75,Miscellaneous,EXPENSE,Utilities,2025-03-03
+amount,category,transaction_type,note,date,vendor
+100.50,Food & Drinks,EXPENSE,Groceries,2025-03-01,Sobeys
+50.75,Miscellaneous,EXPENSE,Utilities,2025-03-03,Toronto Hydro
+200.00,Transportation,EXPENSE,Monthly TTC Pass,2025-03-03,TTC
+30.00,Food & Drinks,EXPENSE,Restaurants,2025-03-04,McDonalds
+20.00,Food & Drinks,EXPENSE,Restaurants,2025-03-04,Starbucks
