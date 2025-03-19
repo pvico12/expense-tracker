@@ -162,3 +162,15 @@ class Goal(Base):
 
     def __repr__(self):
         return f"<Goal {self.id} for User {self.user_id} on Category {self.category_id} from {self.start_date} to {self.end_date}>"
+
+def GoalSubscription(Base):
+    __tablename__ = 'goal__location_subscriptions'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+
+    user = relationship("User", backref=backref("goal_subscriptions", cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return f"<GoalSubscription {self.id} for User {self.user_id} on latitude {self.latitude} and longitude {self.longitude}>"

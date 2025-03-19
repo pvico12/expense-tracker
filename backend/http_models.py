@@ -296,3 +296,15 @@ class GoalResponse(BaseModel):
 class GoalsStatisticsResponse(BaseModel):
     goals: List[GoalResponse]
     stats: Dict[str, int]
+
+class GoalSubscription:
+    id: int
+    user_id: int
+    longitude: float
+    latitude: float
+class GoalSubscriptionResponse(BaseModel):
+    subs: List[GoalSubscription]
+
+class GoalSubscriptionLocation(BaseModel):
+    longitude: float
+    latitude: float
