@@ -1,6 +1,6 @@
 from notifications import push_notification_healthcheck, send_goal_notifications
 from fastapi import FastAPI
-from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction, goals
+from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction, goals, notifications
 from db import test_connection, init_db
 import uvicorn
 import logging
@@ -27,6 +27,7 @@ app.include_router(statistics.router)
 app.include_router(tools.router)
 app.include_router(deals.router)
 app.include_router(goals.router)
+app.include_router(notifications.router)
 
 @app.get("/")
 def home():
@@ -43,7 +44,7 @@ async def startup():
     init_db()
     
     # Start the healthcheck thread
-    asyncio.create_task(push_notification_healthcheck())
+    # asyncio.create_task(push_notification_healthcheck())
     
     # start goal notification thread
     asyncio.create_task(send_goal_notifications())
