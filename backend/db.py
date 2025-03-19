@@ -301,7 +301,7 @@ def create_sample_goals():
                 "limit": 20,
                 "category_name": "Food & Drinks",
                 "start_date": datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0),
-                "end_date": datetime.datetime.utcnow().replace(hour=23, minute=59, second=59, microsecond=999999) + datetime.timedelta(days=7)
+                "end_date": datetime.datetime.utcnow().replace(hour=23, minute=59, second=59, microsecond=999999) + datetime.timedelta(days=6)
             },
         ]
 

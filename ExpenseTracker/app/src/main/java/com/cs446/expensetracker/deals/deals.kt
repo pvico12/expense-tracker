@@ -98,8 +98,9 @@ class Deals {
         val atasehir = LatLng(43.452969, -80.495064)
         var currentAddress = rememberSaveable  { mutableStateOf("")}
         var currentLatLng = rememberSaveable  { mutableStateOf<LatLng?>(null)}
+        var defaultZoom = rememberSaveable  { mutableStateOf(0f)}
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom((currentLatLng.value ?: atasehir) as LatLng, 15f)
+            position = CameraPosition.fromLatLngZoom((currentLatLng.value ?: atasehir) as LatLng, defaultZoom.value)
         }
 
         var uiSettings = remember {
@@ -412,7 +413,7 @@ class Deals {
                     Row(modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 12.dp, end = 12.dp, top = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween) {
+                        horizontalArrangement = Arrangement.SpaceBetween) {
                         TextButton(
                             onClick = { onDeleteButtonClick(deal.id) },
                             shape = CircleShape,
@@ -630,6 +631,7 @@ class Deals {
                             currentAddress.value = it.address
                             currentLatLng.value = it.latLng
                             viewLocationPicker = false
+                            defaultZoom.value = 15f
                         }
                     }
                 }
@@ -645,7 +647,7 @@ class Deals {
             LaunchedEffect(currentLatLng.value) {
                 currentLatLng.value?.let { latLng ->
                     cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngZoom(latLng, 15f),
+                        CameraUpdateFactory.newLatLngZoom(latLng, 1f),
                         durationMs = 1000 // Optional animation duration
                     )
                 }
@@ -657,10 +659,12 @@ class Deals {
                 cameraPositionState = cameraPositionState,
                 uiSettings = uiSettings.value
             ) {
-                Marker(
-                    state = MarkerState(position = (currentLatLng.value ?: atasehir) as LatLng),
-                    title = "One Marker"
-                )
+                if (defaultZoom.value != 0f) {
+                    Marker(
+                        state = MarkerState(position = (currentLatLng.value ?: atasehir) as LatLng),
+                        title = "One Marker"
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
             // row below map
@@ -679,7 +683,7 @@ class Deals {
                             errorMessageForRegion = ""
                             dealsNavController.navigate("addDealScreen/${-1}")
                         }
-                              },
+                    },
                 ) {
                     Icon(
                         imageVector = Icons.Filled.AddToPhotos,
@@ -702,7 +706,7 @@ class Deals {
                                 viewingUserSubmittedDeals = "See All Deals in Area"
                             }
                         }
-                              },
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = mainTextColor)
                 ) {
                     Text(text = viewingUserSubmittedDeals, modifier = Modifier.padding(0.dp))

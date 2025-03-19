@@ -16,11 +16,14 @@ import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.SuggestionResponse
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
+import com.cs446.expensetracker.api.models.GoalCreationRequest
+import com.cs446.expensetracker.api.models.GoalRetrievalGoals
+import com.cs446.expensetracker.api.models.GoalRetrievalResponse
+import com.cs446.expensetracker.api.models.GoalUpdateRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.RecurringTransactionRequest
 import com.cs446.expensetracker.api.models.RecurringTransactionResponse
 import com.cs446.expensetracker.api.models.SpendingSummaryResponse
-import com.cs446.expensetracker.api.models.TempDealCreationRequest
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.UserProfileUpdateRequest
@@ -72,8 +75,19 @@ interface BaseAPIService {
     @GET("/transactions/")
     suspend fun getTransactions(
         @Query("skip") skip: Int,
-        @Query("limit") limit: Int
+        @Query("limit") limit: Int,
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String,
     ): Response<List<TransactionResponse>>
+
+    @PUT("/transactions/{transaction_id}")
+    suspend fun updateTransaction(
+        @Path("transaction_id") transactionId: Int,
+        @Body transaction: Transaction
+    ): Response<Void>
+
+    @DELETE("/transactions/{transaction_id}")
+    suspend fun deleteTransaction(@Path("transaction_id") transactionId: Int): Response<Void>
 
     @Multipart
     @POST("/transactions/csv")
@@ -121,7 +135,7 @@ interface BaseAPIService {
     suspend fun deleteDeal(@Path("deal_id") dealId: String): Response<String>
 
     @PUT("/deals/{deal_id}")
-    suspend fun updateDeal(@Path("deal_id") dealId: String, @Body TempDealCreationRequest: TempDealCreationRequest): Response<String>
+    suspend fun updateDeal(@Path("deal_id") dealId: String, @Body DealCreationRequest: DealCreationRequest): Response<String>
 
     @POST("/deals/")
     suspend fun addDeal(@Body DealCreationRequest: DealCreationRequest): Response<String>
@@ -141,5 +155,19 @@ interface BaseAPIService {
     // ====================== Tools ===========================
     @POST("tools/categories/suggestion")
     suspend fun getCategorySuggestion(@Body request: SuggestionRequest): Response<SuggestionResponse>
+
+    // ====================== Goals ===========================
+
+    @GET("/goals/")
+    suspend fun getGoals(): Response<GoalRetrievalResponse>
+
+    @POST("/goals/")
+    suspend fun addGoal(@Body GoalCreationRequest: GoalCreationRequest): Response<GoalRetrievalResponse>
+
+    @PUT("/goals/{goal_id}")
+    suspend fun updateGoal(@Path("goal_id") goalId: String, @Body GoalUpdateRequest: GoalUpdateRequest): Response<GoalRetrievalGoals>
+
+    @DELETE("/goals/{goal_id}")
+    suspend fun deleteGoal(@Path("goal_id") goalId: String): Response<String>
 
 }

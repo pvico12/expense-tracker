@@ -156,7 +156,7 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
     return notifications
 
 
-def calculate_percentage_goal_progress(db: Session, user_id: int, goal: Goal) -> tuple[float, bool, float, float]:
+def calculate_percentage_goal_progress(db: Session, user_id: int, goal: Goal) -> tuple[float, bool]:
     """
     Calculates the current period spending progress for a percentage goal.
     For a percentage goal, the 'limit' field represents the percentage reduction target relative to the previous period.
@@ -189,4 +189,4 @@ def calculate_percentage_goal_progress(db: Session, user_id: int, goal: Goal) ->
         progress_percentage = 0 if current_amount == 0 else 100
 
     on_track = progress_percentage >= goal.limit
-    return progress_percentage, on_track, current_amount, previous_period_amount
+    return progress_percentage, on_track
