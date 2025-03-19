@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,17 +42,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.cs446.expensetracker.api.RetrofitInstance
-import com.cs446.expensetracker.mockData.dashboard_mock_expense
 import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.CategoryBreakdown
-import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.SpendingSummaryResponse
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
@@ -68,13 +64,38 @@ import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.math.round
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import com.cs446.expensetracker.api.models.GoalRetrievalGoals
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.AddToPhotos
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.navigation.NavController
+import com.cs446.expensetracker.api.models.GoalRetrievalResponse
+import com.cs446.expensetracker.api.models.GoalRetrievalStats
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 
 class Dashboard {
 
@@ -90,7 +111,8 @@ class Dashboard {
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun DashboardScreen(
-        drawerState: DrawerState
+        drawerState: DrawerState,
+        dashboardNavController: NavController
     ) {
         val scrollState = rememberScrollState()
         val coroutineScope = rememberCoroutineScope()
@@ -100,6 +122,16 @@ class Dashboard {
         var isLoading by remember { mutableStateOf(true) }
         val currentDate = LocalDateTime.now()
         val monthName = currentDate.format(DateTimeFormatter.ofPattern("MMMM"))
+
+        var viewSpendingOrGoals by rememberSaveable { mutableStateOf("View Goals") }
+        var listOfGoals by remember { mutableStateOf<List<GoalRetrievalGoals>>(emptyList()) }
+
+        var deleteConfirmationDialogue by remember { mutableStateOf(false)}
+        var idToDelete by remember { mutableStateOf(-1)}
+
+        var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
+
+        var goalStats by remember { mutableStateOf<GoalRetrievalStats?>(null) }
 
         // Load transactions via API
         LaunchedEffect(Unit) {
@@ -147,6 +179,130 @@ class Dashboard {
         }
 
         Log.d("FCM Token", UserSession.fcmToken)
+
+        LaunchedEffect(Unit) {
+            coroutineScope.launch {
+                try {
+                    val response = RetrofitInstance.apiService.getCategories()
+                    if (response.isSuccessful) {
+                        categories = response.body() ?: emptyList()
+                    } else {
+                        errorMessage = "Failed to load categories."
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "Error: ${e.message}"
+                }
+            }
+        }
+
+        fun apiFetchGoals(startDate: String, endDate: String) {
+            // Load deals via API
+            Log.d("Response", "Api fetch was called, but request not necessarily sent")
+            CoroutineScope(Dispatchers.IO).launch {
+//                isLoading = true
+//                errorMessage = ""
+                try {
+                    val token = UserSession.access_token ?: ""
+                    val response: Response<GoalRetrievalResponse> =
+                        RetrofitInstance.apiService.getGoals()
+                    Log.d("Response", "Fetch Goals API Request actually called")
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+                        Log.d("Response", "Goals Response: $responseBody")
+                        goalStats = responseBody?.stats
+                        listOfGoals = responseBody?.goals?.map { x ->
+                            GoalRetrievalGoals(
+                                id = x.id,
+                                category_id = x.category_id,
+                                goal_type = x.goal_type,
+                                limit = x.limit,
+                                start_date = x.start_date,
+                                end_date = x.end_date,
+                                period = x.period,
+                                on_track = x.on_track,
+                                time_left = x.time_left,
+                                amount_spent = x.amount_spent,
+                            )
+                        } ?: emptyList()
+                    } else {
+                        errorMessage = "Failed to load data."
+                        Log.d("Error", "Deals API Response Was Unsuccessful: $response")
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "Error: ${e.message}"
+                    Log.d("Error", "Error Calling Deals API: $errorMessage")
+                } finally {
+//                    isLoading = false
+                }
+            }
+        }
+
+        fun onConfirm(id: Int, context: Context) {
+            deleteConfirmationDialogue = false
+            CoroutineScope(Dispatchers.IO).launch {
+                val firstDayOfMonth = currentDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE_TIME)
+                val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).format(DateTimeFormatter.ISO_DATE_TIME)
+                isLoading = true
+                try {
+                    val token = UserSession.access_token ?: ""
+                    val response: Response<String> =
+                        RetrofitInstance.apiService.deleteGoal(id.toString())
+                    Log.d("Response", "Fetch Goals API Request actually called")
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+                        Log.d("Response", "Goals Response: $responseBody")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Goal Deleted",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        Log.d("Error", "Goals API Response Was Unsuccessful: $response")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Failed to Delete Goal, Please Try Again",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                    apiFetchGoals(firstDayOfMonth, lastDayOfMonth)
+                } catch (e: Exception) {
+                    Log.d("Error", "Error Calling Deals API: $e")
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
+
+        if (deleteConfirmationDialogue) {
+            AlertDialog(
+                onDismissRequest = { deleteConfirmationDialogue = false },
+                title = { Text("Are you sure?") },
+                text = { Text("Do you really want to delete?") },
+                confirmButton = {
+                    val context = LocalContext.current
+                    TextButton(onClick = { onConfirm(idToDelete, context) }) {
+                        Text("Proceed")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteConfirmationDialogue = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        fun onEditButtonClick(id: Int) {
+            dashboardNavController.navigate("addGoalScreen/$id")
+        }
+        fun onDeleteButtonClick(id: Int) {
+            idToDelete = id
+            deleteConfirmationDialogue = true
+        }
 
         val dollars = totalSpending.toInt()
         val cents = ((totalSpending - dollars) * 100).toInt()
@@ -221,67 +377,241 @@ class Dashboard {
                             )
                         }
                         Piechart(spendingSummary)
-                        for (expense in spendingSummary) {
-                            Card(
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Button(
                                 modifier = Modifier
-                                    .padding(4.dp)
-                                    .fillMaxSize(),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                                colors = CardDefaults.cardColors(containerColor = tileColor)
+                                    .padding(0.dp),
+                                onClick = {
+                                    if(viewSpendingOrGoals == "View Goals") {
+                                        viewSpendingOrGoals = "View Spending"
+                                    } else {
+                                        viewSpendingOrGoals = "View Goals"
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = mainTextColor)
                             ) {
-                                Box(
+                                Text(text = viewSpendingOrGoals, modifier = Modifier.padding(0.dp))
+                            }
+
+                        }
+                        if(viewSpendingOrGoals == "View Goals") {
+                            for(expense in spendingSummary) {
+                                expenseCategoryCard(expense)
+                            }
+                        } else {
+                            val firstDayOfMonth = currentDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE_TIME)
+                            val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).format(DateTimeFormatter.ISO_DATE_TIME)
+                            Row(modifier = Modifier
+                                .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(
+                                    text = "Goals:",
+                                    color = mainTextColor,
+                                    style = Typography.titleLarge,
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .padding(start = 16.dp, top = 16.dp)
+                                )
+                                TextButton(
+                                    shape = CircleShape,
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .padding(end = 12.dp, top = 12.dp),
+                                    contentPadding = PaddingValues(0.dp),
+                                    onClick = {
+                                        dashboardNavController.navigate("addGoalScreen/${(-1)}")
+                                    },
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .padding(
-                                                start = 10.dp,
-                                                top = 10.dp,
-                                                bottom = 10.dp,
-                                                end = 10.dp
-                                            )
-                                            .clip(CircleShape)
-                                            .background(Color(android.graphics.Color.parseColor((expense.custom_color))))
-                                            .align(Alignment.CenterStart)
-                                    )
-                                    Text(
-                                        text = "${expense.category_name}: ",
-                                        color = mainTextColor,
-                                        style = Typography.labelSmall,
-                                        modifier = Modifier
-                                            .padding(
-                                                start = 40.dp,
-                                                top = 8.dp,
-                                                bottom = 8.dp,
-                                                end = 8.dp
-                                            )
-                                    )
-                                    Spacer(Modifier.fillMaxWidth(0.2f))
-                                    Text(
-                                        text = "${round(expense.percentage)}%",
-                                        color = PurpleGrey40,
-                                        style = Typography.labelSmall,
-                                        modifier = Modifier
-                                            .padding(8.dp)
-                                            .align(Alignment.Center)
-                                    )
-                                    Text(
-                                        text = "$${formatCurrency(expense.total_amount)}",
-                                        color = PurpleGrey40,
-                                        style = Typography.labelSmall,
-                                        modifier = Modifier
-                                            .padding(
-                                                start = 1.dp,
-                                                top = 8.dp,
-                                                bottom = 8.dp,
-                                                end = 20.dp
-                                            )
-                                            .align(Alignment.CenterEnd)
+                                    Icon(
+                                        imageVector = Icons.Filled.AddToPhotos,
+                                        contentDescription = "Add New Deal",
+                                        modifier = Modifier.size(40.dp),
+                                        tint = mainTextColor
                                     )
                                 }
+                            }
+                            Row(modifier = Modifier
+                                .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                Row(modifier = Modifier
+                                    .padding(start=12.dp, end=12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Check,
+                                        contentDescription = "Favorite",
+                                        modifier = Modifier.size(35.dp),
+                                        tint = Color(0xFF69A42D)
+                                    )
+                                    Text(
+                                        text = ": ${goalStats?.completed}",
+                                        color = secondTextColor,
+                                        style = Typography.titleMedium,
+                                        modifier = Modifier
+                                            .padding(start = 16.dp)
+                                    )
+                                }
+                                Row(modifier = Modifier
+                                    .padding(start=12.dp, end=15.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Circle,
+                                        contentDescription = "Favorite",
+                                        modifier = Modifier.size(35.dp),
+                                        tint = Color(0xFFCC8658)
+                                    )
+                                    Text(
+                                        text = ": ${goalStats?.in_progress}",
+                                        color = secondTextColor,
+                                        style = Typography.titleMedium,
+                                        modifier = Modifier
+                                            .padding(start = 16.dp)
+                                    )
+                                }
+                                Row(modifier = Modifier
+                                    .padding(start=12.dp, end=15.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Favorite",
+                                        modifier = Modifier.size(35.dp),
+                                        tint = Color(0xFFD5030A)
+                                    )
+                                    Text(
+                                        text = ": ${goalStats?.incompleted}",
+                                        color = secondTextColor,
+                                        style = Typography.titleMedium,
+                                        modifier = Modifier
+                                            .padding(start = 16.dp)
+                                    )
+                                }
+                            }
+                            LaunchedEffect(categories) {
+                                apiFetchGoals(firstDayOfMonth, lastDayOfMonth)
+                            }
+                            for((i, goal) in listOfGoals.withIndex()) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = tileColor,
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Row(modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 12.dp, end = 12.dp, top = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween) {
+                                        TextButton(
+                                            onClick = { onDeleteButtonClick(goal.id) },
+                                            shape = CircleShape,
+                                            modifier = Modifier.size(30.dp),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Delete,
+                                                contentDescription = "delete",
+                                                modifier = Modifier.size(20.dp),
+                                                tint = Color(0xFF9D9D9D)
+                                            )
+                                        }
+                                        TextButton(
+                                            onClick = { onEditButtonClick(goal.id) },
+                                            shape = CircleShape,
+                                            modifier = Modifier.size(30.dp),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Edit,
+                                                contentDescription = "edit",
+                                                modifier = Modifier.size(20.dp),
+                                                tint = Color(0xFF9D9D9D)
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                start = 16.dp,
+                                                end = 16.dp,
+                                                top = 4.dp,
+                                                bottom = 16.dp
+                                            ),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        var main_goal_text: String
+                                        var secondary_goal_text: String
+                                        var category_string = categories.find { it.id == goal.category_id }?.name ?: "Deleted Category"
+                                        var period_length = "week"
+                                        if (goal.period != 7) {
+                                            period_length = "month"
+                                        }
+                                        if(goal.goal_type == "amount") {
+                                            main_goal_text = "Spend less than $" + formatCurrency(goal.limit) + " on $category_string"
+                                            secondary_goal_text = "$${formatCurrency(goal.amount_spent)} amount spent this $period_length so far"
+                                        } else {
+                                            main_goal_text = "Spend " + formatCurrency(goal.limit) + "% less than last $period_length on $category_string"
+                                            secondary_goal_text = "${formatCurrency(goal.amount_spent)}% less spent than last $period_length so far"
+                                        }
+                                        Column {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(text = main_goal_text, fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall)
+                                            }
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column() {
+                                                    Text(text = "Time Left: ${goal.time_left} days", fontWeight = FontWeight.Bold, color= secondTextColor, modifier = Modifier.padding(end=14.dp), style = MaterialTheme.typography.titleLarge)
+                                                    Text(
+                                                        text = secondary_goal_text,
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = MaterialTheme.colorScheme.secondary,
+                                                        textAlign = TextAlign.Left,
+                                                        modifier = Modifier.padding(top=2.dp)
+                                                    )
+                                                    Text(
+                                                        text = "${goal.start_date.substringBefore("T")} to ${goal.end_date.substringBefore("T")}",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.secondary,
+                                                        textAlign = TextAlign.Right,
+                                                        modifier = Modifier.padding(top=3.dp)
+                                                    )
+                                                }
+                                                var icon: ImageVector
+                                                var color: Color
+                                                val formatter = DateTimeFormatter.ISO_DATE_TIME
+                                                val dateTime = LocalDateTime.parse(goal.end_date, formatter)
+                                                val currentDateTime = LocalDateTime.now()
 
+                                                if (goal.on_track && dateTime.isBefore(currentDateTime)) {
+                                                    icon = Icons.Filled.Check
+                                                    color = Color(0xFF69A42D)
+                                                } else if(goal.on_track == true) {
+                                                    icon = Icons.Filled.Circle
+                                                    color = Color(0xFFCC8658)
+                                                } else {
+                                                    icon = Icons.Filled.Close
+                                                    color = Color(0xFFD5030A)
+                                                }
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = "Favorite",
+                                                    modifier = Modifier.size(35.dp),
+                                                    tint = color
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         Spacer(Modifier.height(85.dp))

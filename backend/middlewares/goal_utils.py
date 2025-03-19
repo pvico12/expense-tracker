@@ -11,7 +11,7 @@ def recalc_goal_progress(db: Session, user_id: int, category_id: Optional[int] =
     if None, recalc overall (global) spending goals.
     """
     if category_id is None:
-        goals = db.query(Goal).filter(Goal.user_id == user_id, Goal.category_id.is_(None)).all()
+        goals = db.query(Goal).filter(Goal.user_id == user_id).all()
     else:
         goals = db.query(Goal).filter(Goal.user_id == user_id, Goal.category_id == category_id).all()
     
@@ -33,14 +33,22 @@ def recalc_goal_progress(db: Session, user_id: int, category_id: Optional[int] =
     db.commit()
 
 
-def calculate_goal_spending(db: Session, user_id: int, goal: Goal) -> float:
+def calculate_goal_spending(db: Session, user_id: int, goal: Goal, last_period: bool = False) -> float:
     """
     Calculate the total spending for a given goal period.
+    If last_period is True, calculate the spending for the period right before the target goal period.
     """
+    target_start_date = goal.start_date
+    target_end_date = goal.end_date
+    if last_period:
+        period = goal.end_date - goal.start_date
+        target_start_date -= period
+        target_end_date -= period
+    
     total_spent = db.query(func.sum(Transaction.amount)).filter(
         Transaction.user_id == user_id,
-        Transaction.date >= goal.start_date,
-        Transaction.date <= goal.end_date
+        Transaction.date >= target_start_date,
+        Transaction.date <= target_end_date
     ).scalar() or 0.0
     return total_spent
 
@@ -62,19 +70,39 @@ def get_mid_period_notifications(db: Session, user_id: int) -> List[Dict[str, An
         # Check if the goal's period is at least 80% complete
         if total_duration > 0 and (elapsed / total_duration) >= 0.8:
             total_spent = calculate_goal_spending(db, user_id, goal)
+            
+            category_name = db.query(Transaction.category_name).filter(Transaction.category_id == goal.category_id).first()[0]
+            if category_name is None:
+                continue
+            
             if goal.goal_type == "amount":
                 if total_spent <= goal.limit:
                     remaining_pct = ((goal.limit - total_spent) / goal.limit) * 100
                     message = (
-                        f"Goal {goal.id}: You are {remaining_pct:.1f}% away from breaking your spending limit."
+                        f"Budget Goal: You are on track to complete your spending goal for {category_name}. You are {remaining_pct:.1f}% away from breaking your spending limit (target ${goal.limit}%)."
                     )
                 else:
                     exceeded_pct = ((total_spent - goal.limit) / goal.limit) * 100
                     message = (
-                        f"Goal {goal.id}: You have exceeded your spending limit by {exceeded_pct:.1f}%."
+                        f"Budget Goal: You are NOT on track to complete your spending goal for {category_name}. You have exceeded your spending limit by {exceeded_pct:.1f}% (target ${goal.limit})."
                     )
             else:
-                message = f"Goal {goal.id}: Percentage goal notifications are not implemented yet."
+                last_period_spent = calculate_goal_spending(db, user_id, goal, last_period=True)
+                pct_less_spent = ((last_period_spent - total_spent) / last_period_spent) * 100
+                if pct_less_spent >= goal.limit:
+                    message = (
+                        f"Budget Goal: You are on track to complete your spending goal for {category_name}. You have spent {pct_less_spent:.1f}% below the previous period (target {goal.limit}%)."
+                    )
+                else:
+                    if pct_less_spent < 0:
+                        message = (
+                            f"Budget Goal: You are NOT on track to complete your spending goal for {category_name}. You have spent {abs(pct_less_spent):.1f}% above the previous period (target {goal.limit}%)."
+                        )
+                    else:
+                        message = (
+                            f"Budget Goal: You are NOT on track to complete your spending goal for {category_name}. You have spent {pct_less_spent:.1f}% below the previous period (target {goal.limit}%)."
+                        )
+                
             notifications.append({"goal_id": goal.id, "message": message})
     return notifications
 
@@ -91,24 +119,44 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
     
     for goal in ended_goals:
         total_spent = calculate_goal_spending(db, user_id, goal)
+        
+        category_name = db.query(Transaction.category_name).filter(Transaction.category_id == goal.category_id).first()[0]
+        if category_name is None:
+            continue
+        
         if goal.goal_type == "amount":
             if total_spent <= goal.limit:
                 margin_pct = ((goal.limit - total_spent) / goal.limit) * 100
                 message = (
-                    f"Goal {goal.id}: Completed successfully with a {margin_pct:.1f}% margin remaining."
+                    f"Budget Goal: Completed {category_name} goal successfully with a {margin_pct:.1f}% margin remaining (target ${goal.limit})."
                 )
             else:
                 excess_pct = ((total_spent - goal.limit) / goal.limit) * 100
                 message = (
-                    f"Goal {goal.id}: Failed, exceeded the goal by {excess_pct:.1f}%."
+                    f"Budget Goal: Failed {category_name} goal, exceeded the goal by {excess_pct:.1f}% (target ${goal.limit})."
                 )
         else:
-            message = f"Goal {goal.id}: Percentage goal notifications are not implemented yet."
+            last_period_spent = calculate_goal_spending(db, user_id, goal, last_period=True)
+            pct_less_spent = ((last_period_spent - total_spent) / last_period_spent) * 100
+            if pct_less_spent >= goal.limit:
+                message = (
+                    f"Budget Goal: Completed {category_name} goal successfully, spent {pct_less_spent:.1f}% less than the previous period (target {goal.limit}%)."
+                )
+            else:
+                if pct_less_spent < 0:
+                    message = (
+                        f"Budget Goal: Failed {category_name} goal, spent {abs(pct_less_spent):.1f}% more than the previous period (target {goal.limit}%)."
+                    )
+                else:
+                    message = (
+                        f"Budget Goal: Failed {category_name} goal, spent {pct_less_spent:.1f}% less than the previous period (target {goal.limit}%)."
+                    )
+            
         notifications.append({"goal_id": goal.id, "message": message})
     return notifications
 
 
-def calculate_percentage_goal_progress(db: Session, user_id: int, goal: Goal) -> tuple[float, bool, float, float]:
+def calculate_percentage_goal_progress(db: Session, user_id: int, goal: Goal) -> tuple[float, bool]:
     """
     Calculates the current period spending progress for a percentage goal.
     For a percentage goal, the 'limit' field represents the percentage reduction target relative to the previous period.

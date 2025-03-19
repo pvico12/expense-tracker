@@ -43,6 +43,7 @@ import com.cs446.expensetracker.ui.theme.ExpenseTrackerTheme
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import com.cs446.expensetracker.dashboard.AddGoalScreen
 import com.cs446.expensetracker.nav.DealsContainer
 import com.cs446.expensetracker.nav.TransactionNavContainer
 import com.cs446.expensetracker.nav.settings.AdminPageContainer
@@ -174,6 +175,10 @@ class MainActivity : ComponentActivity() {
                                 composable("settings/profile") {
                                     val profilePageContainer = ProfilePageContainer()
                                     profilePageContainer.ProfilePageScreen(onBackClick = { rootNavController.popBackStack() })
+                                }
+
+                                composable("addGoalScreen/{editVersion}") { backStackEntry ->
+                                    AddGoalScreen(navController = rootNavController, editVersion=backStackEntry.arguments?.getString("editVersion")?.toInt() ?: -1)
                                 }
                             }
                         }
