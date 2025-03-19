@@ -1,12 +1,19 @@
 package com.cs446.expensetracker.nav
 
 import android.app.DatePickerDialog
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cs446.expensetracker.api.RetrofitInstance
+import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.Transaction
 import com.cs446.expensetracker.session.UserSession
@@ -29,6 +37,11 @@ import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class TransactionNavContainer {
 
@@ -36,6 +49,7 @@ class TransactionNavContainer {
     fun TransactionNavHost() {
         val transactionNavController = rememberNavController()
         NavHost(transactionNavController, startDestination = "history") {
+
             composable("history") {
                 TransactionHistoryScreen(
                     onTransactionClick = { transactionId ->
@@ -43,44 +57,91 @@ class TransactionNavContainer {
                     }
                 )
             }
+
             composable("history/detail/{transactionId}") { backStackEntry ->
-                val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
+                val transactionIdStr = backStackEntry.arguments?.getString("transactionId") ?: ""
+                val transactionId = transactionIdStr.toIntOrNull() ?: 0  // Convert to Int, using 0 as a fallback
                 TransactionDetailScreen(
                     transactionId = transactionId,
                     onBackClick = { transactionNavController.popBackStack() },
-                    // Updated: Pass transactionId to the split route.
-                    onSplitClick = { transactionNavController.navigate("split/$transactionId") }
+                    onSplitClick = { transaction ->
+                        transactionNavController.currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("transactionToSplit", transaction)
+                        transactionNavController.navigate("split")
+                    }
                 )
             }
-            // New route for the bill splitting screen.
-            composable("split/{transactionId}") { backStackEntry ->
-                val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
-                // Retrieve the transaction by its ID.
-                // You must implement getTransactionById (or use a shared ViewModel) to fetch the Transaction.
-                val transaction = getTransactionById(transactionId)
+
+
+            composable("split") {
+                val transaction = transactionNavController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<Transaction>("transactionToSplit")
+
                 SplitTransactionScreen(transaction = transaction)
             }
         }
     }
 
+
     @Composable
-    fun TransactionHistoryScreen(onTransactionClick: (String) -> Unit) {
+    fun TransactionHistoryScreen(onTransactionClick: (Int) -> Unit) {
         var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
         var isLoading by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
 
-        // Search bar states
         var searchQuery by remember { mutableStateOf("") }
         var startDate by remember { mutableStateOf<Date?>(null) }
         var endDate by remember { mutableStateOf<Date?>(null) }
 
-        // Filter transactions based on search query and date range.
+        // dates
+        val calendar = Calendar.getInstance()
+        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        var selectedEndDate by remember {
+            mutableStateOf(
+//                SimpleDateFormat(
+//                    "yyyy-MM-dd",
+//                    Locale.getDefault()
+//                ).format(calendar.time)
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                ).format(calendar.apply {
+                    set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
+                    set(Calendar.HOUR_OF_DAY, 23)
+                    set(Calendar.MINUTE, 59)
+                    set(Calendar.SECOND, 59)
+                    set(Calendar.MILLISECOND, 0)
+                }.time)
+            )
+        }
+        val context = LocalContext.current
+        var selectedStartDate by remember {
+            mutableStateOf(
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                ).format(calendar.apply {
+                    set(Calendar.DAY_OF_MONTH, getActualMinimum(Calendar.DAY_OF_MONTH))
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.time)
+            )
+        }
+
+        val inputDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val startDateTime = isoFormat.format(inputDateFormat.parse(selectedStartDate)!!)
+        val endDateTime = isoFormat.format(inputDateFormat.parse(selectedEndDate)!!)
+
+
         val filteredTransactions = transactions.filter { transaction ->
             val matchesQuery = if (searchQuery.isNotBlank())
                 transaction.note.contains(searchQuery, ignoreCase = true)
             else true
 
-            // Parse the transaction date from ISO string.
             val transactionDate: Date? = parseIsoDate(transaction.date)
 
             val inDateRange = if (transactionDate != null) {
@@ -93,24 +154,28 @@ class TransactionNavContainer {
             matchesQuery && inDateRange
         }
 
-        // Load transactions via API
         LaunchedEffect(Unit) {
             isLoading = true
             errorMessage = null
             try {
                 val token = UserSession.access_token ?: ""
                 val response: Response<List<TransactionResponse>> =
-                    RetrofitInstance.apiService.getTransactions(skip = 0, limit = 100)
+                    RetrofitInstance.apiService.getTransactions(skip = 0,
+                        limit = 100,
+                        startDate = startDateTime,
+                        endDate = endDateTime)
                 if (response.isSuccessful) {
                     val transactionResponses = response.body() ?: emptyList()
                     Log.d("TransactionHistory", "TransactionResponse list: $transactionResponses")
                     transactions = transactionResponses.map { tr ->
                         Transaction(
+                            id = tr.id,
                             amount = tr.amount.toDouble(),
                             category_id = tr.categoryId,
                             transaction_type = tr.transactionType ?: "expense",
                             note = if (tr.note.toString().isEmpty()) "Transaction" else tr.note.toString(),
-                            date = tr.date ?: ""
+                            date = tr.date ?: "",
+                            vendor = if (tr.vendor == null) "N/A" else tr.vendor
                         )
                     }
                     Log.d("Transactions", "Transactions list: $transactions")
@@ -159,8 +224,7 @@ class TransactionNavContainer {
                     LazyColumn {
                         items(filteredTransactions) { transaction ->
                             TransactionListItem(transaction, onClick = {
-                                // Using the transaction date as an identifier.
-                                onTransactionClick(transaction.date)
+                                onTransactionClick(transaction.id ?: -1)
                             })
                         }
                     }
@@ -250,15 +314,15 @@ class TransactionNavContainer {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(text = transaction.note, fontWeight = FontWeight.Bold)
+                    Text(text = transaction.vendor ?: transaction.note, fontWeight = FontWeight.Bold)
                     Text(
-                        text = formatTransactionDate(transaction.date),
+                        text = formatDate(transaction.date),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary
                     )
                 }
                 Text(
-                    text = "$${transaction.amount}",
+                    text = "$${"%.2f".format(transaction.amount)}",
                     fontWeight = FontWeight.Bold,
                     color = if (transaction.transaction_type == "expense")
                         MaterialTheme.colorScheme.primary
@@ -269,43 +333,129 @@ class TransactionNavContainer {
         }
     }
 
+
     @Composable
     fun TransactionDetailScreen(
-        transactionId: String,
+        transactionId: Int,
         onBackClick: () -> Unit,
-        onSplitClick: () -> Unit // Parameter for handling the split bill navigation
+        onSplitClick: (Transaction) -> Unit // Parameter for handling the split bill navigation
     ) {
         var transaction: Transaction? by remember { mutableStateOf(null) }
         var isLoading by remember { mutableStateOf(true) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
 
+        // New state variables for edit mode.
+        var isEditMode by remember { mutableStateOf(false) }
+        var editedAmount by remember { mutableStateOf("") }
+        var editedVendor by remember { mutableStateOf("") }
+
+        // Create a coroutine scope for API calls.
+        val coroutineScope = rememberCoroutineScope()
+
+        // State for categories list and selected category.
+        var categoriesList by remember { mutableStateOf<List<Category>>(emptyList()) }
+        var selectedCategory: Category? by remember { mutableStateOf(null) }
+        var expanded by remember { mutableStateOf(false) }
+
+        // Date Picker State
+        val calendar = Calendar.getInstance()
+        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        var selectedDate by remember {
+            mutableStateOf(
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                ).format(calendar.time)
+            )
+        }
+        val context = LocalContext.current
+        // Date Picker Dialog
+        val datePickerDialog = DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                selectedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+
+        // dates
+        var selectedEndDate by remember {
+            mutableStateOf(
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                ).format(calendar.time)
+            )
+        }
+
+        var selectedStartDate by remember {
+            mutableStateOf(
+                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                    Calendar.getInstance().apply { add(Calendar.MONTH, -1) }.time
+                )
+            )
+        }
+
+        val inputDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val startDateTime = isoFormat.format(inputDateFormat.parse(selectedStartDate)!!)
+        val endDateTime = isoFormat.format(inputDateFormat.parse(selectedEndDate)!!)
+
         LaunchedEffect(transactionId) {
             try {
                 val token = UserSession.access_token ?: ""
-                val response: Response<List<TransactionResponse>> =
-                    RetrofitInstance.apiService.getTransactions(skip = 0, limit = 100)
+                val response = RetrofitInstance.apiService.getTransactions(
+                    skip = 0,
+                    limit = 100,
+                    startDate = startDateTime,
+                    endDate = endDateTime
+                )
                 if (response.isSuccessful) {
                     val transactionResponses = response.body() ?: emptyList()
                     val transactions = transactionResponses.map { tr ->
                         Transaction(
+                            id = tr.id,
                             amount = tr.amount.toDouble(),
                             category_id = tr.categoryId,
                             transaction_type = tr.transactionType ?: "expense",
                             note = if (tr.note.toString().isEmpty()) "Transaction" else tr.note.toString(),
-                            date = tr.date ?: ""
+                            date = tr.date ?: "",
+                            vendor = if (tr.vendor == null) "N/A" else tr.vendor
                         )
                     }
-                    transaction = transactions.find { it.date == transactionId }
+                    transaction = transactions.find { it.id == transactionId }
                     if (transaction == null) {
                         errorMessage = "Transaction not found."
+                    } else {
+                        Log.d("Transaction", "T: ${transaction}")
                     }
                 } else {
                     errorMessage = "Failed to load transaction details."
                 }
+                // Fetch categories and set the selected one based on transaction.category_id
+                val categoriesResponse = RetrofitInstance.apiService.getCategories()
+                if (categoriesResponse.isSuccessful) {
+                    val catList = categoriesResponse.body() ?: emptyList()
+                    categoriesList = catList
+                    transaction?.let { t ->
+                        selectedCategory = catList.find { it.id == t.category_id }
+                    }
+                } else {
+                    errorMessage = "Failed to load categories."
+                }
+
             } catch (e: Exception) {
                 errorMessage = "Error: ${e.message}"
             } finally {
                 isLoading = false
+            }
+        }
+
+        LaunchedEffect(transaction) {
+            transaction?.let {
+                editedAmount = it.amount.toString()
+                editedVendor = it.vendor ?: ""
             }
         }
 
@@ -315,11 +465,59 @@ class TransactionNavContainer {
                 .background(mainBackgroundColor)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Transaction Details",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Transaction Details",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = {
+                        isEditMode = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Edit Transaction"
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            val id = transaction?.id
+                            if (id == null) {
+                                Log.e("TransactionDetail", "Invalid transaction id: ${transactionId}")
+                                return@launch
+                            }
+                            try {
+                                val response = RetrofitInstance.apiService.deleteTransaction(id)
+                                if (response.isSuccessful) {
+                                    // Deletion successful, navigate back to history.
+                                    onBackClick()
+                                } else {
+                                    Log.e("TransactionDetail", "Deletion failed: ${response.errorBody()?.string()}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("TransactionDetail", "Exception during deletion: ${e.message}")
+                            }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete Transaction"
+                    )
+                }
+
+
+            }
+
+
             Spacer(modifier = Modifier.height(16.dp))
             when {
                 isLoading -> {
@@ -329,40 +527,124 @@ class TransactionNavContainer {
                     Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
                 }
                 else -> {
-                    transaction?.let {
-                        Text(text = "Amount: $${it.amount}", fontWeight = FontWeight.Bold)
-                        Text(text = "Category ID: ${it.category_id}", fontWeight = FontWeight.Bold)
-                        Text(text = "Type: ${it.transaction_type}", fontWeight = FontWeight.Bold)
-                        Text(text = "Note: ${it.note}", fontWeight = FontWeight.Bold)
-                        Text(text = "Date: ${it.date}", fontWeight = FontWeight.Bold)
+                    transaction?.let { tr ->
+                        if (isEditMode) {
+                            OutlinedTextField(
+                                value = editedAmount,
+                                onValueChange = { editedAmount = it },
+                                label = { Text("Amount") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = editedVendor,
+                                onValueChange = { editedVendor = it },
+                                label = { Text("Vendor") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            // Date Picker
+                            Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .clickable { datePickerDialog.show() }
+                                    .padding(10.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Text(text = selectedDate)
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(text = "Category", style = MaterialTheme.typography.bodyLarge)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { expanded = true }
+                                    .border(1.dp, Color.Gray, shape = RoundedCornerShape(4.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Text(text = selectedCategory?.name ?: "Select Category")
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                categoriesList.forEach { category ->
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            selectedCategory = category
+                                            expanded = false
+                                        },
+                                        text = { Text(text = category.name) }
+                                    )
+                                }
+                            }
+                        } else {
+                            Text(text = "Amount: $${"%.2f".format(tr.amount)}", fontWeight = FontWeight.Bold)
+                            Text(text = "Vendor: ${tr.vendor}", fontWeight = FontWeight.Bold)
+                            Text(text = "Category: ${selectedCategory?.name ?: "N/A"}", fontWeight = FontWeight.Bold)
+                            Text(text = "Date: ${formatDate(tr.date)}", fontWeight = FontWeight.Bold)
+                        }
                     } ?: Text(text = "Transaction not found.")
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            // Button to navigate to the bill splitting screen.
-            Button(
-                onClick = { onSplitClick() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF228B22))
-            ) {
-                Text("Split Bill")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = { onBackClick() }, modifier = Modifier.fillMaxWidth()) {
-                Text("Back to History")
-            }
-        }
-    }
 
-    // Helper to format date (assumes ISO format "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    private fun formatTransactionDate(isoDate: String): String {
-        return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val date = inputFormat.parse(isoDate)
-            outputFormat.format(date ?: Date())
-        } catch (e: Exception) {
-            ""
+            if (isEditMode) {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            // Convert transactionId to Int (assumes it's convertible)
+                            val id = transaction?.id
+                            if (id == null) {
+                                Log.e("TransactionDetail", "Invalid transaction id: ${transactionId}")
+                                return@launch
+                            }
+                            try {
+                                val updatedTransaction = Transaction(
+                                    id = id,
+                                    amount = editedAmount.toDoubleOrNull() ?: transaction?.amount ?: 0.0,
+                                    category_id = selectedCategory?.id ?: transaction?.category_id ?: 0,
+                                    transaction_type = transaction?.transaction_type ?: "expense",
+                                    vendor = editedVendor,
+                                    date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
+                                    note = transaction?.note ?: ""
+                                )
+                                val response = RetrofitInstance.apiService.updateTransaction(id, updatedTransaction)
+                                if (response.isSuccessful) {
+                                    isEditMode = false
+                                    transaction = updatedTransaction
+                                } else {
+                                    Log.e("TransactionDetail", "Update failed: ${response.errorBody()?.string()}, ${transaction}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("TransactionDetail", "Exception during update: ${e.message}")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Changes")
+                }
+            } else {
+                Button(
+                    onClick = {
+                        transaction?.let { onSplitClick(it) }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF228B22))
+                ) {
+                    Text("Split Bill")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { onBackClick() }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Back to History")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 
@@ -376,11 +658,36 @@ class TransactionNavContainer {
         }
     }
 
-    // Dummy helper to get a Transaction by its ID.
-    // Replace this with your own implementation or repository lookup.
-    private fun getTransactionById(transactionId: String): Transaction? {
-        // For now, simply return null so that the SplitTransactionScreen
-        // shows an empty amount text field for user input.
-        return null
+    fun formatDate(dateString: String): String {
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val date = inputFormat.parse(dateString)
+            if (date != null) {
+                outputFormat.format(date)
+            } else {
+                dateString
+            }
+        } catch (e: Exception) {
+            dateString
+        }
+    }
+
+    private fun formatDateTime(dateString: String): String {
+        return try {
+            // Define the input and output date formats
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+            // Parse the input string and format it into the desired output string
+            val date = inputFormat.parse(dateString)
+            if (date != null) {
+                outputFormat.format(date)
+            } else {
+                dateString
+            }
+        } catch (e: Exception) {
+            // Fallback to the original string in case of error
+            dateString
+        }
     }
 }
