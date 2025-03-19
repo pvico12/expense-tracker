@@ -141,4 +141,4 @@ def calculate_percentage_goal_progress(db: Session, user_id: int, goal: Goal) ->
         progress_percentage = 0 if current_amount == 0 else 100
 
     on_track = progress_percentage >= goal.limit
-    return progress_percentage, on_track, current_amount, previous_period_amount
+    return progress_percentage, on_track

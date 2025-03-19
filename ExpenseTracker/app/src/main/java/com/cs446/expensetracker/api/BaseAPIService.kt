@@ -72,8 +72,19 @@ interface BaseAPIService {
     @GET("/transactions/")
     suspend fun getTransactions(
         @Query("skip") skip: Int,
-        @Query("limit") limit: Int
+        @Query("limit") limit: Int,
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String,
     ): Response<List<TransactionResponse>>
+
+    @PUT("/transactions/{transaction_id}")
+    suspend fun updateTransaction(
+        @Path("transaction_id") transactionId: Int,
+        @Body transaction: Transaction
+    ): Response<Void>
+
+    @DELETE("/transactions/{transaction_id}")
+    suspend fun deleteTransaction(@Path("transaction_id") transactionId: Int): Response<Void>
 
     @Multipart
     @POST("/transactions/csv")
