@@ -514,6 +514,8 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
+        Spacer(modifier = Modifier.height(10.dp))
+
         // Upload CSV Button
         Button(
             onClick = { filePickerLauncher.launch("text/*") },
