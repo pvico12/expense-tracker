@@ -241,6 +241,7 @@ class GoalCreateRequest(BaseModel):
         return values
 
 class GoalUpdateRequest(BaseModel):
+    category_id: Optional[int] = None
     limit: Optional[float] = None
     start_date: Optional[datetime.datetime] = None
     end_date: Optional[datetime.datetime] = None
@@ -270,6 +271,7 @@ class GoalResponse(BaseModel):
     period: int = 0
     on_track: bool
     time_left: int = 0
+    amount_spent: Optional[float] = None
 
     class Config:
         orm_mode = True
