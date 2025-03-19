@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 
 from http_models import SummaryResponse, CategoryStats, SummaryCategoryResponse, TransactionResponse
-from datetime import datetime
+from datetime import datetime, timedelta
 from db import get_db, get_transactions as db_get_transactions, get_all_categories_for_user
 from models import Transaction, TransactionType, User
 from fastapi.security import HTTPAuthorizationCredentials
@@ -29,9 +29,11 @@ def fetch_transactions(
     end_date: Optional[datetime]
 ) -> List[Transaction]:
     if end_date is None:
-        end_date = datetime.utcnow()
+        # last day of the month
+        end_date = datetime.utcnow().replace(day=1, hour=23, minute=59, second=59, microsecond=999999).replace(month=datetime.utcnow().month + 1) - timedelta(days=1)
     if start_date is None:
-        start_date = end_date.replace(day=1)
+        # first day of the month
+        start_date = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     transactions = db.query(Transaction).filter(
         Transaction.user_id == user.id,
