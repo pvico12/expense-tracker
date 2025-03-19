@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from middlewares.goal_utils import get_mid_period_notifications, get_post_period_notifications
+from middlewares.goal_utils import get_mid_period_notifications, get_post_period_notifications, recalc_goal_progress
 from models import FcmToken, Goal
 import json
 import requests
@@ -96,6 +96,12 @@ async def send_goal_notifications():
     
     while True:
         fcm_tokens = []
+        
+        # recaculate goal progress
+        users = db_session.query(Goal).distinct(Goal.user_id).all()
+        user_ids = [user.user_id for user in users]
+        for user_id in user_ids:
+            recalc_goal_progress(db_session, user_id)
         
         # get goal notifications
         mid_period_notifications = get_mid_period_notifications(db_session, 1)

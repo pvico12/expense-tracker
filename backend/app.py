@@ -1,4 +1,4 @@
-from notifications import push_notification_healthcheck
+from notifications import push_notification_healthcheck, send_goal_notifications
 from fastapi import FastAPI
 from routes import auth, user, transaction, statistics, tools, category, deals, recurring_transaction, goals
 from db import test_connection, init_db
