@@ -86,6 +86,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavController
@@ -585,11 +586,27 @@ class Dashboard {
                                                         modifier = Modifier.padding(top=3.dp)
                                                     )
                                                 }
+                                                var icon: ImageVector
+                                                var color: Color
+                                                val formatter = DateTimeFormatter.ISO_DATE_TIME
+                                                val dateTime = LocalDateTime.parse(goal.end_date, formatter)
+                                                val currentDateTime = LocalDateTime.now()
+
+                                                if (goal.on_track && dateTime.isBefore(currentDateTime)) {
+                                                    icon = Icons.Filled.Check
+                                                    color = Color(0xFF69A42D)
+                                                } else if(goal.on_track == true) {
+                                                    icon = Icons.Filled.Circle
+                                                    color = Color(0xFFCC8658)
+                                                } else {
+                                                    icon = Icons.Filled.Close
+                                                    color = Color(0xFFD5030A)
+                                                }
                                                 Icon(
-                                                    imageVector = if(goal.on_track) Icons.Filled.Circle else Icons.Filled.Close,
+                                                    imageVector = icon,
                                                     contentDescription = "Favorite",
                                                     modifier = Modifier.size(35.dp),
-                                                    tint = if(goal.on_track) Color(0xFFCC8658) else Color(0xFFD5030A)
+                                                    tint = color
                                                 )
                                             }
                                         }
