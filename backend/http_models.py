@@ -300,12 +300,22 @@ class GoalsStatisticsResponse(BaseModel):
 class HttpDealLocationSubscription(BaseModel):
     id: int
     user_id: int
+    address: str
     longitude: float
     latitude: float
+    
+    class Config:
+        orm_mode = True
     
 class DealSubscriptionResponse(BaseModel):
     subs: List[HttpDealLocationSubscription]
 
 class DealSubscriptionLocation(BaseModel):
+    address: str
     longitude: float
     latitude: float
+    
+class DealSubscriptionLocationUpdateRequest(BaseModel):
+    address: Optional[str] = None
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None

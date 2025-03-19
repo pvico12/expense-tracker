@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from http_models import GoalCreateRequest, GoalSubscription, GoalSubscriptionCreationRequest, GoalSubscriptionLocation, GoalSubscriptionResponse, GoalUpdateRequest, GoalResponse, GoalsStatisticsResponse
+from http_models import GoalCreateRequest, GoalUpdateRequest, GoalResponse, GoalsStatisticsResponse
 from models import Goal, Category, User, Transaction
 from dependencies.auth import get_current_user
 from db import get_db

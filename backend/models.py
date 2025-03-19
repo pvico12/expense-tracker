@@ -167,6 +167,7 @@ class DealLocationSubscription(Base):
     __tablename__ = 'deal_location_subscriptions'
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    address = Column(String(512), nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
 

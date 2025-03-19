@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from http_models import TransactionResponse
 import utils
-from models import Deal, DealVote, Goal, User, Category, Transaction, TransactionType, Base
+from models import Deal, DealLocationSubscription, DealVote, Goal, User, Category, Transaction, TransactionType, Base
 from typing import List, Optional
 import datetime
 from sqlalchemy.exc import SQLAlchemyError
@@ -55,6 +55,10 @@ def fill_tables():
     print("DB SETUP: Populating sample goals")
     create_sample_goals()
     print("DB SETUP: Sample goals created successfully.")
+    
+    print("DB SETUP: Populating sample deal subscriptions")
+    create_sample_deal_subscriptions()
+    print("DB SETUP: Sample deal subscriptions created successfully.")
 
 def create_initial_users():
     """Create initial admin and team users."""
@@ -209,6 +213,7 @@ def create_sample_deals():
         user_ids = [user.id for user in users]
 
         sample_deals = [
+            # Waterloo Deals
             {
                 "name": "Discounted Coffee",
                 "description": "50% off on all coffee varieties",
@@ -254,6 +259,26 @@ def create_sample_deals():
                 "latitude": 43.47531462727487,
                 "vendor": "Toma's Pizza"
             },
+            
+            # Vancouver Deals
+            {
+                "name": "Free Donut With Coffee",
+                "description": "Free Donuts with the purchase of 1 medium coffee",
+                "price": 2.00,
+                "address": "2225 W 41st Ave, Vancouver, BC V6M 2A3",
+                "longitude": -123.15772777161725,
+                "latitude": 49.23740319158456,
+                "vendor": "Tim Hortons"
+            },
+            {
+                "name": "Discounted Movie Tickets",
+                "description": "50% off on all movie tickets",
+                "price": 10.00,
+                "address": "452 SW Marine Dr, Vancouver, BC V5X 0C3",
+                "longitude": -123.11591147675632,
+                "latitude": 49.21276936478535,
+                "vendor": "Cineplex"
+            }
         ]
 
         # create deals
@@ -278,6 +303,35 @@ def create_sample_deals():
     except Exception as e:
         db_session.rollback()
         print(f"Error creating sample deals: {e}")
+
+def create_sample_deal_subscriptions():
+    """Create sample deal subscriptions for each user."""
+    try:
+        users = db_session.query(User).all()
+        if not users:
+            raise ValueError("No users found in the database.")
+
+        waterloo_coordinates = {"address": "Waterloo, ON", "latitude": 43.46422335402901, "longitude": -80.5209870181904}
+        vancouver_coordinates = {"address": "Vancouver, BC", "latitude": 49.2816214189974, "longitude": -123.11757524562407} 
+
+        for user in users:
+            db_session.add(DealLocationSubscription(
+                user_id=user.id,
+                address=waterloo_coordinates["address"],
+                latitude=waterloo_coordinates["latitude"],
+                longitude=waterloo_coordinates["longitude"]
+            ))
+            db_session.add(DealLocationSubscription(
+                user_id=user.id,
+                address=vancouver_coordinates["address"],
+                latitude=vancouver_coordinates["latitude"],
+                longitude=vancouver_coordinates["longitude"]
+            ))
+            
+        db_session.commit()
+    except Exception as e:
+        db_session.rollback()
+        print(f"Error creating sample deal subscriptions: {e}")
 
 def create_sample_goals():
     """Create a few sample goals for each user."""

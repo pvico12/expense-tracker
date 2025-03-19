@@ -8,7 +8,7 @@ from dependencies.auth import get_current_user
 from db import add_deal, get_db, get_single_deal
 from db import get_deals as db_get_deals
 from typing import List
-from http_models import DealCreationRequest, DealRetrievalRequest, DealSubscriptionLocation, DealUpdateRequest, DealVoteResponse, HttpDeal, HttpDealLocationSubscription, LocationFilter
+from http_models import DealCreationRequest, DealRetrievalRequest, DealSubscriptionLocation, DealSubscriptionLocationUpdateRequest, DealUpdateRequest, DealVoteResponse, HttpDeal, HttpDealLocationSubscription, LocationFilter
 
 router = APIRouter(
     prefix="/deals",
@@ -306,7 +306,7 @@ def get_single_deal_subscription(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.get("/subscriptions", response_model=List[HttpDealLocationSubscription], status_code=status.HTTP_200_OK)
+@router.get("/subscriptions/all", response_model=List[HttpDealLocationSubscription], status_code=status.HTTP_200_OK)
 def get_deal_subscriptions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -333,7 +333,7 @@ def create_deal_subscription(
     """
     try:
         # create subscription
-        new_subscription = DealLocationSubscription(user_id=current_user.id, longitude=data.longitude, latitude=data.latitude)
+        new_subscription = DealLocationSubscription(user_id=current_user.id, address=data.address,longitude=data.longitude, latitude=data.latitude)
         db.add(new_subscription)
         db.commit()
         db.refresh(new_subscription)
@@ -345,7 +345,7 @@ def create_deal_subscription(
 @router.put("/subscription/{deal_sub_id}", response_model=HttpDealLocationSubscription, status_code=status.HTTP_200_OK)
 def update_deal_subscription(
     deal_sub_id: int,
-    data: DealSubscriptionLocation,
+    data: DealSubscriptionLocationUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -360,7 +360,7 @@ def update_deal_subscription(
             raise Exception("Subscription not found.")
         
         # update the subscription
-        for key, value in data.dict().items():
+        for key, value in data.dict(exclude_unset=True).items():
             setattr(subscription, key, value)
         db.commit()
         db.refresh(subscription)
