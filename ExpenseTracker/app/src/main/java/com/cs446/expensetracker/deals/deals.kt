@@ -8,6 +8,7 @@ import android.icu.text.DecimalFormat
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -86,10 +87,14 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.pointer.pointerInteropFilter
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import kotlinx.coroutines.withContext
 
 class Deals {
 
+    @OptIn(ExperimentalComposeUiApi::class)
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @Composable
     fun DealsHost(dealsNavController: NavController) {
@@ -589,11 +594,18 @@ class Deals {
         }
         LaunchedEffect(currentLatLng.value) { apiFetchDeals(currentLatLng.value) }
 
+        var columnScrollingEnabled by remember { mutableStateOf(true) }
+        LaunchedEffect(cameraPositionState.isMoving) {
+            if (!cameraPositionState.isMoving) {
+                columnScrollingEnabled = true
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(mainBackgroundColor)
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState, columnScrollingEnabled),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -655,15 +667,36 @@ class Deals {
             GoogleMap(
                 modifier = Modifier
                     .height(180.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .pointerInteropFilter(
+                        onTouchEvent = {
+                            when (it.action) {
+                                MotionEvent.ACTION_DOWN -> {
+                                    columnScrollingEnabled = false
+                                    false
+                                }
+                                else -> {
+                                    true
+                                }
+                            }
+                        }
+                    ),
                 cameraPositionState = cameraPositionState,
                 uiSettings = uiSettings.value
             ) {
                 if (defaultZoom.value != 0f) {
                     Marker(
                         state = MarkerState(position = (currentLatLng.value ?: atasehir) as LatLng),
-                        title = "One Marker"
+                        title = "Current Location"
                     )
+                    listOfDeals.forEach { deal ->
+                        Marker(
+                            state = MarkerState(position = LatLng(deal.latitude.toDouble(), deal.longitude.toDouble())),
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE),
+                            title = deal.name,
+                            snippet = deal.description
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
