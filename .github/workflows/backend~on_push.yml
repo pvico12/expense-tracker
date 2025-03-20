@@ -1,0 +1,39 @@
+name: General Backend CI/CD On Push
+on:
+  push:
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+        
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Create .env file
+      run: |
+        cd backend
+        echo "DATABASE_URI=postgresql://testuser:testpassword@localhost:5433/testdb" > .env
+        echo "JWT_ACCESS_TOKEN_SECRET=does-not-matter-for-ci-1" >> .env
+        echo "JWT_REFRESH_TOKEN_SECRET=does-not-matter-for-ci-2" >> .env
+        echo "OPENAI_API_KEY=does-not-matter-for-ci-3" >> .env
+        echo "GOOGLE_APPLICATION_CREDENTIALS=does-not-matter-for-ci-4" >> .env
+
+    - name: Start Postgres Docker Container
+      run: |
+        cd backend
+        docker compose -f docker-compose.test.yml up -d
+
+    - name: Run Tests
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pytest
+    
+    - name: Stop Postgres Docker Container
+      run: |
+        cd backend
+        docker compose -f docker-compose.test.yml down
+    
