@@ -29,6 +29,7 @@ jobs:
     - name: Run Tests
       run: |
         cd backend
+        pip install -r requirements.txt
         pytest
     
     - name: Stop Postgres Docker Container
