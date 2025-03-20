@@ -123,8 +123,8 @@ class ReceiptParseResponse(BaseModel):
 class HttpDeal(BaseModel):
     id: Optional[int]
     name: str
-    description: str
-    vendor: Optional[str]
+    description: Optional[str]
+    vendor: str
     price: float
     date: datetime.datetime
     address: str

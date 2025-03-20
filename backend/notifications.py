@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import time
+from utils import get_coordinate_distance
 from middlewares.goal_utils import get_mid_period_notifications, get_post_period_notifications, recalc_goal_progress
-from models import FcmToken, Goal
+from models import Deal, DealLocationSubscription, FcmToken, Goal
 import json
 import requests
 from google.oauth2 import service_account
@@ -126,3 +127,33 @@ async def send_goal_notifications():
             fcm.send_multiple_notifications(fcm_tokens, "Expense Tracker Goal!", goal_notifaction["message"])
         
         await asyncio.sleep(120)  # sleep for 2 minutes
+
+def send_new_deal_notification(new_deal: Deal):
+    fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
+    
+    # get all deal subscriptions
+    deal_subscriptions = db_session.query(DealLocationSubscription).all()
+    user_ids_notify = set()
+    
+    # for every subscription, check if the deal is within 100km of the subscription location
+    for deal_subscription in deal_subscriptions:
+        if deal_subscription.user_id == new_deal.user_id:
+            continue
+        distance = get_coordinate_distance(
+            new_deal.latitude, new_deal.longitude,
+            deal_subscription.latitude, deal_subscription.longitude
+        )
+        
+        if distance <= 100:
+            user_ids_notify.add(deal_subscription.user_id)
+    
+    # get FCM tokens with these user_ids
+    fcm_tokens = []
+    for user_id in user_ids_notify:
+        tokens = db_session.query(FcmToken).filter(FcmToken.user_id == user_id).all()
+        fcm_tokens.extend([token.token for token in tokens])
+    
+    print(fcm_tokens)
+    
+    # send notifications
+    fcm.send_multiple_notifications(fcm_tokens, "New Deal Alert!", f"A new deal at {new_deal.vendor} has been posted near you!")
