@@ -24,7 +24,7 @@ jobs:
     - name: Start Postgres Docker Container
       run: |
         cd backend
-        docker-compose -f docker-compose.test.yml up -d
+        docker compose -f docker-compose.test.yml up -d
 
     - name: Run Tests
       run: |
@@ -34,5 +34,5 @@ jobs:
     - name: Stop Postgres Docker Container
       run: |
         cd backend
-        docker-compose -f docker-compose.test.yml down
+        docker compose -f docker-compose.test.yml down
     
