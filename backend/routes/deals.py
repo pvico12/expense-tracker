@@ -1,4 +1,5 @@
 from typing import Optional
+from notifications import send_new_deal_notification
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 
@@ -114,7 +115,8 @@ def create_deal(
     """
     try:
         # create deal
-        add_deal(current_user.id, deal.name, deal.description, deal.price, deal.address, deal.longitude, deal.latitude, deal.date, deal.vendor)
+        new_deal = add_deal(current_user.id, deal.name, deal.description, deal.price, deal.address, deal.longitude, deal.latitude, deal.date, deal.vendor)
+        send_new_deal_notification(new_deal)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
