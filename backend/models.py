@@ -164,6 +164,8 @@ class Goal(Base):
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
     on_track = Column(Boolean, default=True)
+    mid_notified = Column(Boolean, default=False)
+    post_notified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", backref=backref("goals", cascade="all, delete-orphan"))

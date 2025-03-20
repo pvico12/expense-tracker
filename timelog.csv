@@ -49,4 +49,6 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-19,0.5,0.5,0.5,0.5,0.5,0.5, Discuss Final Iteration Plans
 2025-03-20,2,0,0,0,0,0, Goal Subscriptions Notifications
 2025-03-20,2,0,0,0,0,0, Gamification Leveling/XP Logic + Add XP on Goal Success
+2025-03-20,1,0,0,0,0,0, Goal Notification Bug - Store orginal send in DB to avoid multiple retries
+
 

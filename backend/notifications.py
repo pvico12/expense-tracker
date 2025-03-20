@@ -109,8 +109,8 @@ async def send_goal_notifications():
             recalc_goal_progress(db_session, user_id)
         
         # get goal notifications
-        mid_period_notifications = get_mid_period_notifications(db_session, 1)
-        post_period_notifications = get_post_period_notifications(db_session, 1)
+        mid_period_notifications = get_mid_period_notifications(db_session)
+        post_period_notifications = get_post_period_notifications(db_session)
         all_notifications = mid_period_notifications + post_period_notifications
         for goal_notifaction in all_notifications:
             logger.info(f"Sending goal notification for goal {goal_notifaction['goal_id']}")
