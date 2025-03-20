@@ -533,34 +533,4 @@ def get_user_level_info(user_id: int) -> dict:
         total_xp_for_next_level=xp_for_next_level
     )
 
-
-def add_xp_to_user(user_id: int, xp: int) -> User:
-    """Add XP to the user's profile."""
-    user = db_session.query(User).filter_by(id=user_id).first()
-    if not user:
-        return
-    
-    user.xp += xp
-    old_level = user.level
-    
-    # calcuate new level
-    new_level = 1
-    score = xp
-    xp_for_next_level = 5
-    
-    while score >= xp_for_next_level:
-        score -= xp_for_next_level
-        new_level += 1
-        xp_for_next_level *= 2
-    
-    user.level = new_level
-    
-    db_session.commit()
-    db_session.refresh(user)
-    
-    if new_level > old_level:
-        print("Notify user!")
-    
-    return user
-
 # endregion

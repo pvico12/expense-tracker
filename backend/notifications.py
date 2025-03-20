@@ -3,7 +3,7 @@ import logging
 import time
 from utils import get_coordinate_distance
 from middlewares.goal_utils import get_mid_period_notifications, get_post_period_notifications, recalc_goal_progress
-from models import Deal, DealLocationSubscription, FcmToken, Goal
+from models import Deal, DealLocationSubscription, FcmToken, Goal, User
 import json
 import requests
 from google.oauth2 import service_account
@@ -125,6 +125,10 @@ async def send_goal_notifications():
             
             # send notifications
             fcm.send_multiple_notifications(fcm_tokens, "Expense Tracker Goal!", goal_notifaction["message"])
+            
+            if goal_notifaction.get("completed", False):
+                add_xp_to_user(user_id, 5)
+                
         
         await asyncio.sleep(120)  # sleep for 2 minutes
 
@@ -157,3 +161,44 @@ def send_new_deal_notification(new_deal: Deal):
     
     # send notifications
     fcm.send_multiple_notifications(fcm_tokens, "New Deal Alert!", f"A new deal at {new_deal.vendor} has been posted near you!")
+    
+def send_level_up_notification(user_id: int, level: int):
+    fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
+    
+    # get FCM tokens with this user_id
+    tokens = db_session.query(FcmToken).filter(FcmToken.user_id == user_id).all()
+    fcm_tokens = [token.token for token in tokens]
+    
+    logger.info(f"Sending level up notification to user {user_id}")
+    
+    # send notifications
+    fcm.send_multiple_notifications(fcm_tokens, "Level Up!", f"Congratulations! You have reached level {level}!")
+
+def add_xp_to_user(user_id: int, xp: int) -> User:
+    """Add XP to the user's profile."""
+    user = db_session.query(User).filter_by(id=user_id).first()
+    if not user:
+        return
+    
+    user.xp += xp
+    old_level = user.level
+    
+    # calcuate new level
+    new_level = 1
+    score = xp
+    xp_for_next_level = 5
+    
+    while score >= xp_for_next_level:
+        score -= xp_for_next_level
+        new_level += 1
+        xp_for_next_level *= 2
+    
+    user.level = new_level
+    
+    db_session.commit()
+    db_session.refresh(user)
+    
+    if new_level > old_level:
+        send_level_up_notification(user_id, new_level)
+    
+    return user
