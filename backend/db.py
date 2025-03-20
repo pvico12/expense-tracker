@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from http_models import TransactionResponse
 import utils
-from models import Deal, DealLocationSubscription, DealVote, Goal, User, Category, Transaction, TransactionType, Base
+from models import Deal, DealLocationSubscription, DealVote, Goal, User, Category, Transaction, TransactionType, Base, UserLevelInfo
 from typing import List, Optional
 import datetime
 from sqlalchemy.exc import SQLAlchemyError
@@ -507,5 +507,60 @@ def get_single_deal(deal_id: int) -> Optional[Deal]:
     except SQLAlchemyError as e:
         print(f"Error fetching deal: {e}")
         return None
+    
+def get_user_level_info(user_id: int) -> dict:
+    """Get the user's level and XP information."""
+    user = db_session.query(User).filter_by(id=user_id).first()
+    if not user:
+        return
+    
+    score = user.xp
+    level = 1
+    xp_for_next_level = 5
+
+    while score >= xp_for_next_level:
+        score -= xp_for_next_level
+        level += 1
+        xp_for_next_level *= 2
+
+    current_xp = score
+    remaining_xp_for_next_level = xp_for_next_level - score
+
+    return UserLevelInfo(
+        level=level,
+        current_xp=current_xp,
+        remaining_xp_until_next_level=remaining_xp_for_next_level,
+        total_xp_for_next_level=xp_for_next_level
+    )
+
+
+def add_xp_to_user(user_id: int, xp: int) -> User:
+    """Add XP to the user's profile."""
+    user = db_session.query(User).filter_by(id=user_id).first()
+    if not user:
+        return
+    
+    user.xp += xp
+    old_level = user.level
+    
+    # calcuate new level
+    new_level = 1
+    score = xp
+    xp_for_next_level = 5
+    
+    while score >= xp_for_next_level:
+        score -= xp_for_next_level
+        new_level += 1
+        xp_for_next_level *= 2
+    
+    user.level = new_level
+    
+    db_session.commit()
+    db_session.refresh(user)
+    
+    if new_level > old_level:
+        print("Notify user!")
+    
+    return user
 
 # endregion

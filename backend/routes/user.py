@@ -3,7 +3,7 @@ from dependencies.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from db import get_db
+from db import get_db, get_user_level_info
 from models import User
 from middlewares.user_auth import verify_user
 
@@ -41,5 +41,10 @@ def update_profile(
         return {"message": "Profile updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-        
+
+@router.get("/level")
+def get_level_info(
+    current_user: User = Depends(get_current_user)
+):
+    return get_user_level_info(current_user.id)
         

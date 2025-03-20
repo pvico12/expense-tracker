@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from db import add_xp_to_user
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Goal, Transaction
@@ -130,6 +131,7 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
                 message = (
                     f"Budget Goal: Completed {category_name} goal successfully with a {margin_pct:.1f}% margin remaining (target ${goal.limit})."
                 )
+                add_xp_to_user(user_id, 5)
             else:
                 excess_pct = ((total_spent - goal.limit) / goal.limit) * 100
                 message = (
@@ -142,6 +144,7 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
                 message = (
                     f"Budget Goal: Completed {category_name} goal successfully, spent {pct_less_spent:.1f}% less than the previous period (target {goal.limit}%)."
                 )
+                add_xp_to_user(user_id, 5)
             else:
                 if pct_less_spent < 0:
                     message = (
