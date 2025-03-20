@@ -60,6 +60,8 @@ class User(Base):
     password = Column(String(100), nullable=False)
     firstname = Column(String(50), nullable=False)
     lastname = Column(String(50), nullable=False)
+    xp = Column(Integer, default=1, nullable=False)
+    level = Column(Integer, default=1, nullable=False)
 
     categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
@@ -81,6 +83,13 @@ class User(Base):
             'firstname': self.firstname,
             'lastname': self.lastname
         }
+
+class UserLevelInfo:
+    def __init__(self, level: int, current_xp: int, remaining_xp_until_next_level: int, total_xp_for_next_level: int):
+        self.level = level
+        self.current_xp = current_xp
+        self.remaining_xp_until_next_level = remaining_xp_until_next_level
+        self.total_xp_for_next_level = total_xp_for_next_level
         
 class FcmToken(Base):
     __tablename__ = 'fcm_tokens'
@@ -155,6 +164,8 @@ class Goal(Base):
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
     on_track = Column(Boolean, default=True)
+    mid_notified = Column(Boolean, default=False)
+    post_notified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", backref=backref("goals", cascade="all, delete-orphan"))

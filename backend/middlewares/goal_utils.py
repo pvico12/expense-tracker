@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from models import Goal, Transaction
+from models import Category, Goal, Transaction, User
 from typing import Optional, List, Dict, Any
 
 def recalc_goal_progress(db: Session, user_id: int, category_id: Optional[int] = None):
@@ -53,7 +53,7 @@ def calculate_goal_spending(db: Session, user_id: int, goal: Goal, last_period: 
     return total_spent
 
 ## Feel free to change the logic here based on the needs of the notification system. I am putting everything into a list, but you can manage it to just return a true/false value. 
-def get_mid_period_notifications(db: Session, user_id: int) -> List[Dict[str, Any]]:
+def get_mid_period_notifications(db: Session) -> List[Dict[str, Any]]:
     """
     Check for goals that are at least 80% through their period and not yet ended.
     For these goals (currently implemented for "amount" type),
@@ -62,16 +62,16 @@ def get_mid_period_notifications(db: Session, user_id: int) -> List[Dict[str, An
     notifications = []
     now = datetime.utcnow()
     # Only consider ongoing goals (end date > now)
-    ongoing_goals = db.query(Goal).filter(Goal.user_id == user_id, Goal.end_date > now).all()
+    ongoing_goals = db.query(Goal).filter(Goal.end_date > now, Goal.mid_notified == False).all()
     
     for goal in ongoing_goals:
         total_duration = (goal.end_date - goal.start_date).total_seconds()
         elapsed = (now - goal.start_date).total_seconds()
         # Check if the goal's period is at least 80% complete
         if total_duration > 0 and (elapsed / total_duration) >= 0.8:
-            total_spent = calculate_goal_spending(db, user_id, goal)
+            total_spent = calculate_goal_spending(db, goal.user_id, goal)
             
-            category_name = db.query(Transaction.category_name).filter(Transaction.category_id == goal.category_id).first()[0]
+            category_name = db.query(Category.name).filter(Category.id == goal.category_id).first()[0]
             if category_name is None:
                 continue
             
@@ -87,7 +87,7 @@ def get_mid_period_notifications(db: Session, user_id: int) -> List[Dict[str, An
                         f"Budget Goal: You are NOT on track to complete your spending goal for {category_name}. You have exceeded your spending limit by {exceeded_pct:.1f}% (target ${goal.limit})."
                     )
             else:
-                last_period_spent = calculate_goal_spending(db, user_id, goal, last_period=True)
+                last_period_spent = calculate_goal_spending(db, goal.user_id, goal, last_period=True)
                 pct_less_spent = ((last_period_spent - total_spent) / last_period_spent) * 100
                 if pct_less_spent >= goal.limit:
                     message = (
@@ -102,12 +102,17 @@ def get_mid_period_notifications(db: Session, user_id: int) -> List[Dict[str, An
                         message = (
                             f"Budget Goal: You are NOT on track to complete your spending goal for {category_name}. You have spent {pct_less_spent:.1f}% below the previous period (target {goal.limit}%)."
                         )
+            
+            # set the mid_notified flag to True
+            goal.mid_notified = True
+            db.add(goal)
                 
             notifications.append({"goal_id": goal.id, "message": message})
+    db.commit()
     return notifications
 
 
-def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, Any]]:
+def get_post_period_notifications(db: Session) -> List[Dict[str, Any]]:
     """
     For goals whose period has ended, notify the user whether they succeeded or failed their goal.
     For an "amount" goal: if total spending is under the limit, include the margin percentage;
@@ -115,12 +120,13 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
     """
     notifications = []
     now = datetime.utcnow()
-    ended_goals = db.query(Goal).filter(Goal.user_id == user_id, Goal.end_date <= now).all()
+    ended_goals = db.query(Goal).filter(Goal.end_date <= now, Goal.post_notified == False).all()
     
     for goal in ended_goals:
-        total_spent = calculate_goal_spending(db, user_id, goal)
+        completed = False
+        total_spent = calculate_goal_spending(db, goal.user_id, goal)
         
-        category_name = db.query(Transaction.category_name).filter(Transaction.category_id == goal.category_id).first()[0]
+        category_name = db.query(Category.name).filter(Category.id == goal.category_id).first()[0]
         if category_name is None:
             continue
         
@@ -130,18 +136,20 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
                 message = (
                     f"Budget Goal: Completed {category_name} goal successfully with a {margin_pct:.1f}% margin remaining (target ${goal.limit})."
                 )
+                completed = True
             else:
                 excess_pct = ((total_spent - goal.limit) / goal.limit) * 100
                 message = (
                     f"Budget Goal: Failed {category_name} goal, exceeded the goal by {excess_pct:.1f}% (target ${goal.limit})."
                 )
         else:
-            last_period_spent = calculate_goal_spending(db, user_id, goal, last_period=True)
+            last_period_spent = calculate_goal_spending(db, goal.user_id, goal, last_period=True)
             pct_less_spent = ((last_period_spent - total_spent) / last_period_spent) * 100
             if pct_less_spent >= goal.limit:
                 message = (
                     f"Budget Goal: Completed {category_name} goal successfully, spent {pct_less_spent:.1f}% less than the previous period (target {goal.limit}%)."
                 )
+                completed = True
             else:
                 if pct_less_spent < 0:
                     message = (
@@ -151,8 +159,13 @@ def get_post_period_notifications(db: Session, user_id: int) -> List[Dict[str, A
                     message = (
                         f"Budget Goal: Failed {category_name} goal, spent {pct_less_spent:.1f}% less than the previous period (target {goal.limit}%)."
                     )
+        
+        # set the post_notified flag to True
+        goal.post_notified = True
+        db.add(goal)
             
-        notifications.append({"goal_id": goal.id, "message": message})
+        notifications.append({"goal_id": goal.id, "message": message, "completed": completed})
+    db.commit()
     return notifications
 
 
