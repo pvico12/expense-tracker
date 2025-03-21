@@ -13,6 +13,7 @@ import com.cs446.expensetracker.ui.SignupActivity
 import com.cs446.expensetracker.ui.SignupScreen
 import com.cs446.expensetracker.ui.ui.theme.ExpenseTrackerTheme
 import com.cs446.expensetracker.ui.ui.theme.Pink40
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
@@ -28,6 +29,7 @@ class SignupUITests {
         composeTestRule.onNodeWithText("SIGN UP").performClick()
     }
 
+    @Before
     fun setScreen() {
         composeTestRule.setContent {
             Surface(
@@ -66,45 +68,31 @@ class SignupUITests {
 
     @Test
     fun testSignup_noFirstname() {
-        setScreen()
-
         performSignup("", "Last", "username", "password")
-
         assertSignupError()
     }
 
     @Test
     fun testSignup_noLastname() {
-        setScreen()
-
         performSignup("First", "", "username", "password")
-
         assertSignupError()
     }
 
     @Test
     fun testSignup_noUsername() {
-        setScreen()
-
         performSignup("First", "Last", "", "password")
-
         assertSignupError()
     }
 
     @Test
     fun testSignup_noPassword() {
-        setScreen()
-
         performSignup("First", "Last", "username", "")
-
         assertSignupError()
     }
 
     // Commenting out to avoid filling database with test data
 //    @Test
 //    fun testSignup_validCredentials() {
-//        setScreen()
-//
 //        performSignup("First", "Last", "new_user", "Password1")
 //
 //        // wait 2s for signup to complete
@@ -117,49 +105,34 @@ class SignupUITests {
 
     @Test
     fun testSignup_navToLogin() {
-        setScreen()
-
         composeTestRule.onNodeWithText("Login").performClick()
-
         assert(loginScreenReached)
     }
 
     @Test
     fun testSignup_invalidPassword_notEnoughCharacters() {
-        setScreen()
-
         performSignup("First", "Last", "username", "asdf")
-
         assertPasswordComplexityError()
         assert(!loginScreenReached)
     }
 
     @Test
     fun testSignup_invalidPassword_noUppercase() {
-        setScreen()
-
         performSignup("First", "Last", "username", "password1")
-
         assertPasswordComplexityError()
         assert(!loginScreenReached)
     }
 
     @Test
     fun testSignup_invalidPassword_noLowercase() {
-        setScreen()
-
         performSignup("First", "Last", "username", "PASSWORD1")
-
         assertPasswordComplexityError()
         assert(!loginScreenReached)
     }
 
     @Test
     fun testSignup_invalidPassword_noNumber() {
-        setScreen()
-
         performSignup("First", "Last", "username", "Password")
-
         assertPasswordComplexityError()
         assert(!loginScreenReached)
     }

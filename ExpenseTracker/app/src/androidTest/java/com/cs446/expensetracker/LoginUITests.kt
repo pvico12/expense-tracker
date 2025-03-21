@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat.startActivity
 import com.cs446.expensetracker.ui.LoginScreen
 import com.cs446.expensetracker.ui.SignupActivity
 import com.cs446.expensetracker.ui.ui.theme.Pink40
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
@@ -35,6 +36,7 @@ class LoginUITests {
         composeTestRule.onNodeWithText("LOGIN").performClick()
     }
 
+    @Before
     fun setScreen() {
         composeTestRule.setContent {
             Surface(
@@ -80,10 +82,7 @@ class LoginUITests {
 
     @Test
     fun testLogin_noPassword() {
-        setScreen()
-
         performLogin("USERNAME", "")
-
         composeTestRule.onNodeWithText("Missing password!").assertExists()
         assert(!mainScreenReached)
         assert(!registrationScreenReached)
@@ -91,10 +90,7 @@ class LoginUITests {
 
     @Test
     fun testLogin_noUsername_noPassword() {
-        setScreen()
-
         performLogin("", "")
-
         composeTestRule.onNodeWithText("Missing username and password!").assertExists()
         assert(!mainScreenReached)
         assert(!registrationScreenReached)
@@ -102,10 +98,7 @@ class LoginUITests {
 
     @Test
     fun testLogin_invalidCredentials() {
-        setScreen()
-
         performLogin("admin", "wrongpassword")
-
         composeTestRule.onNodeWithText("Invalid credentials. Please try again.").assertExists()
         assert(!mainScreenReached)
         assert(!registrationScreenReached)
@@ -113,8 +106,6 @@ class LoginUITests {
 
     @Test
     fun testLogin_validCredentials() {
-        setScreen()
-
         performLogin("admin", "admin")
 
         // wait 2s for login to complete
@@ -127,10 +118,7 @@ class LoginUITests {
 
     @Test
     fun testLogin_navToCreateAccount() {
-        setScreen()
-
         composeTestRule.onNodeWithText("Sign up").performClick()
-
         assert(!mainScreenReached)
         assert(registrationScreenReached)
     }
