@@ -67,6 +67,10 @@ class LoginUITests {
         composeTestRule.onNodeWithText("Username").performTextReplacement(username)
         composeTestRule.onNodeWithText("Password").performTextReplacement(password)
         clickLogin()
+
+        // wait 2s for the login to complete
+        val latch = CountDownLatch(1)
+        latch.await(2, TimeUnit.SECONDS)
     }
 
     @Test
@@ -96,7 +100,7 @@ class LoginUITests {
     @Test
     fun testLogin_invalidCredentials() {
         performLogin("admin", "wrongpassword")
-        composeTestRule.onNodeWithText("Invalid credentials. Please try again.").assertExists()
+        composeTestRule.onNodeWithText("Invalid credentials. Please try again.", useUnmergedTree = true).assertExists()
         assert(!mainScreenReached)
         assert(!registrationScreenReached)
     }
