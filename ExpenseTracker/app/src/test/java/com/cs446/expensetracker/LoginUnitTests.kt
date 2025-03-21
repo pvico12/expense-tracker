@@ -6,13 +6,6 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LoginUnitTests {
-
-    @Test
-    fun testCalculateTip() {
-
-        assertEquals(5, 5)
-    }
-
     @Test
     fun testLogin_noUsername() {
         runBlocking {

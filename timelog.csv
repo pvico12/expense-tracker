@@ -52,5 +52,6 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-20,1,0,0,0,0,0, Goal Notification Bug - Store original send in DB to avoid multiple retries
 2025-03-20,1,0,0,0,0,0, level Up Notification!
 2025-03-20,2,0,0,0,0,0, Login Unit Tests + UI Tests
+2025-03-20,2,0,0,0,0,0, Signup Unit Tests + UI Tests
 
 
