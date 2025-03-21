@@ -153,6 +153,19 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
         Spacer(modifier = Modifier.height((screenHeight * 0.2f).dp))
         Button(
             onClick = {
+                if (username.isEmpty() && password.isEmpty()) {
+                    errorMessage = "Missing username and password!"
+                    return@Button
+                }
+                if (username.isEmpty()) {
+                    errorMessage = "Missing username!"
+                    return@Button
+                }
+                if (password.isEmpty()) {
+                    errorMessage = "Missing password!"
+                    return@Button
+                }
+
                 isLoading = true
                 errorMessage = null
                 CoroutineScope(Dispatchers.IO).launch {
@@ -162,7 +175,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
                         if (result) {
                             onLoginSuccess()
                         } else {
-                            errorMessage = "Login failed. Please try again."
+                            errorMessage = "Invalid credentials. Please try again."
                         }
                     }
                 }
@@ -231,6 +244,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onCreateAccountClick: () -> Unit) {
 }
 
 suspend fun login(username: String, password: String): Boolean {
+    if (username.isEmpty() || password.isEmpty()) {
+        return false
+    }
     return try {
         val response = RetrofitInstance.apiService.login(LoginRequest(username, password))
         if (response.isSuccessful) {
