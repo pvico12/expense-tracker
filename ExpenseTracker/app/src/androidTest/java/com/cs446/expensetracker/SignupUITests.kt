@@ -40,9 +40,9 @@ class SignupUITests {
                     SignupScreen(onSignupSuccess = {
                         loginScreenReached = true
                     },
-                    onLoginClick = {
-                        loginScreenReached = true
-                    })
+                        onLoginClick = {
+                            loginScreenReached = true
+                        })
                 }
             }
         }
@@ -62,7 +62,8 @@ class SignupUITests {
     }
 
     fun assertPasswordComplexityError() {
-        composeTestRule.onNodeWithText("Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 lowercase letter, and 1 number.").assertExists()
+        composeTestRule.onNodeWithText("Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 lowercase letter, and 1 number.")
+            .assertExists()
         assert(!loginScreenReached)
     }
 
@@ -136,3 +137,4 @@ class SignupUITests {
         assertPasswordComplexityError()
         assert(!loginScreenReached)
     }
+}
