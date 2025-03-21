@@ -136,5 +136,3 @@ class SignupUITests {
         assertPasswordComplexityError()
         assert(!loginScreenReached)
     }
-
-}

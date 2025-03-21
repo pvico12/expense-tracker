@@ -71,10 +71,7 @@ class LoginUITests {
 
     @Test
     fun testLogin_noUsername() {
-        setScreen()
-
         performLogin("", "PASSWORD")
-
         composeTestRule.onNodeWithText("Missing username!").assertExists()
         assert(!mainScreenReached)
         assert(!registrationScreenReached)
