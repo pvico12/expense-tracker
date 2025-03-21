@@ -56,6 +56,9 @@ class SignupActivity : ComponentActivity() {
                     SignupScreen(onSignupSuccess = {
                         startActivity(Intent(this, LoginActivity::class.java))
                         finish()
+                    }, onLoginClick = {
+                        startActivity(Intent(this, LoginActivity::class.java))
+                        finish()
                     })
                 }
             }
@@ -64,7 +67,7 @@ class SignupActivity : ComponentActivity() {
 }
 
 @Composable
-fun SignupScreen(onSignupSuccess: () -> Unit) {
+fun SignupScreen(onSignupSuccess: () -> Unit, onLoginClick: () -> Unit) {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -171,9 +174,33 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
                 onDone = { keyboardController?.hide() }
             )
         )
-        Spacer(modifier = Modifier.height((screenHeight * 0.16f).dp))
+        Spacer(modifier = Modifier.height((screenHeight * 0.03f).dp))
+        if (errorMessage != null) {
+            Box(
+                modifier = Modifier
+                    .height((screenHeight * 0.08f).dp)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = errorMessage ?: "", color = Color(0xFFDBAD8C), style = Typography.bodySmall)
+            }
+        } else {
+            Spacer(modifier = Modifier.height((screenHeight * 0.08f).dp))
+        }
+        Spacer(modifier = Modifier.height((screenHeight * 0.03f).dp))
         Button(
             onClick = {
+                if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty() || password.isEmpty()) {
+                    errorMessage = "Please fill in all fields."
+                    return@Button
+                }
+
+                // password complexity check (at least 8 characters, 1 uppercase, 1 lowercase, 1 number)
+                if (!Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}\$").matches(password)) {
+                    errorMessage = "Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 lowercase letter, and 1 number."
+                    return@Button
+                }
+
                 isLoading = true
                 errorMessage = null
                 CoroutineScope(Dispatchers.IO).launch {
@@ -228,10 +255,7 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
                 }
             }
         }
-        errorMessage?.let {
-            Spacer(modifier = Modifier.height((screenHeight * 0.005f).dp))
-            Text(text = it, color = Color(0xFFDBAD8C))
-        }
+
         Spacer(modifier = Modifier.height((screenHeight * 0.01f).dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -239,7 +263,7 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Already have an account? ", style = Typography.bodySmall)
-            TextButton(onClick = onSignupSuccess) {
+            TextButton(onClick = onLoginClick) {
                 Text(
                     text = "Login",
                     color = tileColor,
@@ -254,6 +278,9 @@ fun SignupScreen(onSignupSuccess: () -> Unit) {
 }
 
 suspend fun signup(firstName: String, lastName: String, username: String, password: String): Boolean {
+    if (username.isEmpty() || password.isEmpty() || firstName.isEmpty() || lastName.isEmpty()) {
+        return false
+    }
     return try {
         val response = RetrofitInstance.apiService.register(
             RegistrationRequest(

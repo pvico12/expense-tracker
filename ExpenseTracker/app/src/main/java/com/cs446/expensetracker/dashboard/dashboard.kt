@@ -325,7 +325,7 @@ class Dashboard {
                                         drawerState.open()
                                     }
                                 }) {
-                                    Icon(Icons.Filled.Menu, contentDescription = "")
+                                    Icon(Icons.Filled.Menu, contentDescription = "Menu Button")
                                 }
                             },
                             title = {
