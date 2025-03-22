@@ -37,6 +37,12 @@ class TransactionCreateRequest(BaseModel):
         if isinstance(v, str):
             return TransactionType(v.lower())
         return v
+    
+    @validator('amount', pre=True)
+    def validate_amount(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Amount must be greater than 0")
+        return v
 
 # Response Models
 
@@ -191,6 +197,24 @@ class RecurringTransactionCreateRequest(BaseModel):
     transaction_type: TransactionType
     vendor: Optional[str] = None
 
+    @validator('amount', pre=True)
+    def validate_amount(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Amount must be greater than 0")
+        return v
+    
+    @validator('period', pre=True)
+    def validate_period(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Period must be greater than 0")
+        return v
+
+    @validator('start_date', pre=True)
+    def validate_start_date(cls, v: Any) -> Any:
+        if v is not None and v > cls.end_date:
+            raise ValueError("Start date must be before end date")
+        return v
+
 class RecurringTransactionUpdateRequest(RecurringTransactionCreateRequest):
     # For now, the update fields mirror the creation request.
     pass
@@ -218,6 +242,12 @@ class TransactionUpdateRequest(BaseModel):
         if v is not None and isinstance(v, str):
             return TransactionType(v.lower())
         return v
+    
+    @validator('amount', pre=True)
+    def validate_amount(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Amount must be greater than 0")
+        return v
 
 class GoalCreateRequest(BaseModel):
     category_id: Optional[int] = None
@@ -239,6 +269,12 @@ class GoalCreateRequest(BaseModel):
         if goal_type == "percentage" and category_id is None:
             raise ValueError("Percentage goal must have a category_id")
         return values
+    
+    @validator('limit', pre=True)
+    def validate_limit(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Limit must be greater than 0")
+        return v
 
 class GoalUpdateRequest(BaseModel):
     category_id: Optional[int] = None
