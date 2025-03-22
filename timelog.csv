@@ -52,5 +52,6 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-20,1,0,0,0,0,0, Goal Notification Bug - Store orginal send in DB to avoid multiple retries
 2025-03-20,1,0,0,0,0,0, Level Up Notification!
 2025-03-20,3,0,0,0,0,0, Set Up Backend Testing in CI + Write Some Auth Tests
+2025-03-22,0.5,0,0,0,0,0, Set Up Backend Testing in CI + Write Some Auth Tests
 
 
