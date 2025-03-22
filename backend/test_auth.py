@@ -182,6 +182,6 @@ def test_send_fcm_token_invalid_input(server):
         
         for data in invalid_data:
             response = requests.post(fcm_token_url, json=data, headers=headers)
-            assert response.status_code == 422  # Unprocessable Entity
+            assert response.status_code == 422 
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
