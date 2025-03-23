@@ -20,6 +20,7 @@ import com.cs446.expensetracker.api.models.GoalCreationRequest
 import com.cs446.expensetracker.api.models.GoalRetrievalGoals
 import com.cs446.expensetracker.api.models.GoalRetrievalResponse
 import com.cs446.expensetracker.api.models.GoalUpdateRequest
+import com.cs446.expensetracker.api.models.LevelRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.RecurringTransactionRequest
 import com.cs446.expensetracker.api.models.RecurringTransactionResponse
@@ -67,6 +68,9 @@ interface BaseAPIService {
 
     @PUT("/user/profile")
     suspend fun updateUserProfile(@Body request: UserProfileUpdateRequest): Response<Void>
+
+    @GET("/user/level")
+    suspend fun getLevel(): Response<LevelRequest>
 
     // ===================== Transactions ======================
     @POST("/transactions/")

@@ -11,6 +11,7 @@ data class GoalRetrievalGoals (
     val on_track: Boolean,
     val time_left: Int,
     val amount_spent: Double,
+    var category_string: String? = null,
 )
 
 data class GoalRetrievalStats (
@@ -33,6 +34,7 @@ data class GoalCreationRequest (
 )
 
 data class GoalUpdateRequest (
+    val category_id: Int,
     val limit: Double,
     val start_date: String, // ISO 8601 format
     val end_date: String, // ISO 8601 format

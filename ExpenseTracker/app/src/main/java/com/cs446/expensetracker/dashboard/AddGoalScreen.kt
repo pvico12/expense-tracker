@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,18 +30,24 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.Category
+import com.cs446.expensetracker.api.models.CategoryBreakdown
 import com.cs446.expensetracker.api.models.DealCreationRequest
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.GoalCreationRequest
 import com.cs446.expensetracker.api.models.GoalRetrievalGoals
 import com.cs446.expensetracker.api.models.GoalUpdateRequest
+import com.cs446.expensetracker.api.models.LevelRequest
+import com.cs446.expensetracker.api.models.SpendingSummaryResponse
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
+import com.cs446.expensetracker.ui.ui.theme.mainBackgroundColor
 import com.cs446.expensetracker.ui.ui.theme.mainTextColor
 import com.cs446.expensetracker.ui.ui.theme.secondTextColor
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.text.SimpleDateFormat
@@ -55,12 +62,10 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
+    // Input states
     var limit by remember { mutableStateOf("") }
     var period by remember { mutableStateOf("Week") }
     var goal_type by remember { mutableStateOf("amount") }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var goBack by remember { mutableStateOf(false) }
 
     // Category List State
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
@@ -68,6 +73,12 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
     // Bottom Sheet State
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
+
+    var isSaveButtonLoading by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
+    var preloadErrorMessage by remember { mutableStateOf<String>("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var goBack by remember { mutableStateOf(false) }
 
     // Date Picker State
     val calendar = Calendar.getInstance()
@@ -79,21 +90,6 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
     }
 
     var listOfGoals by remember { mutableStateOf<List<GoalRetrievalGoals>>(emptyList()) }
-
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            try {
-                val response = RetrofitInstance.apiService.getCategories()
-                if (response.isSuccessful) {
-                    categories = response.body() ?: emptyList()
-                } else {
-                    errorMessage = "Failed to load categories."
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
-            }
-        }
-    }
 
     // Date Picker Dialog
     val datePickerDialog = DatePickerDialog(
@@ -108,70 +104,6 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
     )
 
     var specificGoalToEdit: GoalRetrievalGoals? by remember { mutableStateOf(null) }
-
-    fun apiFetchSpecificGoal() {
-        // Load deals via API
-        Log.d("Response", "Api fetch was called, but request not necessarily sent")
-        errorMessage = ""
-        Log.d("Response", "Api fetch was called, but request not necessarily sent")
-        CoroutineScope(Dispatchers.IO).launch {
-//                isLoading = true
-//                errorMessage = ""
-            try {
-                val token = UserSession.access_token ?: ""
-                val response: Response<GoalRetrievalResponse> =
-                    RetrofitInstance.apiService.getGoals()
-                Log.d("Response", "Fetch Goals API Request actually called")
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    Log.d("Response", "Goals Response: $responseBody")
-                    listOfGoals = responseBody?.goals?.map { x ->
-                        GoalRetrievalGoals(
-                            id = x.id,
-                            category_id = x.category_id,
-                            goal_type = x.goal_type,
-                            limit = x.limit,
-                            start_date = x.start_date,
-                            end_date = x.end_date,
-                            period = x.period,
-                            on_track = x.on_track,
-                            time_left = x.time_left,
-                            amount_spent = x.amount_spent,
-                        )
-                    } ?: emptyList()
-                    for (goal in listOfGoals) {
-                        if (goal.id == editVersion) {
-                            specificGoalToEdit = goal
-                        }
-                    }
-                } else {
-                    errorMessage = "Failed to load data."
-                    Log.d("Error", "Deals API Response Was Unsuccessful: $response")
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
-                Log.d("Error", "Error Calling Deals API: $errorMessage")
-            } finally {
-                //                    isLoading = false
-            }
-            period = specificGoalToEdit?.period.toString()
-            if(period == "31") {
-                period = "Month"
-            } else {
-                period = "Week"
-            }
-            goal_type = specificGoalToEdit?.goal_type ?: ""
-            limit = specificGoalToEdit?.limit.toString()
-            selectedDate = specificGoalToEdit?.start_date ?: ""
-            for(category in categories) {
-                if(category.id == specificGoalToEdit?.category_id) {
-                    selectedCategory = category
-                }
-            }
-        }
-
-
-    }
 
     @Composable
     fun GoalTypeDropdownMenu() {
@@ -298,6 +230,8 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
         Spacer(modifier = Modifier.height(10.dp))
     }
 
+    // End of definitions, actual seen code starts here
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -325,130 +259,259 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                 Text("X",  style = Typography.titleLarge, color= Color(0xFF4B0C0C))
             }
         }
-        LaunchedEffect(categories) {
-            if (editVersion != -1) {
-                apiFetchSpecificGoal()
-            }
-        }
-        allFieldInputs()
-        // Error Message Display
-        if (errorMessage != null) {
-            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-//            Spacer(modifier = Modifier.height(10.dp))
-        }
 
-        // Save Expense Button
-        Button(
-            onClick = {
-                Log.d("Period", "Period is ${period}")
-                CoroutineScope(Dispatchers.IO).launch {
-//                    isLoading = true
-                    errorMessage = null
-                    try {
-                        if(selectedCategory == null) {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please select a category\n"
-                        }
-                        if (goal_type == "") {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please pick a goal type\n"
-                        }
-                        var nullCheckLimit = limit.toDoubleOrNull()
-                        Log.d("Response", "Amount: ${nullCheckLimit}")
-                        if (nullCheckLimit == null) {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add a numerical limit\n"
-                        }
-                        if(nullCheckLimit != null && nullCheckLimit < 0) {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add a limit greater than 0"
-                        }
-                        if(nullCheckLimit != null && (nullCheckLimit > 100 && goal_type == "percentage")) {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "If using percentage, please add a limit less than 100%\n"
-                        }
-                        if (period != "Week" && period != "Month") {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please pick a time period\n"
-                        }
-                        if (selectedDate == "") {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add a date\n"
-                        }
+        fun preloadData() {
+            coroutineScope.launch {
+                try {
+                    val categoriesDeferred = async(Dispatchers.IO) {
+                        RetrofitInstance.apiService.getCategories()
+                    }
+                    val goalsDeferred = async(Dispatchers.IO) {
+                        RetrofitInstance.apiService.getGoals()
+                    }
 
-                        if(errorMessage == null) {
-                            if(editVersion != -1) {
+                    // Await all calls to complete
+                    val (categoriesResponse, goalsResponse) =
+                        awaitAll(categoriesDeferred, goalsDeferred)
 
-                                val updateGoalRequest = GoalUpdateRequest (
-                                    limit=limit.toDouble(),
-                                    start_date=selectedDate,
-                                    end_date=selectedDate,
-                                    goal_type= goal_type,
-                                )
+                    if (categoriesResponse.isSuccessful) {
+                        categories = categoriesResponse.body() as List<Category> ?: emptyList()
+                    } else {
+                        preloadErrorMessage += "Failed to load categories."
+                        Log.d("Error", "Categories API Response Was Unsuccessful: $categories")
+                    }
 
-                                Log.d("Response", "Edit Goal Request: ${updateGoalRequest}")
+                    if (goalsResponse.isSuccessful) {
+                        val responseBody = goalsResponse.body() as GoalRetrievalResponse
+                        Log.d("Response", "Goals Response: $responseBody")
+                        listOfGoals = responseBody?.goals?.map { x ->
+                            GoalRetrievalGoals(
+                                id = x.id,
+                                category_id = x.category_id,
+                                goal_type = x.goal_type,
+                                limit = x.limit,
+                                start_date = x.start_date,
+                                end_date = x.end_date,
+                                period = x.period,
+                                on_track = x.on_track,
+                                time_left = x.time_left,
+                                amount_spent = x.amount_spent,
+                            )
+                        } ?: emptyList()
 
-                                val token = UserSession.access_token ?: ""
-                                val response =
-                                    RetrofitInstance.apiService.updateGoal(editVersion.toString(), updateGoalRequest)
-                                if (response.isSuccessful) {
-                                    goBack = true
-                                    Log.d("Response", "Edit Goal Response: ${response}")
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Failed to edit goal. Please try again",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    Log.d("Response", "Api request to edit goal failed: ${response.body()}")
+                        if (editVersion != -1) {
+                            for (goal in listOfGoals) {
+                                if (goal.id == editVersion) {
+                                    specificGoalToEdit = goal
+                                    specificGoalToEdit!!.category_string = categories.find { it.id == specificGoalToEdit!!.category_id }?.name ?: "Deleted Category"
                                 }
+                            }
+                            period = specificGoalToEdit?.period.toString()
+                            if(period == "31") {
+                                period = "Month"
                             } else {
-                                val goal = GoalCreationRequest (
-                                    category_id=selectedCategory?.id ?: 0,
-                                    goal_type= goal_type,
-                                    limit=limit.toDouble(),
-                                    start_date=selectedDate,
-                                    period= if(period == "Week") 7.0 else 31.0,
-                                )
-                                Log.d("Response", "Create Goal Request: ${goal}")
-                                val token = UserSession.access_token ?: ""
-                                val response: Response<GoalRetrievalResponse> =
-                                    RetrofitInstance.apiService.addGoal(goal)
-                                if (response.isSuccessful) {
-                                    goBack = true
-                                    Log.d("Response", "Add Goal Response: ${response.body()}")
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Failed to add goal. Please try again",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    Log.d("Response", "Api request to add goal failed: ${response.body()}")
+                                period = "Week"
+                            }
+                            goal_type = specificGoalToEdit?.goal_type ?: ""
+                            limit = specificGoalToEdit?.limit.toString()
+                            selectedDate = specificGoalToEdit?.start_date ?: ""
+                            for(category in categories) {
+                                if(category.id == specificGoalToEdit?.category_id) {
+                                    selectedCategory = category
                                 }
                             }
                         }
-                    } catch (e: Exception) {
-                        Log.d("Response", "Exception when adding goal: ${e.message}")
-                    } finally {
-                        isLoading = false
+
+                    } else {
+                        preloadErrorMessage = "Failed to load goals."
+                        Log.d("Error", "Goals API Response Was Unsuccessful: $goalsResponse")
+                    }
+
+
+                } catch (e: Exception) {
+                    preloadErrorMessage += "Error Fetching User Data"
+                    Log.d("Error", "Error Calling Summary Spend API: ${e.message}")
+                    isLoading = false
+                }
+            }
+
+        }
+
+        LaunchedEffect(Unit) {
+            isLoading = true
+            val token = UserSession.access_token ?: ""
+            preloadData()
+        }
+
+        if (categories.isNotEmpty() && (if (editVersion == -1) true else (specificGoalToEdit != null))) {
+            isLoading = false
+        }
+        if(errorMessage != "") {
+            isLoading = false
+        }
+
+        when {
+            isLoading -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                )
+                {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(80.dp),
+                        strokeWidth = 6.dp,
+                        color = mainTextColor
+                    )
+                }
+            }
+            preloadErrorMessage != "" -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                )
+                {
+                    Text(text = preloadErrorMessage, color = MaterialTheme.colorScheme.error, style = Typography.headlineSmall)
+                    Button(onClick = { preloadData() }, colors = ButtonDefaults.buttonColors(containerColor = mainTextColor)) { Text("Retry") }
+                }
+            }
+
+            else -> {
+                allFieldInputs()
+                // Save Expense Button
+                Button(
+                    onClick = {
+                        isSaveButtonLoading = true
+                        coroutineScope.launch {
+                            errorMessage = null
+                            try {
+                                if(selectedCategory == null) {
+                                    errorMessage = errorMessage ?: ""
+                                    errorMessage += "Please select a category\n"
+                                    isSaveButtonLoading = false
+                                }
+                                if (goal_type == "") {
+                                    errorMessage = errorMessage ?: ""
+                                    errorMessage += "Please pick a goal type\n"
+                                    isSaveButtonLoading = false
+                                }
+                                var nullCheckLimit = limit.toDoubleOrNull()
+                                Log.d("Response", "Amount: ${nullCheckLimit}")
+                                if (nullCheckLimit == null) {
+                                    errorMessage = errorMessage ?: ""
+                                    errorMessage += "Please add a numerical limit\n"
+                                    isSaveButtonLoading = false
+                                }
+                                if(nullCheckLimit != null && nullCheckLimit < 0) {
+                                    errorMessage = errorMessage ?: ""
+                                    errorMessage += "Please add a limit greater than 0"
+                                    isSaveButtonLoading = false
+                                }
+                                if(nullCheckLimit != null && (nullCheckLimit > 100 && goal_type == "percentage")) {
+                                    errorMessage = errorMessage ?: ""
+                                    errorMessage += "If using percentage, please add a limit less than 100%\n"
+                                    isSaveButtonLoading = false
+                                }
+                                if (period != "Week" && period != "Month") {
+                                    errorMessage = errorMessage ?: ""
+                                    errorMessage += "Please pick a time period\n"
+                                    isSaveButtonLoading = false
+                                }
+                                if (selectedDate == "") {
+                                    errorMessage = errorMessage ?: ""
+                                    errorMessage += "Please add a date\n"
+                                    isSaveButtonLoading = false
+                                }
+
+                                if(errorMessage == null) {
+                                    if(editVersion != -1) {
+                                        val updateGoalRequest = GoalUpdateRequest (
+                                            category_id=selectedCategory?.id ?: 0,
+                                            limit=limit.toDouble(),
+                                            start_date=selectedDate,
+                                            end_date=selectedDate,
+                                            goal_type= goal_type,
+                                        )
+
+                                        Log.d("Response", "Edit Goal Request: ${updateGoalRequest}")
+
+                                        val token = UserSession.access_token ?: ""
+                                        val response =
+                                            RetrofitInstance.apiService.updateGoal(editVersion.toString(), updateGoalRequest)
+                                        if (response.isSuccessful) {
+                                            goBack = true
+                                            isSaveButtonLoading = false
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "Failed to edit goal. Please try again",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            Log.d("Response", "Api request to edit goal failed: ${response.body()}")
+                                            errorMessage = errorMessage ?: ""
+                                            errorMessage += "Editing goal failed. Please try again.\n"
+                                            isSaveButtonLoading = false
+                                        }
+                                    } else {
+                                        val goal = GoalCreationRequest (
+                                            category_id=selectedCategory?.id ?: 0,
+                                            goal_type= goal_type,
+                                            limit=limit.toDouble(),
+                                            start_date=selectedDate,
+                                            period= if(period == "Week") 7.0 else 31.0,
+                                        )
+                                        Log.d("Response", "Create Goal Request: ${goal}")
+                                        val token = UserSession.access_token ?: ""
+                                        val response: Response<GoalRetrievalResponse> =
+                                            RetrofitInstance.apiService.addGoal(goal)
+                                        if (response.isSuccessful) {
+                                            goBack = true
+                                            Log.d("Response", "Add Goal Response: ${response.body()}")
+                                            isSaveButtonLoading = false
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "Failed to add goal. Please try again",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            Log.d("Response", "Api request to add goal failed: ${response.body()}")
+                                            errorMessage = errorMessage ?: ""
+                                            errorMessage += "Adding goal failed. Please try again.\n"
+                                            isSaveButtonLoading = false
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.d("Response", "Exception when adding goal: ${e.message}")
+                                errorMessage = errorMessage ?: ""
+                                errorMessage += "Exception happened when adding goal. Please try again.\n"
+                                isSaveButtonLoading = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        Color(0xFF4B0C0C),
+                    ),
+                    enabled = !isLoading
+                ) {
+                    if (isSaveButtonLoading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(text = "Save Goal")
                     }
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            ),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text(text = "Save Goal")
             }
         }
+
         if (goBack) {
             goBack = false
             var toastText = "added"
