@@ -58,7 +58,7 @@ fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Un
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    var category by remember {
+    var category by remember(defaultValue) {
         mutableStateOf(defaultValue)
     }
 
