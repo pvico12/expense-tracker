@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.dashboard
+package com.cs446.expensetracker.ui.deals
 
 import android.app.DatePickerDialog
 import android.content.Context
@@ -33,7 +33,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddTask
 import androidx.compose.material.icons.filled.AddToPhotos
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Delete
@@ -72,7 +71,6 @@ import com.cs446.expensetracker.api.models.DealLocation
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithUser
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
-import com.cs446.expensetracker.deals.AutoComplete
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -103,7 +101,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import com.cs446.expensetracker.api.models.DealSubRetrievalResponse
-import com.cs446.expensetracker.deals.AddSubScreen
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import kotlinx.coroutines.withContext
 

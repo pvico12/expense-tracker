@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.deals
+package com.cs446.expensetracker.ui.deals
 
 import android.os.Build
 import android.util.Log
@@ -84,7 +84,7 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 var titleText = "Add New Address"
                 if (editVersion != -1) {
-                    titleText = "Edit Subscribed Location"
+                    titleText = "Edit Subscribed Address"
                 }
                 Text(
                     text = titleText,
@@ -123,7 +123,6 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
                         isLoading = true
                         errorMessage = null
                         try {
-                            Log.d("TAG", "SUBSCRIBE: $address $latlngPrediction")
                             if (address == "" || latlngPrediction == null) {
                                 errorMessage = errorMessage ?: ""
                                 errorMessage += "Please pick an address from the autocomplete dropdown\n"
