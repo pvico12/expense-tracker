@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.dashboard
+package com.cs446.expensetracker.ui.dashboard
 
 import android.graphics.Typeface
 import androidx.compose.foundation.layout.fillMaxWidth

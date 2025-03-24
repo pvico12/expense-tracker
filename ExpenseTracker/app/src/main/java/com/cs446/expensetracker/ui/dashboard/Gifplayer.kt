@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.dashboard
+package com.cs446.expensetracker.ui.dashboard
 
 import android.content.Context
 import android.os.Build.VERSION.SDK_INT

@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.dashboard
+package com.cs446.expensetracker.ui.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.dashboard
+package com.cs446.expensetracker.ui.dashboard
 
 import android.icu.text.DecimalFormat
 import androidx.compose.foundation.background
