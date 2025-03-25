@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.deals
+package com.cs446.expensetracker.ui.deals
 
 import android.app.DatePickerDialog
 import android.os.Build

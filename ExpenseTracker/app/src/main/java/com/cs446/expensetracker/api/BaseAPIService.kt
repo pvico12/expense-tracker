@@ -16,6 +16,8 @@ import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.SuggestionResponse
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
+import com.cs446.expensetracker.api.models.DealSubCreationRequest
+import com.cs446.expensetracker.api.models.DealSubRetrievalResponse
 import com.cs446.expensetracker.api.models.GoalCreationRequest
 import com.cs446.expensetracker.api.models.GoalRetrievalGoals
 import com.cs446.expensetracker.api.models.GoalRetrievalResponse
@@ -151,6 +153,23 @@ interface BaseAPIService {
 
     @POST("categories/custom")
     suspend fun createCustomCategory(@Body category: CustomCategoryRequest): Response<Category>
+
+    // ====================== Deals ===========================
+
+    @GET("/deals/subscriptions/all")
+    suspend fun getSubs(): Response<List<DealSubRetrievalResponse>>
+
+    @GET("/deals/subscription/{deal_sub_id}")
+    suspend fun getSpecificSub(@Path("deal_sub_id") dealSubId: Int): Response<DealSubRetrievalResponse>
+
+    @DELETE("/deals/subscription/{deal_sub_id}")
+    suspend fun deleteSub(@Path("deal_sub_id") dealSubId: Int): Response<String>
+
+    @PUT("/deals/subscription/{deal_sub_id}")
+    suspend fun updateSub(@Path("deal_sub_id") dealSubId: Int, @Body request: DealSubCreationRequest): Response<DealSubRetrievalResponse>
+
+    @POST("/deals/subscription")
+    suspend fun addSub(@Body request: DealSubCreationRequest): Response<DealSubRetrievalResponse>
 
     // ====================== Tools ===========================
     @POST("tools/categories/suggestion")
