@@ -205,12 +205,13 @@ def add_xp_to_user(user_id: int, xp: int) -> User:
     return user
 
 async def send_upcoming_recurring_payment_notifications():
+    fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
+        
     while True:
         recurring_transactions = db_session.query(RecurringTransaction).all()
         now = datetime.utcnow()
         # Define the upcoming threshold (next 24 hours)
         upcoming_threshold = now + timedelta(hours=24)
-        fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
         
         for recurring in recurring_transactions:
             period_delta = timedelta(days=recurring.period)
