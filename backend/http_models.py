@@ -9,8 +9,8 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1)
 
 class RegistrationRequest(BaseModel):
-    username: str = Field(..., min_length=1)
-    password: str = Field(..., min_length=1)
+    username: str = Field(..., min_length=4)
+    password: str = Field(..., min_length=6)
     firstname: str = Field(..., min_length=1)
     lastname: str = Field(..., min_length=1)
     

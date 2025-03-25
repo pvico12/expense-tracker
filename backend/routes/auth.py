@@ -22,6 +22,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", status_code=201)
 def register(data: RegistrationRequest, db: Session = Depends(get_db)):
+    
+    # check for existing users with same username
+    user = db.query(User).filter_by(username=data.username).first()
+    if user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
     hashed_password = hash_password(data.password)
     new_user = User(
         username=data.username,

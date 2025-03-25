@@ -40,13 +40,32 @@ def test_register(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
+def test_register_existing_user():
+    """Test the /auth/register endpoint with an existing user"""
+    url = f"{BASE_URL}/auth/register"
+    data = {
+        "username": "newuser",
+        "password": "newpassword",
+        "firstname": "New",
+        "lastname": "User 2"
+    }
+    
+    try:
+        response = requests.post(url, json=data)
+        assert response.status_code == 400  # Bad Request
+    except requests.exceptions.ConnectionError:
+        pytest.fail("Could not connect to the server")
+
 def test_register_invalid_input(server):
     """Test the /auth/register endpoint with invalid input"""
     url = f"{BASE_URL}/auth/register"
     invalid_data = [
         {},  # Empty data
         {"username": "newuser"},  # Missing fields
-        {"username": "newuser", "password": "short"},  # Password too short
+        {"username": "a", "password": "newpassword", "firstname": "New", "lastname": "User"},  # Username too short
+        {"username": "newuser2", "password": "short", "firstname": "New", "lastname": "User"},  # Password too short
+        {"username": "newuser2", "password": "newpassword", "firstname": "", "lastname": "User"},  # Firstname too short
+        {"username": "newuser2", "password": "newpassword", "firstname": "New", "lastname": ""},  # Lastname too short
     ]
     
     for data in invalid_data:
