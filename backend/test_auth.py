@@ -101,6 +101,23 @@ def test_login_invalid_password(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
+def test_login_missing_params(server):
+    """Test the /auth/login endpoint with missing parameters"""
+    url = f"{BASE_URL}/auth/login"
+    invalid_data = [
+        {},  # Empty data
+        {"username": "newuser"},  # Missing password
+        {"password": "newpassword"}  # Missing username
+    ]
+    
+    for data in invalid_data:
+        try:
+            response = requests.post(url, json=data)
+            assert response.status_code == 422  # Unprocessable Entity
+        except requests.exceptions.ConnectionError:
+            pytest.fail("Could not connect to the server")
+
+
 def test_refresh_token(server):
     """Test the /auth/refresh endpoint"""
     login_url = f"{BASE_URL}/auth/login"
@@ -137,6 +154,21 @@ def test_refresh_token_invalid_input(server):
         except requests.exceptions.ConnectionError:
             pytest.fail("Could not connect to the server")
 
+def test_refresh_token_missing_params(server):
+    """Test the /auth/refresh endpoint with missing parameters"""
+    url = f"{BASE_URL}/auth/refresh"
+    invalid_data = [
+        {},  # Empty data
+    ]
+    
+    for data in invalid_data:
+        try:
+            response = requests.post(url, json=data)
+            assert response.status_code == 422  # Unprocessable Entity
+        except requests.exceptions.ConnectionError:
+            pytest.fail("Could not connect to the server")
+
+
 def test_send_fcm_token(server):
     """Test the /auth/fcm_token endpoint"""
     login_url = f"{BASE_URL}/auth/login"
@@ -160,8 +192,8 @@ def test_send_fcm_token(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
-def test_send_fcm_token_invalid_input(server):
-    """Test the /auth/fcm_token endpoint with invalid input"""
+def test_send_fcm_token_invalid_fcm_token():
+    """Test the /auth/fcm_token endpoint with invalid FCM token"""
     login_url = f"{BASE_URL}/auth/login"
     fcm_token_url = f"{BASE_URL}/auth/fcm_token"
     login_data = {
@@ -183,5 +215,16 @@ def test_send_fcm_token_invalid_input(server):
         for data in invalid_data:
             response = requests.post(fcm_token_url, json=data, headers=headers)
             assert response.status_code == 422 
+    except requests.exceptions.ConnectionError:
+        pytest.fail("Could not connect to the server")
+        
+def send_fcm_token_missing_auth_token():
+    """Test the /auth/fcm_token endpoint with missing Authorization header"""
+    fcm_token_url = f"{BASE_URL}/auth/fcm_token"
+    data = {"fcm_token": "test_fcm_token"}
+    
+    try:
+        response = requests.post(fcm_token_url, json=data)
+        assert response.status_code == 401
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
