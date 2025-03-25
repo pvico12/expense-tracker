@@ -127,7 +127,16 @@ async def send_goal_notifications():
             fcm.send_multiple_notifications(fcm_tokens, "Expense Tracker Goal!", goal_notifaction["message"])
             
             if goal_notifaction.get("completed", False):
-                add_xp_to_user(user_id, 5)
+                # get period of goal
+                goal = db_session.query(Goal).filter(Goal.id == goal_id).first()
+                period = goal.end_date - goal.start_date
+                period = period.days
+                
+                # add xp to user
+                if (period < 8):
+                    add_xp_to_user(user_id, 5)
+                else:
+                    add_xp_to_user(user_id, 20)
                 
         
         await asyncio.sleep(120)  # sleep for 2 minutes

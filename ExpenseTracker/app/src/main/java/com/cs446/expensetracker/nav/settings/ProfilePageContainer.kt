@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.UserProfileResponse
 import com.cs446.expensetracker.api.models.UserProfileUpdateRequest
@@ -113,6 +115,11 @@ class ProfilePageContainer {
                 ) {
                     Button(
                         onClick = {
+                            if (username.isEmpty() || firstname.isEmpty() || lastname.isEmpty()) {
+                                errorMessage = "Please fill in all fields!"
+                                return@Button
+                            }
+
                             coroutineScope.launch {
                                 val requestBody = UserProfileUpdateRequest(
                                     firstname = firstname,
@@ -157,6 +164,7 @@ class ProfilePageContainer {
                                 onValueChange = { username = it.replace("\n", "") },
                                 singleLine = true,
                                 shape = textFieldShape,
+                                modifier = Modifier.semantics { contentDescription = "Username Input" },
                                 colors = TextFieldDefaults.colors(
                                     unfocusedContainerColor = Color(0xFFFAF2ED),
                                     focusedContainerColor = Color(0xFFFAF2ED),
@@ -178,6 +186,7 @@ class ProfilePageContainer {
                                 onValueChange = { firstname = it.replace("\n", "") },
                                 singleLine = true,
                                 shape = textFieldShape,
+                                modifier = Modifier.semantics { contentDescription = "First Name Input" },
                                 colors = TextFieldDefaults.colors(
                                     unfocusedContainerColor = Color(0xFFFAF2ED),
                                     focusedContainerColor = Color(0xFFFAF2ED),
@@ -199,6 +208,7 @@ class ProfilePageContainer {
                                 onValueChange = { lastname = it.replace("\n", "") },
                                 singleLine = true,
                                 shape = textFieldShape,
+                                modifier = Modifier.semantics { contentDescription = "Last Name Input" },
                                 colors = TextFieldDefaults.colors(
                                     unfocusedContainerColor = Color(0xFFFAF2ED),
                                     focusedContainerColor = Color(0xFFFAF2ED),
@@ -207,6 +217,14 @@ class ProfilePageContainer {
                                 )
                             )
                         }
+                    }
+
+                    errorMessage?.let {
+                        Text(
+                            text = it,
+                            color = Color.Red,
+                            modifier = Modifier.padding(10.dp)
+                        )
                     }
 
                 }
