@@ -275,6 +275,12 @@ class GoalCreateRequest(BaseModel):
         if v is not None and v <= 0:
             raise ValueError("Limit must be greater than 0")
         return v
+    
+    @validator('period', pre=True)
+    def validate_period(cls, v: Any) -> Any:
+        if v is not None and v <= 6:
+            raise ValueError("Period must be greater than 6")
+        return v
 
 class GoalUpdateRequest(BaseModel):
     category_id: Optional[int] = None
