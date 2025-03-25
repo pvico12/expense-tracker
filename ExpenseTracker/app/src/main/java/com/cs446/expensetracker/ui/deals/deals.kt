@@ -1,6 +1,5 @@
-package com.cs446.expensetracker.dashboard
+package com.cs446.expensetracker.ui.deals
 
-import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.Intent
@@ -8,10 +7,13 @@ import android.icu.text.DecimalFormat
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,12 +24,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddTask
 import androidx.compose.material.icons.filled.AddToPhotos
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Delete
@@ -66,7 +71,6 @@ import com.cs446.expensetracker.api.models.DealLocation
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithUser
 import com.cs446.expensetracker.api.models.DealRetrievalResponse
-import com.cs446.expensetracker.deals.AutoComplete
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -86,14 +90,28 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabPosition
+import androidx.compose.material3.TabRow
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInteropFilter
+import com.cs446.expensetracker.api.models.DealSubRetrievalResponse
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import kotlinx.coroutines.withContext
 
 class Deals {
 
+    @OptIn(ExperimentalComposeUiApi::class)
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @Composable
     fun DealsHost(dealsNavController: NavController) {
         val scrollState = rememberScrollState()
+        val scope = rememberCoroutineScope()
 
         val atasehir = LatLng(43.452969, -80.495064)
         var currentAddress = rememberSaveable  { mutableStateOf("")}
@@ -107,6 +125,7 @@ class Deals {
             mutableStateOf(MapUiSettings(zoomControlsEnabled = true))
         }
 
+        var listOfSubs by rememberSaveable  { mutableStateOf<List<DealSubRetrievalResponse>>(emptyList()) }
         var listOfDeals by rememberSaveable  { mutableStateOf<List<DealRetrievalResponse>>(emptyList()) }
 
         var viewingUserSubmittedDeals by rememberSaveable { mutableStateOf("See Your Submitted Deals") }
@@ -115,6 +134,8 @@ class Deals {
         var isLoading by remember { mutableStateOf(true) }
 
         var viewLocationPicker by remember { mutableStateOf(false) }
+
+        val pagerState = rememberPagerState(pageCount = { 2 })
 
         // Search bar states
         var searchQuery by remember { mutableStateOf("") }
@@ -126,8 +147,12 @@ class Deals {
         var errorMessageForRegion by remember { mutableStateOf<String>("")}
 
         var deleteConfirmationDialogue by remember { mutableStateOf(false)}
+        var deleteSubConfirmationDialogue by remember { mutableStateOf(false)}
         var idToDelete by remember { mutableStateOf(-1)}
+        var subToDelete by remember { mutableIntStateOf(-1) }
 
+        var showBottomSheet by remember { mutableStateOf(false) }
+        var subToChange by remember { mutableIntStateOf(-1) }
 
         fun onEditButtonClick(id: Int) {
             dealsNavController.navigate("addDealScreen/$id")
@@ -138,15 +163,54 @@ class Deals {
         }
         fun onChangeLocationClick() {
             viewLocationPicker = true
-
         }
 
+        fun onEditSubClick(id: Int) {
+            showBottomSheet = true
+            subToChange = id
+        }
+        fun onDeleteSubClick(id: Int) {
+            subToDelete = id
+            deleteSubConfirmationDialogue = true
+        }
+
+        fun apiFetchSubs() {
+            scope.launch {
+                isLoading = true
+                errorMessage = ""
+                try {
+                    val token = UserSession.access_token ?: ""
+                    val response: Response<List<DealSubRetrievalResponse>> =
+                        RetrofitInstance.apiService.getSubs()
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+                        Log.d("Response", "Subs Response: $responseBody")
+                        listOfSubs = responseBody?.map { x ->
+                            DealSubRetrievalResponse(
+                                id = x.id,
+                                user_id = x.user_id,
+                                address = x.address,
+                                longitude = x.longitude,
+                                latitude = x.latitude
+                            )
+                        } ?: emptyList()
+                    } else {
+                        Log.d("Error", "Subs API Response Was Unsuccessful: $response")
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "Error: ${e.message}"
+                    Log.d("Error", "Error Calling Subs API: $errorMessage")
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
         fun apiFetchDeals(newLatLng: LatLng?) {
             viewingUserSubmittedDeals = "See User Submitted Deals"
             // Load deals via API
             Log.d("Response", "Api fetch was called, but request not necessarily sent")
             if (newLatLng != null) {
-                CoroutineScope(Dispatchers.IO).launch {
+                scope.launch {
                     isLoading = true
                     errorMessage = ""
                     val deal_request = DealRetrievalRequestWithLocation(
@@ -372,6 +436,43 @@ class Deals {
                 }
             }
         }
+        fun onConfirmSub(id: Int, context: Context) {
+            deleteSubConfirmationDialogue = false
+            CoroutineScope(Dispatchers.IO).launch {
+                isLoading = true
+                try {
+                    val token = UserSession.access_token ?: ""
+                    val response: Response<String> =
+                        RetrofitInstance.apiService.deleteSub(id)
+                    Log.d("Response", "Fetch Subs API Request actually called")
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+                        Log.d("Response", "Subs Response: $responseBody")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Address Deleted",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        Log.d("Error", "Subs API Response Was Unsuccessful: $response")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Failed to Delete Address, Please Try Again",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                    apiFetchSubs()
+                } catch (e: Exception) {
+                    Log.d("Error", "Error Calling Subs API: $e")
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
 
         if (deleteConfirmationDialogue) {
             AlertDialog(
@@ -386,6 +487,25 @@ class Deals {
                 },
                 dismissButton = {
                     TextButton(onClick = { deleteConfirmationDialogue = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (deleteSubConfirmationDialogue) {
+            AlertDialog(
+                onDismissRequest = { deleteSubConfirmationDialogue = false },
+                title = { Text("Are you sure?") },
+                text = { Text("Delete this address?") },
+                confirmButton = {
+                    val context = LocalContext.current
+                    TextButton(onClick = { onConfirmSub(subToDelete, context) }) {
+                        Text("Proceed")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteSubConfirmationDialogue = false }) {
                         Text("Cancel")
                     }
                 }
@@ -587,13 +707,130 @@ class Deals {
 
             }
         }
-        LaunchedEffect(currentLatLng.value) { apiFetchDeals(currentLatLng.value) }
+
+        LaunchedEffect(currentLatLng.value) {
+            apiFetchSubs()
+            apiFetchDeals(currentLatLng.value)
+        }
+
+        @Composable
+        fun SearchAddressScreen() {
+            Row(modifier = Modifier.padding(start = 24.dp, bottom = 6.dp, end = 24.dp)) {
+                AutoComplete("") {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        currentAddress.value = it.address
+                        currentLatLng.value = it.latLng
+                        viewLocationPicker = false
+                        defaultZoom.value = 15f
+                    }
+                }
+            }
+        }
+
+        @Composable
+        fun SavedAddressItem(savedAddress: DealSubRetrievalResponse) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+                    .clickable {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            currentAddress.value = savedAddress.address
+                            currentLatLng.value = LatLng(
+                                savedAddress.latitude.toDouble(),
+                                savedAddress.longitude.toDouble()
+                            )
+                            viewLocationPicker = false
+                            defaultZoom.value = 15f
+                        }
+                    },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = savedAddress.address,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 16.sp,
+                    color = mainTextColor,
+                    fontWeight = FontWeight.Medium
+                )
+
+                IconButton(
+                    onClick = { onEditSubClick(savedAddress.id) },
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Address",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                IconButton(
+                    onClick = { onDeleteSubClick(savedAddress.id) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Address",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+
+        @Composable
+        fun SavedAddressesScreen() {
+            Column(Modifier.padding(8.dp)) {
+                listOfSubs.forEach { address ->
+                    SavedAddressItem(address)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clickable {
+                            showBottomSheet = true
+                            subToChange = -1
+                        },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Address",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    Text(
+                        text = "Add new address",
+                        modifier = Modifier.weight(1f),
+                        fontSize = 16.sp,
+                        color = mainTextColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        var columnScrollingEnabled by remember { mutableStateOf(true) }
+        LaunchedEffect(cameraPositionState.isMoving) {
+            if (!cameraPositionState.isMoving) {
+                columnScrollingEnabled = true
+            }
+        }
+
+        if (showBottomSheet) {
+            AddSubScreen(
+                subToChange,
+                onDismissRequest = {
+                    showBottomSheet = false
+                    apiFetchSubs()
+                })
+        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(mainBackgroundColor)
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState, columnScrollingEnabled),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -625,13 +862,45 @@ class Deals {
                 )
             }
             if(viewLocationPicker) {
-                Row(modifier = Modifier.padding(start = 24.dp, bottom = 6.dp, end = 24.dp)) {
-                    AutoComplete("") {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            currentAddress.value = it.address
-                            currentLatLng.value = it.latLng
-                            viewLocationPicker = false
-                            defaultZoom.value = 15f
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        TabRow(selectedTabIndex = pagerState.currentPage,
+                            containerColor = Color(0xFF6E2317),
+                            modifier = Modifier
+                                .padding(vertical = 1.dp, horizontal = 8.dp)
+                                .clip(RoundedCornerShape(50))
+                                .width(300.dp),
+                            indicator = { tabPositions: List<TabPosition> ->
+                                Box {}
+                            }
+                        ) {
+                            listOf("Search", "Subscribed").forEachIndexed { index, text ->
+                                val selected = pagerState.currentPage == index
+                                Tab(
+                                    modifier = if (selected) Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Color.White)
+                                    else Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Color(0xFF6E2317)),
+                                    selected = selected,
+                                    onClick = {
+                                        scope.launch { pagerState.animateScrollToPage(index) }
+                                    },
+                                    text = { Text(text = text, color = Color(0xFF9A6E7C), fontSize = 16.sp) }
+                                )
+                            }
+                        }
+                    }
+                    HorizontalPager(state = pagerState) { page ->
+                        when (page) {
+                            0 -> SearchAddressScreen()
+                            1 -> SavedAddressesScreen()
                         }
                     }
                 }
@@ -655,15 +924,36 @@ class Deals {
             GoogleMap(
                 modifier = Modifier
                     .height(180.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .pointerInteropFilter(
+                        onTouchEvent = {
+                            when (it.action) {
+                                MotionEvent.ACTION_DOWN -> {
+                                    columnScrollingEnabled = false
+                                    false
+                                }
+                                else -> {
+                                    true
+                                }
+                            }
+                        }
+                    ),
                 cameraPositionState = cameraPositionState,
                 uiSettings = uiSettings.value
             ) {
                 if (defaultZoom.value != 0f) {
                     Marker(
                         state = MarkerState(position = (currentLatLng.value ?: atasehir) as LatLng),
-                        title = "One Marker"
+                        title = "Current Location"
                     )
+                    listOfDeals.forEach { deal ->
+                        Marker(
+                            state = MarkerState(position = LatLng(deal.latitude.toDouble(), deal.longitude.toDouble())),
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE),
+                            title = deal.name,
+                            snippet = deal.description
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
