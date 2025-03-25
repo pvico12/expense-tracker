@@ -21,7 +21,7 @@ def server():
     proc.join()
 
 @pytest.mark.run(order=1)
-def test_register(server):
+def test_register():
     """Test the /auth/register endpoint"""
     url = f"{BASE_URL}/auth/register"
     data = {
@@ -56,7 +56,7 @@ def test_register_existing_user():
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
-def test_register_invalid_input(server):
+def test_register_invalid_input():
     """Test the /auth/register endpoint with invalid input"""
     url = f"{BASE_URL}/auth/register"
     invalid_data = [
@@ -75,7 +75,7 @@ def test_register_invalid_input(server):
         except requests.exceptions.ConnectionError:
             pytest.fail("Could not connect to the server")
 
-def test_login(server):
+def test_login():
     """Test the /auth/login endpoint"""
     url = f"{BASE_URL}/auth/login"
     data = {
@@ -92,7 +92,7 @@ def test_login(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
-def test_login_invalid_username(server):
+def test_login_invalid_username():
     """Test the /auth/login endpoint with an invalid username"""
     url = f"{BASE_URL}/auth/login"
     data = {
@@ -106,7 +106,7 @@ def test_login_invalid_username(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
-def test_login_invalid_password(server):
+def test_login_invalid_password():
     """Test the /auth/login endpoint with an invalid password"""
     url = f"{BASE_URL}/auth/login"
     data = {
@@ -120,7 +120,7 @@ def test_login_invalid_password(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
-def test_login_missing_params(server):
+def test_login_missing_params():
     """Test the /auth/login endpoint with missing parameters"""
     url = f"{BASE_URL}/auth/login"
     invalid_data = [
@@ -137,7 +137,7 @@ def test_login_missing_params(server):
             pytest.fail("Could not connect to the server")
 
 
-def test_refresh_token(server):
+def test_refresh_token():
     """Test the /auth/refresh endpoint"""
     login_url = f"{BASE_URL}/auth/login"
     refresh_url = f"{BASE_URL}/auth/refresh"
@@ -159,7 +159,7 @@ def test_refresh_token(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
-def test_refresh_token_invalid_input(server):
+def test_refresh_token_invalid_input():
     """Test the /auth/refresh endpoint with invalid input"""
     url = f"{BASE_URL}/auth/refresh"
     invalid_data = [
@@ -173,7 +173,7 @@ def test_refresh_token_invalid_input(server):
         except requests.exceptions.ConnectionError:
             pytest.fail("Could not connect to the server")
 
-def test_refresh_token_missing_params(server):
+def test_refresh_token_missing_params():
     """Test the /auth/refresh endpoint with missing parameters"""
     url = f"{BASE_URL}/auth/refresh"
     invalid_data = [
@@ -188,7 +188,7 @@ def test_refresh_token_missing_params(server):
             pytest.fail("Could not connect to the server")
 
 
-def test_send_fcm_token(server):
+def test_send_fcm_token():
     """Test the /auth/fcm_token endpoint"""
     login_url = f"{BASE_URL}/auth/login"
     fcm_token_url = f"{BASE_URL}/auth/fcm_token"
