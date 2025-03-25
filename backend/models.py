@@ -148,8 +148,7 @@ class RecurringTransaction(Base):
     note = Column(String(255), nullable=True)
     period = Column(Integer, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-
-    # Establish relationship with the User
+    last_notified_payment_date = Column(DateTime, nullable=True)
     user = relationship("User", backref=backref("recurring_transactions", cascade="all, delete-orphan"))
     
     def __repr__(self):
