@@ -5,21 +5,7 @@ from multiprocessing import Process
 import time
 from datetime import datetime, timedelta
 import os
-BASE_URL = os.getenv("BASE_URL")
-
-def run_server():
-    """Run the FastAPI server in a separate process."""
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, log_level="info")
-
-@pytest.fixture(scope="module")
-def server():
-    """Start and stop the FastAPI server for tests."""
-    proc = Process(target=run_server)
-    proc.start()
-    time.sleep(5)
-    yield
-    proc.terminate()
-    proc.join()
+from test_setup import *
 
 @pytest.fixture
 def auth_headers(server):
