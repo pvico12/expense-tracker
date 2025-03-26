@@ -17,7 +17,7 @@ data class GoalRetrievalGoals (
 data class GoalRetrievalStats (
     val completed: Int,
     val in_progress: Int,
-    val incompleted: Int,
+    val failed: Int,
 )
 
 data class GoalRetrievalResponse (

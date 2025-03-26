@@ -5,7 +5,6 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,7 +16,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Settings
 import com.cs446.expensetracker.api.models.GoalRetrievalResponse
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,21 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.Category
-import com.cs446.expensetracker.api.models.CategoryBreakdown
-import com.cs446.expensetracker.api.models.DealCreationRequest
-import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.GoalCreationRequest
 import com.cs446.expensetracker.api.models.GoalRetrievalGoals
 import com.cs446.expensetracker.api.models.GoalUpdateRequest
-import com.cs446.expensetracker.api.models.LevelRequest
-import com.cs446.expensetracker.api.models.SpendingSummaryResponse
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
-import com.cs446.expensetracker.ui.ui.theme.mainBackgroundColor
 import com.cs446.expensetracker.ui.ui.theme.mainTextColor
 import com.cs446.expensetracker.ui.ui.theme.secondTextColor
-import com.google.android.gms.maps.model.LatLng
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -260,6 +250,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
             }
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun preloadData() {
             coroutineScope.launch {
                 try {
@@ -275,7 +266,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                         awaitAll(categoriesDeferred, goalsDeferred)
 
                     if (categoriesResponse.isSuccessful) {
-                        categories = categoriesResponse.body() as List<Category> ?: emptyList()
+                        categories = categoriesResponse.body() as List<Category>
                     } else {
                         preloadErrorMessage += "Failed to load categories."
                         Log.d("Error", "Categories API Response Was Unsuccessful: $categories")
@@ -284,7 +275,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                     if (goalsResponse.isSuccessful) {
                         val responseBody = goalsResponse.body() as GoalRetrievalResponse
                         Log.d("Response", "Goals Response: $responseBody")
-                        listOfGoals = responseBody?.goals?.map { x ->
+                        listOfGoals = responseBody.goals.map { x ->
                             GoalRetrievalGoals(
                                 id = x.id,
                                 category_id = x.category_id,
@@ -297,7 +288,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                                 time_left = x.time_left,
                                 amount_spent = x.amount_spent,
                             )
-                        } ?: emptyList()
+                        }
 
                         if (editVersion != -1) {
                             for (goal in listOfGoals) {
@@ -339,7 +330,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
 
         LaunchedEffect(Unit) {
             isLoading = true
-            val token = UserSession.access_token ?: ""
+            Log.d("Token", "Token: $UserSession.access_token")
             preloadData()
         }
 
@@ -400,7 +391,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                                     errorMessage += "Please pick a goal type\n"
                                     isSaveButtonLoading = false
                                 }
-                                var nullCheckLimit = limit.toDoubleOrNull()
+                                val nullCheckLimit = limit.toDoubleOrNull()
                                 Log.d("Response", "Amount: ${nullCheckLimit}")
                                 if (nullCheckLimit == null) {
                                     errorMessage = errorMessage ?: ""
@@ -440,7 +431,6 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
 
                                         Log.d("Response", "Edit Goal Request: ${updateGoalRequest}")
 
-                                        val token = UserSession.access_token ?: ""
                                         val response =
                                             RetrofitInstance.apiService.updateGoal(editVersion.toString(), updateGoalRequest)
                                         if (response.isSuccessful) {
@@ -466,7 +456,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
                                             period= if(period == "Week") 7.0 else 31.0,
                                         )
                                         Log.d("Response", "Create Goal Request: ${goal}")
-                                        val token = UserSession.access_token ?: ""
+                                        val token = UserSession.access_token
                                         val response: Response<GoalRetrievalResponse> =
                                             RetrofitInstance.apiService.addGoal(goal)
                                         if (response.isSuccessful) {

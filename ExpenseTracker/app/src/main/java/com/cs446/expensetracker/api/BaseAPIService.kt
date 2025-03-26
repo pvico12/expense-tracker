@@ -182,6 +182,12 @@ interface BaseAPIService {
     // ====================== Goals ===========================
 
     @GET("/goals/")
+    suspend fun getGoals(
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String
+    ): Response<GoalRetrievalResponse>
+
+    @GET("/goals/")
     suspend fun getGoals(): Response<GoalRetrievalResponse>
 
     @POST("/goals/")

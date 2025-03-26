@@ -1,7 +1,5 @@
 package com.cs446.expensetracker.ui.dashboard
 
-import android.app.DatePickerDialog
-import android.icu.text.DecimalFormat
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -70,42 +68,31 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.models.GoalRetrievalResponse
 import com.cs446.expensetracker.api.models.GoalRetrievalStats
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import coil.compose.AsyncImage
-import com.cs446.expensetracker.api.models.DealRetrievalResponse
 import com.cs446.expensetracker.api.models.LevelRequest
 import com.cs446.expensetracker.mockData.formatCurrency
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 
 class Dashboard {
 
-    private val default_colors = arrayOf("#FF9A3B3B", "#FFC08261", "#FFDBAD8C", "#FFDBAD8C", "#FFFFEBCF", "#FFFFCFAC", "#FFFFDADA", "#FFD6CBAF", "#FF8D5F2E")
+    private val defaultCategoryColours = arrayOf("#FF9A3B3B", "#FFC08261", "#FFDBAD8C", "#FFFFEBCF", "#FFFFCFAC", "#FFFFDADA", "#FFD6CBAF", "#FF8D5F2E")
 
     @OptIn(ExperimentalMaterial3Api::class)
     @RequiresApi(Build.VERSION_CODES.O)
@@ -121,19 +108,19 @@ class Dashboard {
         var errorMessage by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(true) }
         // for spending summary
-        var spendingSummary by remember { mutableStateOf<List<CategoryBreakdown>>(emptyList()) }
-        var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
+        var spendingSummary by remember { mutableStateOf<List<CategoryBreakdown>?>(null) }
+        var categories by remember { mutableStateOf<List<Category>?>(null) }
         var totalSpending by remember { mutableDoubleStateOf(0.0) }
         // for goals editing
         var deleteConfirmationDialogue by remember { mutableStateOf(false)}
         var idToDelete by remember { mutableIntStateOf(-1) }
         // for goals
         var viewSpendingOrGoals by rememberSaveable { mutableStateOf("View Goals") }
-        var listOfGoals by remember { mutableStateOf<List<GoalRetrievalGoals>>(emptyList()) }
+        var listOfGoals by remember { mutableStateOf<List<GoalRetrievalGoals>?>(null) }
         var goalStats by remember { mutableStateOf<GoalRetrievalStats?>(null) }
         // for levels
         var levelStats by remember { mutableStateOf<LevelRequest?>(null) }
-        var playPetAnimation by remember { mutableStateOf<Boolean>(false) }
+        var playPetAnimation by remember { mutableStateOf(false) }
         // for search
         var searchQuery by remember { mutableStateOf("") }
         var filteredSearchlistOfGoals by remember { mutableStateOf<List<GoalRetrievalGoals>>(emptyList())}
@@ -141,39 +128,46 @@ class Dashboard {
         val currentDate = LocalDateTime.now()
         val monthName = currentDate.format(DateTimeFormatter.ofPattern("MMMM"))
         // for api calls
-        val firstDayOfMonth = currentDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE_TIME)
-        val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).format(DateTimeFormatter.ISO_DATE_TIME)
+        val firstDayOfMonth = currentDate.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0).format(DateTimeFormatter.ISO_DATE_TIME)
+        val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).format(DateTimeFormatter.ISO_DATE_TIME)
 
-        fun apiFetchGoals(startDate: String, endDate: String) {
+        fun assignGoalResponse(responseBody: GoalRetrievalResponse) {
+            Log.d("Response", "Goals Response: $responseBody for $firstDayOfMonth to $lastDayOfMonth")
+            goalStats = responseBody.stats
+            listOfGoals = responseBody.goals.map { x ->
+                GoalRetrievalGoals(
+                    id = x.id,
+                    category_id = x.category_id,
+                    goal_type = x.goal_type,
+                    limit = x.limit,
+                    start_date = x.start_date,
+                    end_date = x.end_date,
+                    period = x.period,
+                    on_track = x.on_track,
+                    time_left = x.time_left,
+                    amount_spent = x.amount_spent,
+                )
+            } // should automatically make an empty list if no goals are found
+
+            for (goal in listOfGoals!!) {
+                if (categories != null) {
+                    goal.category_string = categories!!.find { it.id == goal.category_id }?.name ?: "Deleted Category"
+                }
+            }
+        }
+
+        fun asyncFetchGoals() {
             coroutineScope.launch {
                 try {
-                    val token = UserSession.access_token ?: ""
+//                    val token = UserSession.access_token ?: ""
                     val response: Response<GoalRetrievalResponse> =
-                        RetrofitInstance.apiService.getGoals()
+                        RetrofitInstance.apiService.getGoals(firstDayOfMonth, lastDayOfMonth)
                     Log.d("Response", "Fetch Goals API Request actually called")
                     if (response.isSuccessful) {
                         val responseBody = response.body()
-                        Log.d("Response", "Goals Response: $responseBody")
-                        goalStats = responseBody?.stats
-                        listOfGoals = responseBody?.goals?.map { x ->
-                            GoalRetrievalGoals(
-                                id = x.id,
-                                category_id = x.category_id,
-                                goal_type = x.goal_type,
-                                limit = x.limit,
-                                start_date = x.start_date,
-                                end_date = x.end_date,
-                                period = x.period,
-                                on_track = x.on_track,
-                                time_left = x.time_left,
-                                amount_spent = x.amount_spent,
-                            )
-                        } ?: emptyList()
-
-                        for (goal in listOfGoals) {
-                            goal.category_string = categories.find { it.id == goal.category_id }?.name ?: "Deleted Category"
+                        if (responseBody != null) {
+                            assignGoalResponse(responseBody)
                         }
-
                     } else {
                         errorMessage = "Failed to load data."
                         Log.d("Error", "Goals API Response Was Unsuccessful: $response")
@@ -192,7 +186,6 @@ class Dashboard {
             coroutineScope.launch {
                 isLoading = true
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<String> =
                         RetrofitInstance.apiService.deleteGoal(id.toString())
                     Log.d("Response", "Fetch Goals API Request actually called")
@@ -216,7 +209,7 @@ class Dashboard {
                             ).show()
                         }
                     }
-                    apiFetchGoals(firstDayOfMonth, lastDayOfMonth)
+                    asyncFetchGoals()
                 } catch (e: Exception) {
                     Log.d("Error", "Error Calling Goals API: $e")
                 } finally {
@@ -288,18 +281,18 @@ class Dashboard {
                         ),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    var main_goal_text: String
-                    var secondary_goal_text: String
-                    var period_length = "week"
+                    val mainGoalText: String
+                    val secondaryGoalText: String
+                    var periodLength = "week"
                     if (goal.period != 7) {
-                        period_length = "month"
+                        periodLength = "month"
                     }
                     if(goal.goal_type == "amount") {
-                        main_goal_text = "Spend less than $" + formatCurrency(goal.limit) + " on ${goal.category_string}"
-                        secondary_goal_text = "$${formatCurrency(goal.amount_spent)} amount spent this $period_length so far"
+                        mainGoalText = "Spend less than $" + formatCurrency(goal.limit) + " on ${goal.category_string}"
+                        secondaryGoalText = "$${formatCurrency(goal.amount_spent)} amount spent this $periodLength so far"
                     } else {
-                        main_goal_text = "Spend " + formatCurrency(goal.limit) + "% less than last $period_length on ${goal.category_string}"
-                        secondary_goal_text = "${formatCurrency(goal.amount_spent)}% less spent than last $period_length so far"
+                        mainGoalText = "Spend " + formatCurrency(goal.limit) + "% less than last $periodLength on ${goal.category_string}"
+                        secondaryGoalText = "${formatCurrency(goal.amount_spent)}% less spent than last $periodLength so far"
                     }
                     Column {
                         Row(
@@ -307,7 +300,7 @@ class Dashboard {
                                 .fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = main_goal_text, fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall)
+                            Text(text = mainGoalText, fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall)
                         }
                         Row(
                             modifier = Modifier
@@ -315,8 +308,8 @@ class Dashboard {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            var icon: ImageVector
-                            var color: Color
+                            val icon: ImageVector
+                            val color: Color
                             val formatter = DateTimeFormatter.ISO_DATE_TIME
                             val dateTime = LocalDateTime.parse(goal.end_date, formatter)
                             val currentDateTime = LocalDateTime.now()
@@ -355,7 +348,7 @@ class Dashboard {
                                     )
                                 }
                                 Text(
-                                    text = secondary_goal_text,
+                                    text = secondaryGoalText,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.secondary,
                                     textAlign = TextAlign.Left,
@@ -468,7 +461,7 @@ class Dashboard {
                         tint = negativeRed
                     )
                     Text(
-                        text = ": ${goalStats?.incompleted}",
+                        text = ": ${goalStats?.failed}",
                         color = secondTextColor,
                         style = Typography.titleMedium,
                         modifier = Modifier
@@ -502,6 +495,7 @@ class Dashboard {
             }
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun preloadData() {
             coroutineScope.launch {
                 try {
@@ -518,7 +512,7 @@ class Dashboard {
                         RetrofitInstance.apiService.getCategories()
                     }
                     val goalsDeferred = async(Dispatchers.IO) {
-                        RetrofitInstance.apiService.getGoals()
+                        RetrofitInstance.apiService.getGoals(firstDayOfMonth, lastDayOfMonth)
                     }
 
                     // Await all calls to complete
@@ -527,25 +521,21 @@ class Dashboard {
 
                     if (spendingResponse.isSuccessful) {
                         val responseBody = spendingResponse.body() as SpendingSummaryResponse
-                        totalSpending = responseBody.total_spend ?: 0.0
+                        totalSpending = responseBody.total_spend
                         Log.d("Response", "Summary Spend Response: $responseBody for $firstDayOfMonth to $lastDayOfMonth")
                         spendingSummary = responseBody.category_breakdown.map { x ->
                             CategoryBreakdown(
                                 category_name = x.category_name,
                                 total_amount = x.total_amount,
                                 percentage = x.percentage,
-                                custom_color = null //TODO: change backend
+                                color = x.color,
                             )
-                        } ?: emptyList()
-                        var color_iter = -1
-                        for (expense in spendingSummary) {
-                            if (expense.custom_color == null) {
-                                if (color_iter < default_colors.size) {
-                                    color_iter += 1
-                                } else {
-                                    color_iter = 0
-                                }
-                                expense.custom_color = default_colors[color_iter]
+                        }
+                        var colorIter = -1
+                        for (expense in spendingSummary!!) {
+                            if (expense.color == null) {
+                                colorIter = (colorIter + 1) % defaultCategoryColours.size
+                                expense.color = defaultCategoryColours[colorIter]
                             }
                         }
                     } else {
@@ -561,7 +551,7 @@ class Dashboard {
                     }
 
                     if (categoriesResponse.isSuccessful) {
-                        categories = categoriesResponse.body() as List<Category> ?: emptyList()
+                        categories = categoriesResponse.body() as List<Category>
                     } else {
                         errorMessage += "Failed to load categories."
                         Log.d("Error", "Categories API Response Was Unsuccessful: $categories")
@@ -569,27 +559,7 @@ class Dashboard {
 
                     if (goalsResponse.isSuccessful) {
                         val responseBody = goalsResponse.body() as GoalRetrievalResponse
-                        Log.d("Response", "Goals Response: $responseBody")
-                        goalStats = responseBody?.stats
-                        listOfGoals = responseBody?.goals?.map { x ->
-                            GoalRetrievalGoals(
-                                id = x.id,
-                                category_id = x.category_id,
-                                goal_type = x.goal_type,
-                                limit = x.limit,
-                                start_date = x.start_date,
-                                end_date = x.end_date,
-                                period = x.period,
-                                on_track = x.on_track,
-                                time_left = x.time_left,
-                                amount_spent = x.amount_spent,
-                            )
-                        } ?: emptyList()
-
-                        for (goal in listOfGoals) {
-                            goal.category_string = categories.find { it.id == goal.category_id }?.name ?: "Deleted Category"
-                        }
-
+                        assignGoalResponse(responseBody)
                     } else {
                         errorMessage = "Failed to load data."
                         Log.d("Error", "Goals API Response Was Unsuccessful: $goalsResponse")
@@ -609,12 +579,12 @@ class Dashboard {
         // Preload all data
         LaunchedEffect(Unit) {
             isLoading = true
-            val token = UserSession.access_token ?: ""
+            Log.d("Token", "Token: $UserSession.access_token")
             preloadData()
         }
 
         // Actual visuals for home page
-        if(categories.isNotEmpty() && levelStats != null && spendingSummary.isNotEmpty() && listOfGoals.isNotEmpty()) {
+        if(categories != null && levelStats != null && spendingSummary != null && listOfGoals != null) {
             isLoading = false
         }
         if(errorMessage != "") {
@@ -730,7 +700,9 @@ class Dashboard {
                             {
                                 GifPlayer(context = LocalContext.current, playPetAnimation)
                             }
-                            Piechart(spendingSummary)
+                            if (spendingSummary != null) {
+                                Piechart(spendingSummary!!)
+                            }
                             Column(
                                 modifier = Modifier
                                     .height(340.dp),
@@ -769,10 +741,10 @@ class Dashboard {
                                 modifier = Modifier
                                     .padding(0.dp),
                                 onClick = {
-                                    if(viewSpendingOrGoals == "View Goals") {
-                                        viewSpendingOrGoals = "View Spending"
+                                    viewSpendingOrGoals = if(viewSpendingOrGoals == "View Goals") {
+                                        "View Spending"
                                     } else {
-                                        viewSpendingOrGoals = "View Goals"
+                                        "View Goals"
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = mainTextColor)
@@ -782,8 +754,8 @@ class Dashboard {
 
                         }
                         if(viewSpendingOrGoals == "View Goals") {
-                            for(expense in spendingSummary) {
-                                expenseCategoryCard(expense)
+                            for(expense in spendingSummary!!) {
+                                ExpenseCategoryCard(expense)
                             }
                         } else {
                             if (deleteConfirmationDialogue) {
@@ -810,14 +782,14 @@ class Dashboard {
                                 onSearchQueryChange = { searchQuery = it },
                             )
                             LaunchedEffect(listOfGoals, searchQuery) {
-                                filteredSearchlistOfGoals = listOfGoals.filter { goal ->
+                                filteredSearchlistOfGoals = listOfGoals!!.filter { goal ->
                                     val matchesQuery = if (searchQuery.isNotBlank())
                                         goal.category_string?.contains(searchQuery, ignoreCase = true)
                                     else true
                                     matchesQuery == true
                                 }
                             }
-                            for(goal in listOfGoals) {
+                            for(goal in listOfGoals!!) {
                                 if (goal in filteredSearchlistOfGoals) {
                                     goalCard(goal)
                                 }

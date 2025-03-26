@@ -58,7 +58,7 @@ fun Piechart(spendingSummary: List<CategoryBreakdown>) {
                 val entries: ArrayList<PieEntry> = ArrayList()
                 for(expense in spendingSummary) {
                     entries.add(PieEntry(expense.percentage.toFloat(), expense.category_name))
-                    colors.add(Color(android.graphics.Color.parseColor((expense.custom_color))).toArgb())
+                    colors.add(Color(android.graphics.Color.parseColor((expense.color))).toArgb())
                 }
 
                 setNoDataText("Add your first transactions to see the pie chart")
