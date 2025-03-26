@@ -9,8 +9,8 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1)
 
 class RegistrationRequest(BaseModel):
-    username: str = Field(..., min_length=1)
-    password: str = Field(..., min_length=1)
+    username: str = Field(..., min_length=4)
+    password: str = Field(..., min_length=6)
     firstname: str = Field(..., min_length=1)
     lastname: str = Field(..., min_length=1)
     
@@ -36,6 +36,12 @@ class TransactionCreateRequest(BaseModel):
     def parse_transaction_type(cls, v: Any) -> Any:
         if isinstance(v, str):
             return TransactionType(v.lower())
+        return v
+    
+    @validator('amount', pre=True)
+    def validate_amount(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Amount must be greater than 0")
         return v
 
 # Response Models
@@ -106,7 +112,7 @@ class CustomCategoryCreateRequest(BaseModel):
 
 # === Category Suggestions ===
 class CategorySuggestionRequest(BaseModel):
-    item_name: str
+    item_name: str = Field(..., min_length=1)
     
 class CategorySuggestionResponse(BaseModel):
     category_id: int
@@ -191,6 +197,24 @@ class RecurringTransactionCreateRequest(BaseModel):
     transaction_type: TransactionType
     vendor: Optional[str] = None
 
+    @validator('amount', pre=True)
+    def validate_amount(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Amount must be greater than 0")
+        return v
+    
+    @validator('period', pre=True)
+    def validate_period(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Period must be greater than 0")
+        return v
+
+    @validator('start_date', pre=True)
+    def validate_start_date(cls, v: Any) -> Any:
+        if v is not None and v > cls.end_date:
+            raise ValueError("Start date must be before end date")
+        return v
+
 class RecurringTransactionUpdateRequest(RecurringTransactionCreateRequest):
     # For now, the update fields mirror the creation request.
     pass
@@ -218,6 +242,12 @@ class TransactionUpdateRequest(BaseModel):
         if v is not None and isinstance(v, str):
             return TransactionType(v.lower())
         return v
+    
+    @validator('amount', pre=True)
+    def validate_amount(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Amount must be greater than 0")
+        return v
 
 class GoalCreateRequest(BaseModel):
     category_id: Optional[int] = None
@@ -239,6 +269,12 @@ class GoalCreateRequest(BaseModel):
         if goal_type == "percentage" and category_id is None:
             raise ValueError("Percentage goal must have a category_id")
         return values
+    
+    @validator('limit', pre=True)
+    def validate_limit(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Limit must be greater than 0")
+        return v
 
 class GoalUpdateRequest(BaseModel):
     category_id: Optional[int] = None
