@@ -3,22 +3,7 @@ import uvicorn
 import requests
 from multiprocessing import Process
 import time
-
-BASE_URL = "http://localhost:8000"
-
-def run_server():
-    """Function to run the FastAPI server in a separate process"""
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, log_level="info")
-
-@pytest.fixture(scope="module")
-def server():
-    """Fixture to start and stop the server"""
-    proc = Process(target=run_server)
-    proc.start()
-    time.sleep(5)
-    yield
-    proc.terminate()
-    proc.join()
+from test_setup import *
 
 @pytest.mark.run(order=1)
 def test_register(server):
@@ -40,13 +25,32 @@ def test_register(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
+def test_register_existing_user(server):
+    """Test the /auth/register endpoint with an existing user"""
+    url = f"{BASE_URL}/auth/register"
+    data = {
+        "username": "newuser",
+        "password": "newpassword",
+        "firstname": "New",
+        "lastname": "User 2"
+    }
+    
+    try:
+        response = requests.post(url, json=data)
+        assert response.status_code == 400  # Bad Request
+    except requests.exceptions.ConnectionError:
+        pytest.fail("Could not connect to the server")
+
 def test_register_invalid_input(server):
     """Test the /auth/register endpoint with invalid input"""
     url = f"{BASE_URL}/auth/register"
     invalid_data = [
         {},  # Empty data
         {"username": "newuser"},  # Missing fields
-        {"username": "newuser", "password": "short"},  # Password too short
+        {"username": "a", "password": "newpassword", "firstname": "New", "lastname": "User"},  # Username too short
+        {"username": "newuser2", "password": "short", "firstname": "New", "lastname": "User"},  # Password too short
+        {"username": "newuser2", "password": "newpassword", "firstname": "", "lastname": "User"},  # Firstname too short
+        {"username": "newuser2", "password": "newpassword", "firstname": "New", "lastname": ""},  # Lastname too short
     ]
     
     for data in invalid_data:
@@ -101,6 +105,23 @@ def test_login_invalid_password(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
+def test_login_missing_params(server):
+    """Test the /auth/login endpoint with missing parameters"""
+    url = f"{BASE_URL}/auth/login"
+    invalid_data = [
+        {},  # Empty data
+        {"username": "newuser"},  # Missing password
+        {"password": "newpassword"}  # Missing username
+    ]
+    
+    for data in invalid_data:
+        try:
+            response = requests.post(url, json=data)
+            assert response.status_code == 422  # Unprocessable Entity
+        except requests.exceptions.ConnectionError:
+            pytest.fail("Could not connect to the server")
+
+
 def test_refresh_token(server):
     """Test the /auth/refresh endpoint"""
     login_url = f"{BASE_URL}/auth/login"
@@ -137,6 +158,21 @@ def test_refresh_token_invalid_input(server):
         except requests.exceptions.ConnectionError:
             pytest.fail("Could not connect to the server")
 
+def test_refresh_token_missing_params(server):
+    """Test the /auth/refresh endpoint with missing parameters"""
+    url = f"{BASE_URL}/auth/refresh"
+    invalid_data = [
+        {},  # Empty data
+    ]
+    
+    for data in invalid_data:
+        try:
+            response = requests.post(url, json=data)
+            assert response.status_code == 422  # Unprocessable Entity
+        except requests.exceptions.ConnectionError:
+            pytest.fail("Could not connect to the server")
+
+
 def test_send_fcm_token(server):
     """Test the /auth/fcm_token endpoint"""
     login_url = f"{BASE_URL}/auth/login"
@@ -160,8 +196,8 @@ def test_send_fcm_token(server):
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
 
-def test_send_fcm_token_invalid_input(server):
-    """Test the /auth/fcm_token endpoint with invalid input"""
+def test_send_fcm_token_invalid_fcm_token(server):
+    """Test the /auth/fcm_token endpoint with invalid FCM token"""
     login_url = f"{BASE_URL}/auth/login"
     fcm_token_url = f"{BASE_URL}/auth/fcm_token"
     login_data = {
@@ -183,5 +219,16 @@ def test_send_fcm_token_invalid_input(server):
         for data in invalid_data:
             response = requests.post(fcm_token_url, json=data, headers=headers)
             assert response.status_code == 422 
+    except requests.exceptions.ConnectionError:
+        pytest.fail("Could not connect to the server")
+        
+def send_fcm_token_missing_auth_token(server):
+    """Test the /auth/fcm_token endpoint with missing Authorization header"""
+    fcm_token_url = f"{BASE_URL}/auth/fcm_token"
+    data = {"fcm_token": "test_fcm_token"}
+    
+    try:
+        response = requests.post(fcm_token_url, json=data)
+        assert response.status_code == 401
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")

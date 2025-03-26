@@ -1,4 +1,4 @@
-package com.cs446.expensetracker.deals
+package com.cs446.expensetracker.ui.deals
 
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.model.Place

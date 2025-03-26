@@ -3,12 +3,13 @@ import logging
 import time
 from utils import get_coordinate_distance
 from middlewares.goal_utils import get_mid_period_notifications, get_post_period_notifications, recalc_goal_progress
-from models import Deal, DealLocationSubscription, FcmToken, Goal, User
+from models import Deal, DealLocationSubscription, FcmToken, Goal, User, RecurringTransaction
 import json
 import requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from db import db_session
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -211,3 +212,41 @@ def add_xp_to_user(user_id: int, xp: int) -> User:
         send_level_up_notification(user_id, new_level)
     
     return user
+
+async def send_upcoming_recurring_payment_notifications():
+    fcm = FirebaseHTTPV1("expense-tracker-firebase.json")
+        
+    while True:
+        recurring_transactions = db_session.query(RecurringTransaction).all()
+        now = datetime.utcnow()
+        # Define the upcoming threshold (next 24 hours)
+        upcoming_threshold = now + timedelta(hours=24)
+        
+        for recurring in recurring_transactions:
+            period_delta = timedelta(days=recurring.period)
+            if now < recurring.start_date:
+                next_payment_date = recurring.start_date
+            else:
+                periods_passed = ((now - recurring.start_date) // period_delta) + 1
+                next_payment_date = recurring.start_date + periods_passed * period_delta
+            if next_payment_date > recurring.end_date:
+                continue
+
+            # Check if the upcoming payment falls within the next 24 hours
+            if now <= next_payment_date <= upcoming_threshold:
+                # If a notification was already sent for this upcoming payment, skip it.
+                if recurring.last_notified_payment_date is not None and recurring.last_notified_payment_date == next_payment_date:
+                    continue
+                
+                tokens = db_session.query(FcmToken).filter(FcmToken.user_id == recurring.user_id).all()
+                fcm_tokens = [token.token for token in tokens]
+                message = (
+                    f"Reminder: Your recurring payment is scheduled for "
+                    f"{next_payment_date.strftime('%Y-%m-%d %H:%M:%S')}."
+                )
+                fcm.send_multiple_notifications(fcm_tokens, "Upcoming Recurring Payment", message)
+                
+                # Mark that a notification for this upcoming payment date has been sent.
+                recurring.last_notified_payment_date = next_payment_date
+                db_session.commit()
+        await asyncio.sleep(120)
