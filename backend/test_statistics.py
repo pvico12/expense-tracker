@@ -51,7 +51,7 @@ def create_recurring_transaction(auth_headers, category_id, note, amount, trans_
     Helper function to create a recurring transaction.
     Setting start_date and end_date to the same value will generate a single transaction.
     """
-    url = f"{BASE_URL}/transactions/recurring"
+    url = f"{BASE_URL}/transactions/recurring/"
     payload = {
         "start_date": trans_date.isoformat(),
         "end_date": trans_date.isoformat(),
