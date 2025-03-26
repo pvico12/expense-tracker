@@ -6,6 +6,11 @@ import time
 from datetime import datetime, timedelta
 import os
 from test_setup import *
+from sqlalchemy.orm import Session
+
+@pytest.fixture(autouse=True)
+def patch_bulk_save_objects(monkeypatch):
+    monkeypatch.setattr(Session, "bulk_save_objects", lambda self, objs: self.add_all(objs))
 
 @pytest.fixture
 def auth_headers(server):
