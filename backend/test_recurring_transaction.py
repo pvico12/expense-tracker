@@ -50,7 +50,7 @@ def create_custom_category(auth_headers, name="Test Category", color="#123456"):
 
 def test_get_recurring_transactions(server, auth_headers):
     """Test retrieving a list of recurring transactions"""
-    url = f"{BASE_URL}/transactions/recurring"
+    url = f"{BASE_URL}/transactions/recurring/"
     response = requests.get(url, headers=auth_headers)
     assert response.status_code == 200, response.text
     data = response.json()
@@ -62,7 +62,7 @@ def test_create_recurring_transaction(server, auth_headers):
     category = create_custom_category(auth_headers, name="Recurring Category", color="#a1b2c3")
     category_id = category.get("id")
 
-    url = f"{BASE_URL}/transactions/recurring"
+    url = f"{BASE_URL}/transactions/recurring/"
     now = datetime.utcnow().replace(microsecond=0)
     start_date = now.isoformat()
     end_date = (now + timedelta(days=30)).isoformat()
@@ -91,7 +91,7 @@ def test_update_recurring_transaction(server, auth_headers):
     category = create_custom_category(auth_headers, name="Update Recurring", color="#d4e5f6")
     category_id = category.get("id")
 
-    post_url = f"{BASE_URL}/transactions/recurring"
+    post_url = f"{BASE_URL}/transactions/recurring/"
     now = datetime.utcnow().replace(microsecond=0)
     start_date = now.isoformat()
     end_date = (now + timedelta(days=30)).isoformat()
@@ -111,7 +111,7 @@ def test_update_recurring_transaction(server, auth_headers):
     recurring_id = recurring.get("id")
     
     # Now, update the recurring transaction. Note that the update endpoint expects the recurring_id as a query parameter.
-    update_url = f"{BASE_URL}/transactions/recurring"
+    update_url = f"{BASE_URL}/transactions/recurring/"
     new_now = datetime.utcnow().replace(microsecond=0)
     new_start_date = new_now.isoformat()
     new_end_date = (new_now + timedelta(days=40)).isoformat()
@@ -134,7 +134,7 @@ def test_update_recurring_transaction(server, auth_headers):
 
 def test_update_nonexistent_recurring_transaction(server, auth_headers):
     """Test updating a non-existent recurring transaction"""
-    update_url = f"{BASE_URL}/transactions/recurring"
+    update_url = f"{BASE_URL}/transactions/recurring/"
     new_now = datetime.utcnow().replace(microsecond=0)
     update_payload = {
         "start_date": new_now.isoformat(),
@@ -156,7 +156,7 @@ def test_delete_recurring_transaction(server, auth_headers):
     category = create_custom_category(auth_headers, name="Delete Recurring", color="#ffcc00")
     category_id = category.get("id")
     
-    post_url = f"{BASE_URL}/transactions/recurring"
+    post_url = f"{BASE_URL}/transactions/recurring/"
     now = datetime.utcnow().replace(microsecond=0)
     start_date = now.isoformat()
     end_date = (now + timedelta(days=25)).isoformat()
@@ -175,7 +175,7 @@ def test_delete_recurring_transaction(server, auth_headers):
     recurring = post_resp.json()
     recurring_id = recurring.get("id")
     
-    delete_url = f"{BASE_URL}/transactions/recurring"
+    delete_url = f"{BASE_URL}/transactions/recurring/"
     # Delete the recurring transaction with the given recurring_id
     delete_resp = requests.delete(delete_url, params={"recurring_id": recurring_id}, headers=auth_headers)
     assert delete_resp.status_code == 204, delete_resp.text

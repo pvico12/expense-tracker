@@ -82,10 +82,13 @@ def get_goals(
         else:
             goal.amount_spent = None
 
-    now = datetime.datetime.utcnow()
-    completed_count = sum(1 for goal in goals if goal.end_date <= now and goal.on_track)
-    failed_count = sum(1 for goal in goals if goal.end_date <= now and not goal.on_track)
-    incompleted_count = sum(1 for goal in goals if goal.end_date > now)
+    if start_date is not None and end_date is not None:
+        ref_date = end_date
+    else:
+        ref_date = datetime.datetime.utcnow()
+    completed_count = sum(1 for goal in goals if goal.end_date <= ref_date and goal.on_track)
+    failed_count = sum(1 for goal in goals if goal.end_date <= ref_date and not goal.on_track)
+    incompleted_count = sum(1 for goal in goals if goal.end_date > ref_date)
     return {
         "goals": goals,
         "stats": {
