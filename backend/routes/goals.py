@@ -54,10 +54,8 @@ def get_goals(
     query = db.query(Goal).filter(Goal.user_id == current_user.id)
     if start_date and end_date:
         query = query.filter(
-            Goal.start_date >= start_date,
             Goal.start_date <= end_date,
-            Goal.end_date >= start_date,
-            Goal.end_date <= end_date
+            Goal.end_date >= start_date
         )
     else:
         if start_date:
