@@ -112,7 +112,7 @@ class CustomCategoryCreateRequest(BaseModel):
 
 # === Category Suggestions ===
 class CategorySuggestionRequest(BaseModel):
-    item_name: str
+    item_name: str = Field(..., min_length=1)
     
 class CategorySuggestionResponse(BaseModel):
     category_id: int
