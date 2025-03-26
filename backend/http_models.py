@@ -209,12 +209,6 @@ class RecurringTransactionCreateRequest(BaseModel):
             raise ValueError("Period must be greater than 0")
         return v
 
-    @validator('start_date', pre=True)
-    def validate_start_date(cls, v: Any) -> Any:
-        if v is not None and v > cls.end_date:
-            raise ValueError("Start date must be before end date")
-        return v
-
 class RecurringTransactionUpdateRequest(RecurringTransactionCreateRequest):
     # For now, the update fields mirror the creation request.
     pass
