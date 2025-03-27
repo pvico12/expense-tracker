@@ -1,5 +1,8 @@
 package com.cs446.expensetracker.ui.ui.theme
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.graphics.Color
 
 val Purple80 = Color(0xFFD0BCFF)
@@ -21,3 +24,11 @@ val pieChartColor4 = Color(0xFFFFEBCF)
 val pieChartColor5 = Color(0xFFFFCFAC)
 val pieChartColor6 = Color(0xFFFFDADA)
 val pieChartColor7 = Color(0xFFD6CBAF)
+
+val secondaryIconColor = Color(0xFF9D9D9D)
+
+val positiveGreen = Color(0xFF69A42D)
+val negativeRed = Color(0xFFD5030A)
+val neutralOrange = Color(0xFFCC8658)
+
+val transparencyColor = Color(0x00F3E3E1)

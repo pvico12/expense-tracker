@@ -43,7 +43,7 @@ import com.cs446.expensetracker.ui.theme.ExpenseTrackerTheme
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import com.cs446.expensetracker.dashboard.AddGoalScreen
+import com.cs446.expensetracker.ui.dashboard.AddGoalScreen
 import com.cs446.expensetracker.nav.DealsContainer
 import com.cs446.expensetracker.nav.TransactionNavContainer
 import com.cs446.expensetracker.nav.settings.AdminPageContainer

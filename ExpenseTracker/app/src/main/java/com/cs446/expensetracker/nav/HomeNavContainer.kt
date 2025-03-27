@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.UserProfileResponse
-import com.cs446.expensetracker.dashboard.Dashboard
+import com.cs446.expensetracker.ui.dashboard.Dashboard
 import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Pink40
 import com.cs446.expensetracker.ui.ui.theme.Pink80
