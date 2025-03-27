@@ -124,6 +124,7 @@ class ProfilePageContainer {
                                 val requestBody = UserProfileUpdateRequest(
                                     firstname = firstname,
                                     lastname = lastname,
+
                                     username = username
                                 )
                                 val response = RetrofitInstance.apiService.updateUserProfile(requestBody)
