@@ -125,5 +125,3 @@ def test_update_user_profile(server):
         
     except requests.exceptions.ConnectionError:
         pytest.fail("Could not connect to the server")
-
-
