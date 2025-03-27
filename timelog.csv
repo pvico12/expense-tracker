@@ -72,3 +72,5 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-25,1,0,0,0,0,0, User Backend Unit Tests
 2025-03-25,1,0,0,0,0,0, Deals Backend Unit Tests
 2025-03-26,1,0,0,0,0,0, More Deals Backend Unit Tests
+2025-03-26,1,0,0,0,0,0, Implement Factory Pattern for Database Connection From Frontend
+2025-03-26,1,0,0,0,0,0, Implement Decorator Pattern for Category Expense Cards on Dashboard
