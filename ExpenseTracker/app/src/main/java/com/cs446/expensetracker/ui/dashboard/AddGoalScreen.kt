@@ -337,7 +337,7 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
         if (categories.isNotEmpty() && (if (editVersion == -1) true else (specificGoalToEdit != null))) {
             isLoading = false
         }
-        if(errorMessage != "") {
+        if(preloadErrorMessage != "") {
             isLoading = false
         }
 
@@ -374,6 +374,9 @@ fun AddGoalScreen(navController: NavController, editVersion: Int) {
 
             else -> {
                 allFieldInputs()
+                if (errorMessage != null) {
+                    Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                }
                 // Save Expense Button
                 Button(
                     onClick = {
