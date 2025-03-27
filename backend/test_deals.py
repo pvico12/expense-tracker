@@ -42,7 +42,6 @@ def test_create_deal(server):
     }
     try:
         response = requests.post(url, json=data, headers=headers)
-        assert response.json() == False
         assert response.status_code == 201
         created_deal = response.json()
         TARGET_DEAL_ID = created_deal["id"]  # Store the created deal ID
