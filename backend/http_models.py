@@ -163,15 +163,27 @@ class DealCreationRequest(BaseModel):
     longitude: float
     latitude: float
 
+    @validator('price', pre=True)
+    def validate_price(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Price must be greater than 0")
+        return v
+
 class DealUpdateRequest(BaseModel):
-    name: Optional[str] = None  # Removed min_length=1
-    description: Optional[str] = None  # Removed min_length=1
-    vendor: Optional[str] = None  # Removed min_length=1
+    name: Optional[str] = None  
+    description: Optional[str] = None 
+    vendor: Optional[str] = None
     price: Optional[float]
     date: Optional[datetime.datetime]
-    address: Optional[str] = None  # Removed min_length=1
+    address: Optional[str] = None
     longitude: Optional[float]
     latitude: Optional[float]
+
+    @validator('price', pre=True)
+    def validate_price(cls, v: Any) -> Any:
+        if v is not None and v <= 0:
+            raise ValueError("Price must be greater than 0")
+        return v
 
 class DealVoteResponse(BaseModel):
     upvotes: int
