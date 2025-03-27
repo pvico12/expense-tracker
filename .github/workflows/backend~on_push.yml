@@ -28,7 +28,7 @@ jobs:
     
     - name: Create google-services.json (for Firebase)
       run: |
-        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PUSH_NOTIFICATIONS }}" | base64 --decode > backend/expense-tracker-firebase.json
+        echo "${{ secrets.BACKEND_FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > backend/expense-tracker-firebase.json
 
     - name: Run Tests
       run: |
