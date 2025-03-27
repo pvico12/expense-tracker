@@ -63,4 +63,4 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-21,1,0,0,0,0,0, Profile Unit Tests + UI Tests
 2025-03-25,0.5,0,0,0,0,0, Backend duplicate user registration handling + Authentication Tests
 2025-03-25,0.5,0,0,0,0,0, Restructure backend testing and add tools tests
-
+2025-03-25,1,0,0,0,0,0, User Backend Unit Tests
