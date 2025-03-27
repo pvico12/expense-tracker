@@ -22,7 +22,7 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # Null for global categories
-    color = Column(String(7), nullable=True)
+    color = Column(String(50), nullable=True)
 
     user = relationship("User", back_populates="categories")
     transactions = relationship("Transaction", back_populates="category")
