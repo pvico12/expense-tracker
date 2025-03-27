@@ -445,7 +445,7 @@ class Dashboard {
                         tint = neutralOrange
                     )
                     Text(
-                        text = ": ${goalStats?.in_progress}",
+                        text = ": ${goalStats?.incompleted}",
                         color = secondTextColor,
                         style = Typography.titleMedium,
                         modifier = Modifier
