@@ -154,22 +154,22 @@ class DealRetrievalRequest(BaseModel):
     location: Optional[LocationFilter] = None
 
 class DealCreationRequest(BaseModel):
-    name: str
-    description: str
-    vendor: Optional[str]
+    name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    vendor: str = Field(..., min_length=1)
     price: float
     date: datetime.datetime
-    address: str
+    address: str = Field(..., min_length=1)
     longitude: float
     latitude: float
 
 class DealUpdateRequest(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
-    vendor: Optional[str]
+    name: Optional[str] = None  # Removed min_length=1
+    description: Optional[str] = None  # Removed min_length=1
+    vendor: Optional[str] = None  # Removed min_length=1
     price: Optional[float]
     date: Optional[datetime.datetime]
-    address: Optional[str]
+    address: Optional[str] = None  # Removed min_length=1
     longitude: Optional[float]
     latitude: Optional[float]
 

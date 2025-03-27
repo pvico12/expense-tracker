@@ -31,3 +31,55 @@ def server():
     yield
     proc.terminate()
     proc.join()
+
+def get_user_id(username="targetuser", password="targetpassword"):
+    # Login
+    url = f"{BASE_URL}/auth/login"
+    data = {
+        "username": username,
+        "password": password
+    }
+    
+    try:
+        response = requests.post(url, json=data)
+        assert response.status_code == 200
+        login_response = response.json()
+        assert "access_token" in login_response
+        target_user_auth_token = login_response["access_token"]
+        
+        # decode access token
+        import jwt
+        from dotenv import load_dotenv
+        import os
+        load_dotenv()
+        JWT_ACCESS_TOKEN_SECRET = os.getenv("JWT_ACCESS_TOKEN_SECRET")
+        if JWT_ACCESS_TOKEN_SECRET is None:
+            pytest.fail("JWT_ACCESS_TOKEN_SECRET is not set in the .env file")
+        
+        token_data = jwt.decode(target_user_auth_token, JWT_ACCESS_TOKEN_SECRET, algorithms=['HS256'])
+        return token_data["user_id"]
+    except requests.exceptions.ConnectionError:
+        pytest.fail("Could not connect to the server")
+        
+    return -1
+
+def get_headers(username="targetuser", password="targetpassword"):
+    # Login
+    url = f"{BASE_URL}/auth/login"
+    data = {
+        "username": username,
+        "password": password
+    }
+    
+    try:
+        response = requests.post(url, json=data)
+        assert response.status_code == 200
+        login_response = response.json()
+        assert "access_token" in login_response
+        target_user_auth_token = login_response["access_token"]
+        
+        return {"Authorization": f"Bearer {target_user_auth_token}"}
+    except requests.exceptions.ConnectionError:
+        pytest.fail("Could not connect to the server")
+        
+    return {}
