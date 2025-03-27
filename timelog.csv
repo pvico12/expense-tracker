@@ -36,13 +36,20 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-09,4,0,0,0,0,0, Push Notifications Frontend App Setup
 2025-03-09,0.5,0,0,0,0,0, Add profile update route
 2025-03-11,0,0,2,0,0,0, Add profile settings
+2025-03-13,0,2,0,0,0,0, Hooked up dashboard and some of deals to backend
 2025-03-13,0.5,0,0,0,0,0, Add votes to general deal GET request
 2025-03-13,0.5,0,0,0,0,0, Add more sample transactions on DB init
 2025-03-14,2,0,0,0,0,0, Add vendor to deals + create more deals on db init + add specific deal request
+2025-03-14,0,2,0,0,0,0, Hooked up most of deals to backend
+2025-03-15,0,2,0,0,0,0, Trying to get google maps integrated to deals
 2025-03-16,3,0,0,0,0,0, Deals Backend Enhancements
+2025-03-16,0,6,0,0,0,0, Trying to get google maps integrated to deals
+2025-03-16,0,8,0,0,0,0, Finally finished google autocomplete + added seachbar + edit/delete + final cosmetic changes
 2025-03-17,3,0,0,0,0,0, Goals Backend Enhancements
+2025-03-17,0,5,0,0,0,0, Added goals feature + discussed ways to alter functionality
 2025-03-17,0,0,3,0,0,0, Relocate settings + Modify dashboard title visuals
 2025-03-18,2,0,0,0,0,0, Transactions Backend Enhancements
+2025-03-18,0,1,0,0,0,0, Some cosmetic cleanup for goals + further discussion
 2025-03-18,2,0,0,0,0,0, Iteration 3 App Stability for Demo
 2025-03-19,2,0,0,0,0,0, Goal Notifications Feature
 2025-03-19,1,0,0,0,0,0, Push Notification healthcheck route
@@ -50,10 +57,6 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-19,0.5,0.5,0.5,0.5,0.5,0.5, Discuss Final Iteration Plans
 2025-03-20,2,0,0,0,0,0, Goal Subscriptions Notifications
 2025-03-20,2,0,0,0,0,0, Gamification Leveling/XP Logic + Add XP on Goal Success
-2025-03-20,1,0,0,0,0,0, Goal Notification Bug - Store orginal send in DB to avoid multiple retries
-2025-03-20,1,0,0,0,0,0, Level Up Notification!
-2025-03-20,3,0,0,0,0,0, Set Up Backend Testing in CI + Write Some Auth Tests
-2025-03-22,0.5,0,0,0,0,0, Set Up Backend Testing in CI + Write Some Auth Tests
 2025-03-20,1,0,0,0,0,0, Goal Notification Bug - Store original send in DB to avoid multiple retries
 2025-03-20,1,0,0,0,0,0, level Up Notification!
 2025-03-23,0,0,4,0,0,0, Deals Address Subscription + minor deals fixes
@@ -61,6 +64,8 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-20,2,0,0,0,0,0, Signup Unit Tests + UI Tests
 2025-03-21,0.5,0,0,0,0,0, Admin Unit Tests + UI Tests
 2025-03-21,1,0,0,0,0,0, Profile Unit Tests + UI Tests
+2025-03-21,0,1,0,0,0,0, Gamification
+2025-03-22,0,4,0,0,0,0, dashboard/goals readability cleanup + fixed loading screens + optimized calling apis
 2025-03-25,0.5,0,0,0,0,0, Backend duplicate user registration handling + Authentication Tests
 2025-03-25,0.5,0,0,0,0,0, Restructure backend testing and add tools tests
-
+2025-03-24,0,3,0,0,0,0,Meet to discuss goals cleanup plus fixed a loading dashboard bug

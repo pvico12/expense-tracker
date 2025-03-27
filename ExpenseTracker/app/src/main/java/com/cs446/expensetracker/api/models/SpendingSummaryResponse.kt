@@ -10,6 +10,6 @@ data class CategoryBreakdown(
     val category_name: String,
     val total_amount: Double,
     val percentage: Double,
-    var custom_color: String?
+    var color: String?
 )
 
