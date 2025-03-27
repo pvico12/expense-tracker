@@ -66,6 +66,8 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-21,1,0,0,0,0,0, Profile Unit Tests + UI Tests
 2025-03-21,0,1,0,0,0,0, Gamification
 2025-03-22,0,4,0,0,0,0, dashboard/goals readability cleanup + fixed loading screens + optimized calling apis
+2025-03-24,0,3,0,0,0,0,Meet to discuss goals cleanup plus fixed a loading dashboard bug
 2025-03-25,0.5,0,0,0,0,0, Backend duplicate user registration handling + Authentication Tests
 2025-03-25,0.5,0,0,0,0,0, Restructure backend testing and add tools tests
-2025-03-24,0,3,0,0,0,0,Meet to discuss goals cleanup plus fixed a loading dashboard bug
+2025-03-25,1,0,0,0,0,0, User Backend Unit Tests
+2025-03-25,1,0,0,0,0,0, Deals Backend Unit Tests

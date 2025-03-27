@@ -42,6 +42,9 @@ def get_deals(
     """
     Get all deals. Optionally filter by user_id and location.
     """
+    if filters is None:
+        filters = DealRetrievalRequest()
+        
     try:
         # get all the deals
         deals = db_get_deals(filters.user_id)
@@ -105,7 +108,7 @@ def get_specific_deal(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.post("/", response_model=None, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def create_deal(
     deal: DealCreationRequest,
     current_user: User = Depends(get_current_user)
@@ -115,8 +118,19 @@ def create_deal(
     """
     try:
         # create deal
-        new_deal = add_deal(current_user.id, deal.name, deal.description, deal.price, deal.address, deal.longitude, deal.latitude, deal.date, deal.vendor)
+        new_deal = add_deal(
+            current_user.id,
+            deal.name,
+            deal.description,
+            deal.price,
+            deal.address,
+            deal.longitude,
+            deal.latitude,
+            deal.date,
+            deal.vendor
+        )
         send_new_deal_notification(new_deal)
+        return {"id": new_deal.id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
@@ -138,8 +152,14 @@ def update_deal(
         if target_deal.user_id != current_user.id:
             raise Exception("You do not own this deal.")
         
+        # validate fields with minimum length requirement
+        for field in ["name", "description", "vendor", "address"]:
+            value = getattr(data, field, None)
+            if value is not None and len(value.strip()) < 1:
+                raise HTTPException(status_code=400, detail=f"{field.capitalize()} must have at least 1 character.")
+        
         # update the deal
-        for key, value in data.dict().items():
+        for key, value in data.dict(exclude_unset=True).items():
             setattr(target_deal, key, value)
         db.commit()
         db.refresh(target_deal)
