@@ -54,10 +54,8 @@ def get_goals(
     query = db.query(Goal).filter(Goal.user_id == current_user.id)
     if start_date and end_date:
         query = query.filter(
-            Goal.start_date >= start_date,
             Goal.start_date <= end_date,
-            Goal.end_date >= start_date,
-            Goal.end_date <= end_date
+            Goal.end_date >= start_date
         )
     else:
         if start_date:
@@ -82,10 +80,13 @@ def get_goals(
         else:
             goal.amount_spent = None
 
-    now = datetime.datetime.utcnow()
-    completed_count = sum(1 for goal in goals if goal.end_date <= now and goal.on_track)
-    failed_count = sum(1 for goal in goals if goal.end_date <= now and not goal.on_track)
-    incompleted_count = sum(1 for goal in goals if goal.end_date > now)
+    if start_date is not None and end_date is not None:
+        ref_date = end_date
+    else:
+        ref_date = datetime.datetime.utcnow()
+    completed_count = sum(1 for goal in goals if goal.end_date <= ref_date and goal.on_track)
+    failed_count = sum(1 for goal in goals if goal.end_date <= ref_date and not goal.on_track)
+    incompleted_count = sum(1 for goal in goals if goal.end_date > ref_date)
     return {
         "goals": goals,
         "stats": {

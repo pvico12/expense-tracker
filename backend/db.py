@@ -102,13 +102,13 @@ def create_initial_users():
 def add_predefined_categories(user_id: int):
     """Assign predefined categories to a specific user."""
     categories = [
-        {"name": "Entertainment", "color": "#FF5733"},
-        {"name": "Food & Drinks", "color": "#33FF57"},
-        {"name": "Housing", "color": "#3357FF"},
-        {"name": "Lifestyle", "color": "#FF8C33"},
-        {"name": "Miscellaneous", "color": "#8C33FF"},
-        {"name": "Savings", "color": "#33FFF5"},
-        {"name": "Transportation", "color": "#FF3333"}
+        {"name": "Entertainment", "color": "#FF9A3B3B"},
+        {"name": "Food & Drinks", "color": "#FFC08261"},
+        {"name": "Housing", "color": "#FFDBAD8C"},
+        {"name": "Lifestyle", "color": "#FFFFEBCF"},
+        {"name": "Miscellaneous", "color": "#FFFFCFAC"},
+        {"name": "Savings", "color": "#FFFFDADA"},
+        {"name": "Transportation", "color": "#FFD6CBAF"}
     ]
 
     try:
