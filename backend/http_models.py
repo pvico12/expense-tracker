@@ -178,9 +178,9 @@ class DealVoteResponse(BaseModel):
     downvotes: int
     
 class UserProfileUpdateRequest(BaseModel):
-    firstname: Optional[str]
-    lastname: Optional[str]
-    username: Optional[str]
+    firstname: Optional[str] = Field(..., min_length=1)
+    lastname: Optional[str] = Field(..., min_length=1)
+    username: Optional[str] = Field(..., min_length=1)
     
 
 
