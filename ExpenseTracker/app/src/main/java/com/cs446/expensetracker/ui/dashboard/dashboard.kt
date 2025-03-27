@@ -531,13 +531,6 @@ class Dashboard {
                                 color = x.color,
                             )
                         }
-                        var colorIter = -1
-                        for (expense in spendingSummary!!) {
-                            if (expense.color == null) {
-                                colorIter = (colorIter + 1) % defaultCategoryColours.size
-                                expense.color = defaultCategoryColours[colorIter]
-                            }
-                        }
                     } else {
                         errorMessage += "Failed to load expense data."
                         Log.d("Error", "Summary Spend API Response Was Unsuccessful: $spendingResponse")
@@ -755,7 +748,8 @@ class Dashboard {
                         }
                         if(viewSpendingOrGoals == "View Goals") {
                             for(expense in spendingSummary!!) {
-                                ExpenseCategoryCard(expense)
+                                val decoratedCategoryBreakdown = CategoryBreakdownDecorator(expense)
+                                ExpenseCategoryCard(decoratedCategoryBreakdown)
                             }
                         } else {
                             if (deleteConfirmationDialogue) {

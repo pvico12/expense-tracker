@@ -33,7 +33,7 @@ import com.cs446.expensetracker.ui.ui.theme.tileColor
 import kotlin.math.round
 
 @Composable
-fun ExpenseCategoryCard(expense: CategoryBreakdown) {
+fun ExpenseCategoryCard(expense: CategoryBreakdownDecorator) {
 
     fun formatCurrency(amount: Double): String {
         if (amount == 0.0) { return "0.00"}
