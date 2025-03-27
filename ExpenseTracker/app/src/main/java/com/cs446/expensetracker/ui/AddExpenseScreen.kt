@@ -533,16 +533,40 @@ fun AddExpenseScreen(navController: NavController) {
         if (showReviewDialog && parsedTransactions != null) {
             AlertDialog(
                 onDismissRequest = { showReviewDialog = false },
-                title = { Text("Review Transactions") },
+                title = { Text("Review Transactions", style = MaterialTheme.typography.headlineSmall) },
                 text = {
-                    LazyColumn {
-                        items(parsedTransactions!!) { parsedTransaction ->
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Text("Amount: ${parsedTransaction.amount}")
-                                Text("Category: ${categories.find { it.id == parsedTransaction.category_id }?.name ?: "Unknown"}")
-                                Text("Note: ${parsedTransaction.note}")
-                                Text("Date: ${parsedTransaction.date}")
-                                Divider()
+                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                        items(parsedTransactions!!) { tx ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F8F8))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text("💰 Amount", style = MaterialTheme.typography.labelMedium)
+                                    Text("$${tx.amount}", style = MaterialTheme.typography.bodyLarge)
+
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("📂 Category", style = MaterialTheme.typography.labelMedium)
+                                    Text(categories.find { it.id == tx.category_id }?.name ?: "Unknown")
+
+                                    if (!tx.note.isNullOrBlank()) {
+                                        Spacer(Modifier.height(4.dp))
+                                        Text("📝 Note", style = MaterialTheme.typography.labelMedium)
+                                        Text(tx.note)
+                                    }
+
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("📅 Date", style = MaterialTheme.typography.labelMedium)
+                                    Text(tx.date)
+
+                                    if (!tx.vendor.isNullOrBlank()) {
+                                        Spacer(Modifier.height(4.dp))
+                                        Text("🏪 Vendor", style = MaterialTheme.typography.labelMedium)
+                                        Text(tx.vendor)
+                                    }
+                                }
                             }
                         }
                     }
@@ -555,53 +579,45 @@ fun AddExpenseScreen(navController: NavController) {
                                 var successCount = 0
                                 var failureCount = 0
 
-                                parsedTransactions?.forEach { parsedTransaction ->
+                                parsedTransactions?.forEach { parsedTx ->
                                     try {
-                                        val token = UserSession.access_token ?: ""
-
                                         val transaction = Transaction(
-                                            amount = parsedTransaction.amount,
-                                            category_id = parsedTransaction.category_id,
+                                            amount = parsedTx.amount,
+                                            category_id = parsedTx.category_id,
                                             transaction_type = "expense",
-                                            note = parsedTransaction.note,
-                                            date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(parsedTransaction.date)!!),
-                                            vendor = parsedTransaction.vendor
+                                            note = parsedTx.note,
+                                            date = isoFormat.format(
+                                                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(parsedTx.date)!!
+                                            ),
+                                            vendor = parsedTx.vendor
                                         )
                                         val response = RetrofitInstance.apiService.addTransaction(transaction)
-                                        if (response.isSuccessful) {
-                                            successCount++
-                                        } else {
-                                            failureCount++
-                                        }
-                                    } catch (e: Exception) {
+                                        if (response.isSuccessful) successCount++ else failureCount++
+                                    } catch (_: Exception) {
                                         failureCount++
                                     }
                                 }
 
                                 isLoading = false
                                 showReviewDialog = false
+                                Toast.makeText(
+                                    context,
+                                    "Saved $successCount transactions, $failureCount failed.",
+                                    Toast.LENGTH_LONG
+                                ).show()
 
-                                val message = "Saved $successCount transactions, $failureCount failed."
-                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-
-                                if (successCount > 0) {
-                                    navController.popBackStack()
-                                }
+                                if (successCount > 0) navController.popBackStack()
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            Color(0xFF4B0C0C),
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4B0C0C))
                     ) {
-                        Text("Save Transactions")
+                        Text("✅ Save All")
                     }
                 },
                 dismissButton = {
-                    Button(
+                    OutlinedButton(
                         onClick = { showReviewDialog = false },
-                        colors = ButtonDefaults.buttonColors(
-                            Color(0xFF4B0C0C),
-                        )
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF4B0C0C))
                     ) {
                         Text("Cancel")
                     }
