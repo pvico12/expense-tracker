@@ -25,7 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
@@ -533,38 +535,128 @@ fun AddExpenseScreen(navController: NavController) {
         if (showReviewDialog && parsedTransactions != null) {
             AlertDialog(
                 onDismissRequest = { showReviewDialog = false },
-                title = { Text("Review Transactions", style = MaterialTheme.typography.headlineSmall) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                title = {
+                    Text(
+                        text = "Review Transactions",
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                },
                 text = {
-                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                        items(parsedTransactions!!) { tx ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F8F8))
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text("💰 Amount", style = MaterialTheme.typography.labelMedium)
-                                    Text("$${tx.amount}", style = MaterialTheme.typography.bodyLarge)
+                    Column {
+                        // Summary chip
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        ) {
+                            Text(
+                                text = "${parsedTransactions!!.size} transactions found",
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
 
-                                    Spacer(Modifier.height(4.dp))
-                                    Text("📂 Category", style = MaterialTheme.typography.labelMedium)
-                                    Text(categories.find { it.id == tx.category_id }?.name ?: "Unknown")
+                        // Transactions list
+                        LazyColumn(
+                            modifier = Modifier
+                                .heightIn(max = 400.dp)
+                                .padding(vertical = 4.dp)
+                        ) {
+                            items(parsedTransactions!!) { transaction ->
+                                val categoryName = categories.find { it.id == transaction.category_id }?.name ?: "Unknown"
 
-                                    if (!tx.note.isNullOrBlank()) {
-                                        Spacer(Modifier.height(4.dp))
-                                        Text("📝 Note", style = MaterialTheme.typography.labelMedium)
-                                        Text(tx.note)
-                                    }
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    elevation = CardDefaults.cardElevation(1.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFF8F8F8),
+                                        contentColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        // Amount row
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "💰Amount",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                            Text(
+                                                text = "$${"%.2f".format(transaction.amount)}",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
 
-                                    Spacer(Modifier.height(4.dp))
-                                    Text("📅 Date", style = MaterialTheme.typography.labelMedium)
-                                    Text(tx.date)
+                                        // Category row
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "📂Category",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                            Text(
+                                                text = categoryName,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
 
-                                    if (!tx.vendor.isNullOrBlank()) {
-                                        Spacer(Modifier.height(4.dp))
-                                        Text("🏪 Vendor", style = MaterialTheme.typography.labelMedium)
-                                        Text(tx.vendor)
+                                        // Date row
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "📅Date",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                            Text(
+                                                text = transaction.date,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+
+                                        // Note (if available)
+                                        if (!transaction.note.isNullOrEmpty()) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "📃Note",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                )
+                                                Text(
+                                                    text = transaction.note,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f, fill = false)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -579,49 +671,80 @@ fun AddExpenseScreen(navController: NavController) {
                                 var successCount = 0
                                 var failureCount = 0
 
-                                parsedTransactions?.forEach { parsedTx ->
+                                parsedTransactions?.forEach { parsedTransaction ->
                                     try {
                                         val transaction = Transaction(
-                                            amount = parsedTx.amount,
-                                            category_id = parsedTx.category_id,
+                                            amount = parsedTransaction.amount,
+                                            category_id = parsedTransaction.category_id,
                                             transaction_type = "expense",
-                                            note = parsedTx.note,
+                                            note = parsedTransaction.note,
                                             date = isoFormat.format(
-                                                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(parsedTx.date)!!
+                                                SimpleDateFormat(
+                                                    "yyyy-MM-dd",
+                                                    Locale.getDefault()
+                                                ).parse(parsedTransaction.date)!!
                                             ),
-                                            vendor = parsedTx.vendor
+                                            vendor = parsedTransaction.vendor
                                         )
                                         val response = RetrofitInstance.apiService.addTransaction(transaction)
-                                        if (response.isSuccessful) successCount++ else failureCount++
-                                    } catch (_: Exception) {
+                                        if (response.isSuccessful) {
+                                            successCount++
+                                        } else {
+                                            failureCount++
+                                        }
+                                    } catch (e: Exception) {
                                         failureCount++
                                     }
                                 }
 
                                 isLoading = false
                                 showReviewDialog = false
+
+                                val message = "Saved $successCount transactions${if (failureCount > 0) ", $failureCount failed" else ""}"
                                 Toast.makeText(
                                     context,
-                                    "Saved $successCount transactions, $failureCount failed.",
+                                    message,
                                     Toast.LENGTH_LONG
                                 ).show()
 
-                                if (successCount > 0) navController.popBackStack()
+                                if (successCount > 0) {
+                                    navController.popBackStack()
+                                }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4B0C0C))
+                        modifier = Modifier.padding(end = 8.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        enabled = !isLoading
                     ) {
-                        Text("✅ Save All")
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("✅Save All", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 },
                 dismissButton = {
                     OutlinedButton(
                         onClick = { showReviewDialog = false },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF4B0C0C))
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
                     ) {
-                        Text("Cancel")
+                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
                     }
-                }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                textContentColor = MaterialTheme.colorScheme.onSurface
             )
         }
 
