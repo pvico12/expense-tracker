@@ -15,7 +15,19 @@ def server():
     """Fixture to start and stop the server"""
     proc = Process(target=run_server)
     proc.start()
-    time.sleep(5)
+    time.sleep(10)
+    
+    print("Server started")
+    
+    # Check if the server is running
+    try:
+        response = requests.get(f"{BASE_URL}/healthcheck")
+        if response.status_code != 200:
+            pytest.fail("Server health check failed")
+    except requests.exceptions.ConnectionError:
+        pytest.fail("Could not connect to the server for health check")
+        
+        
     yield
     proc.terminate()
     proc.join()

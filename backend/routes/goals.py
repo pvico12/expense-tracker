@@ -48,18 +48,20 @@ def get_goals(
     """
     Retrieve goals for the authenticated user.
     Optionally filter goals based on start_date and end_date.
-    If only start_date is provided, use that date up until now.
-    Returns additional statistics including the number of completed and incompleted goals,
-    as well as, for each goal, an amount_spent_in_category field (either in dollars or percentage).
+    If both start_date and end_date are provided, the query filters so that both the goal's start_date 
+    and end_date fall within that period.
     """
     query = db.query(Goal).filter(Goal.user_id == current_user.id)
-    effective_end = end_date
-    if start_date:
-        query = query.filter(Goal.start_date >= start_date)
-        if not end_date:
-            effective_end = datetime.datetime.utcnow()
-    if effective_end:
-         query = query.filter(Goal.end_date <= effective_end)
+    if start_date and end_date:
+        query = query.filter(
+            Goal.start_date <= end_date,
+            Goal.end_date >= start_date
+        )
+    else:
+        if start_date:
+            query = query.filter(Goal.start_date >= start_date)
+        if end_date:
+            query = query.filter(Goal.end_date <= end_date)
     goals = query.all()
 
     for goal in goals:
@@ -78,15 +80,18 @@ def get_goals(
         else:
             goal.amount_spent = None
 
-    now = datetime.datetime.utcnow()
-    completed_count = sum(1 for goal in goals if goal.end_date <= now and goal.on_track)
-    incompleted_count = sum(1 for goal in goals if goal.end_date > now)
-    failed_count = sum(1 for goal in goals if goal.end_date < now and not goal.on_track)
+    if start_date is not None and end_date is not None:
+        ref_date = end_date
+    else:
+        ref_date = datetime.datetime.utcnow()
+    completed_count = sum(1 for goal in goals if goal.end_date <= ref_date and goal.on_track)
+    failed_count = sum(1 for goal in goals if goal.end_date <= ref_date and not goal.on_track)
+    incompleted_count = sum(1 for goal in goals if goal.end_date > ref_date)
     return {
         "goals": goals,
         "stats": {
             "completed": completed_count,
-            "in_progress": incompleted_count,
+            "incompleted": incompleted_count,
             "failed": failed_count
         }
     }
@@ -106,7 +111,7 @@ def create_goal(
             raise HTTPException(status_code=404, detail="Category not found")
     
     start_date = goal.start_date
-    end_date = start_date + datetime.timedelta(days=goal.period)
+    end_date = start_date + datetime.timedelta(days=goal.period - 1)
 
     new_goal = Goal(
         user_id=current_user.id,
