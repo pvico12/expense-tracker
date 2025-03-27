@@ -597,7 +597,7 @@ class Dashboard {
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(mainBackgroundColor)
-                        .height(600.dp),
+                        .height(900.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 )
