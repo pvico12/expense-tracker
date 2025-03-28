@@ -147,6 +147,7 @@ fun AddExpenseScreen(navController: NavController) {
     var csvTemplate by remember { mutableStateOf<List<List<String>>?>(null) }
     var isTemplateLoading by remember { mutableStateOf(false) }
 
+    var showTemplatePreviewDialog by remember { mutableStateOf(false) }
     var showCsvHelpDialog by remember { mutableStateOf(false) }
 
 
@@ -455,6 +456,7 @@ fun AddExpenseScreen(navController: NavController) {
                         if (response.isSuccessful) {
                             val csvText = response.body()?.string()
                             csvTemplate = csvText?.let { parseCsvTemplate(it) }
+                            showTemplatePreviewDialog = true
                         } else {
                             Toast.makeText(context, "Failed to download CSV template.", Toast.LENGTH_SHORT).show()
                         }
@@ -473,49 +475,41 @@ fun AddExpenseScreen(navController: NavController) {
             Text("Download CSV Template")
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            TextButton(onClick = { showCsvHelpDialog = true }) {
-                Text("What does each column mean?")
-            }
-        }
-
         if (showCsvHelpDialog) {
             AlertDialog(
                 onDismissRequest = { showCsvHelpDialog = false },
                 confirmButton = {
                     TextButton(onClick = { showCsvHelpDialog = false }) {
-                        Text("Got it")
+                        Text("Got it ✔️")
                     }
                 },
                 title = {
-                    Text("CSV Column Format Guide")
+                    Text("CSV Column Format Guide", style = MaterialTheme.typography.titleLarge)
                 },
                 text = {
-                    Column {
-                        Text("🧾 Here's what each column means:")
-                        Spacer(Modifier.height(8.dp))
+                    Column() {
+//                        Text("🧾 Here's what each column means:")
+//                        Spacer(Modifier.height(8.dp))
                         val descriptions = listOf(
-                            "amount" to "The numeric value of the expense (e.g., 100.50).",
-                            "category" to "The name of the expense category (must match an existing one).",
-                            "transaction_type" to "Usually 'EXPENSE' or 'INCOME'.",
-                            "note" to "Optional description of the transaction.",
-                            "date" to "The date of the transaction in yyyy-MM-dd format.",
-                            "vendor" to "Where or whom you spent money on."
+                            "amount 💵" to "The numeric value of the expense (e.g., 100.50).",
+                            "category 📂" to "The name of the expense category (must match an existing one).",
+                            "transaction_type 🔁" to "Usually 'EXPENSE' or 'INCOME'.",
+                            "note 📝" to "Optional description of the transaction.",
+                            "date 📅" to "The date of the transaction in yyyy-MM-dd format.",
+                            "vendor 🏪" to "Where or whom you spent money on."
                         )
 
                         descriptions.forEach { (field, explanation) ->
                             Column(modifier = Modifier.padding(bottom = 6.dp)) {
                                 Text(
                                     text = field,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.SemiBold,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                                 Text(
                                     text = explanation,
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
                                 )
                             }
                         }
@@ -525,40 +519,54 @@ fun AddExpenseScreen(navController: NavController) {
         }
 
 
+        if (showTemplatePreviewDialog && csvTemplate != null) {
+            AlertDialog(
+                onDismissRequest = { showTemplatePreviewDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showTemplatePreviewDialog = false }) {
+                        Text("Close")
+                    }
+                },
+                title = {
+                    Text(
+                        "CSV Format Preview",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    )
+                },
+                text = {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showCsvHelpDialog = true }) {
+                                Text("What does each column mean?")
+                            }
+                        }
 
-        if (isTemplateLoading) {
-            CircularProgressIndicator()
-        } else if (csvTemplate != null) {
-            Text(
-                "CSV Format Preview",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-            )
-
-            Column {
-                csvTemplate!!.forEachIndexed { index, row ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .background(if (index == 0) Color(0xFFEDEDED) else Color.Transparent)
-                    ) {
-                        row.forEach { cell ->
-                            Text(
-                                text = cell,
+                        csvTemplate!!.forEachIndexed { index, row ->
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(4.dp),
-                                fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal
-                            )
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .background(if (index == 0) Color(0xFFEFEFEF) else Color.Transparent)
+                            ) {
+                                row.forEach { cell ->
+                                    Text(
+                                        text = cell,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(4.dp),
+                                        fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            }
+            )
         }
-
-
-
 
 
         Spacer(Modifier.height(10.dp))
