@@ -19,6 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -75,6 +77,7 @@ fun AddExpenseScreen(navController: NavController) {
     var showBottomSheet by remember { mutableStateOf(false) }
 
     // Recurrence Period
+    var isRecurring by remember { mutableStateOf(false) }
     var recurrencePeriod by remember { mutableStateOf(7) } // Default to weekly (7 days)
     var expanded by remember { mutableStateOf(false) }
 
@@ -232,41 +235,41 @@ fun AddExpenseScreen(navController: NavController) {
         OutlinedTextField(
             value = vendorName,
             onValueChange = { vendorName = it },
-            label = { Text("Item / Vendor Name") },
+            label = { Text("Item / Vendor Name ") },
+            trailingIcon = {
+                // AI Category Suggestion Button
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            isAiLoading = true
+                            val response = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(vendorName))
+                            isAiLoading = false
+                            if (response.isSuccessful) {
+                                val aiCategory = response.body()
+                                selectedCategory = categories.find { it.id == aiCategory?.category_id }
+                            } else {
+                                errorMessage = "AI could not predict the category."
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        Color(0xFF4B0C0C),
+                    ),
+                    enabled = vendorName.isNotBlank()
+                ) {
+                    if (isAiLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = " Run AI")
+                        Text("Run AI")
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // AI Category Suggestion Button
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    isAiLoading = true
-                    val response = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(vendorName))
-                    isAiLoading = false
-                    if (response.isSuccessful) {
-                        val aiCategory = response.body()
-                        selectedCategory = categories.find { it.id == aiCategory?.category_id }
-                    } else {
-                        errorMessage = "AI could not predict the category."
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            ),
-            enabled = vendorName.isNotBlank()
-        ) {
-            if (isAiLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            } else {
-                Text("Run with AI")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
 
         // Category Box (Tap to Open Bottom Sheet)
         Text(text = "Category", style = MaterialTheme.typography.bodyLarge)
@@ -309,85 +312,82 @@ fun AddExpenseScreen(navController: NavController) {
             )
         }
 
-        // Date Picker
-        Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clickable { datePickerDialog.show() }
-                .padding(10.dp),
-            contentAlignment = Alignment.CenterStart
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = selectedDate)
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // End Date Picker
-        Text(text = "End Date", style = MaterialTheme.typography.bodyLarge)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clickable { endDatePickerDialog.show() }
-                .padding(10.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(text = if (endDate.isNotEmpty()) endDate else "Select End Date (for Recurring Transaction)")
-        }
-
-        // Show error message if end date is invalid
-        if (!isEndDateValid) {
-            Text(
-                text = "End date must be later than the start date",
-                color = Color.Red,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Recurrence Period
-
-        Text("Recurrence Period")
-        Box (
-            modifier = Modifier.padding(10.dp)
-        ) {
-            Button(
-                onClick = { expanded = true },
-                colors = ButtonDefaults.buttonColors(
-                    Color(0xFF4B0C0C),
-                ),
+            Column(
+                modifier = Modifier.padding(12.dp)
             ) {
-                Text(
-                    text = when (recurrencePeriod) {
-                        1 -> "Daily"
-                        7 -> "Weekly"
-                        30 -> "Monthly"
-                        365 -> "Yearly"
-                        else -> "Custom"
-                    }
-                )
-            }
+                Text("Date & Recurrence", style = MaterialTheme.typography.titleMedium)
 
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                listOf(
-                    "Daily" to 1,
-                    "Weekly" to 7,
-                    "Monthly" to 30,
-                    "Yearly" to 365
-                ).forEach { (label, days) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            recurrencePeriod = days
-                            expanded = false
-                        }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(
+                        onClick = { datePickerDialog.show() }
+                    ) {
+                        Text(text = selectedDate)
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Text("Recurring? ")
+                    Switch(
+                        checked = isRecurring,
+                        onCheckedChange = { isRecurring = it },
+                        colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF4B0C0C),)
                     )
                 }
+
+                if (isRecurring) {
+
+                    // End Date Picker
+                    TextButton(onClick = { endDatePickerDialog.show() }) {
+                        Text(if (endDate.isNotEmpty()) "Until $endDate" else "Pick End Date")
+                    }
+
+                    // Show error message if end date is invalid
+                    if (!isEndDateValid) {
+                        Text(
+                            text = "End date must be later than the start date",
+                            color = Color.Red,
+                        )
+                    }
+
+                    // Recurrence Period
+                    TextButton(
+                        onClick = { expanded = true },
+                    ) {
+                        Text(
+                            text = "Repeats: ${when (recurrencePeriod) {
+                                1 -> "daily"
+                                7 -> "weekly"
+                                30 -> "monthly"
+                                365 -> "yearly"
+                                else -> "custom"
+                            }}"
+                        )
+                    }
+
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        listOf(
+                            "Daily" to 1,
+                            "Weekly" to 7,
+                            "Monthly" to 30,
+                            "Yearly" to 365
+                        ).forEach { (label, days) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    recurrencePeriod = days
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
             }
         }
+
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -399,7 +399,7 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Save Expense Button
         Button(
@@ -594,7 +594,7 @@ fun AddExpenseScreen(navController: NavController) {
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = "💰Amount",
+                                                text = "💰 Amount",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -611,7 +611,7 @@ fun AddExpenseScreen(navController: NavController) {
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = "📂Category",
+                                                text = "📂 Category",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -627,7 +627,7 @@ fun AddExpenseScreen(navController: NavController) {
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = "📅Date",
+                                                text = "📅 Date",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -644,7 +644,7 @@ fun AddExpenseScreen(navController: NavController) {
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
                                                 Text(
-                                                    text = "📃Note",
+                                                    text = "📃 Note",
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                                 )
