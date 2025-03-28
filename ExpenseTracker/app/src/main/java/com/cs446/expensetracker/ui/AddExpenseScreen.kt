@@ -21,6 +21,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -358,11 +360,11 @@ fun AddExpenseScreen(navController: NavController) {
                     ) {
                         Text(
                             text = "Repeats: ${when (recurrencePeriod) {
-                                1 -> "daily"
-                                7 -> "weekly"
-                                30 -> "monthly"
-                                365 -> "yearly"
-                                else -> "custom"
+                                1 -> "Daily"
+                                7 -> "Weekly"
+                                30 -> "Monthly"
+                                365 -> "Yearly"
+                                else -> "Custom"
                             }}"
                         )
                     }
@@ -400,6 +402,36 @@ fun AddExpenseScreen(navController: NavController) {
         )
 
         Spacer(modifier = Modifier.height(10.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Scan Receipt Button
+            Button(
+                onClick = { receiptPickerLauncher.launch("image/*") },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFF4B0C0C),
+                )
+            ) {
+                Icon(Icons.Default.CameraAlt, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Scan Receipt")
+            }
+
+            // Upload CSV Button
+            Button(
+                onClick = { filePickerLauncher.launch("text/*") },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFF4B0C0C),
+                )
+            ) {
+                Icon(Icons.Default.UploadFile, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Upload CSV")
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
 
         // Save Expense Button
         Button(
@@ -458,75 +490,77 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        if (isRecurring) {
 
-        // Save Recurring Transaction Button
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    isLoading = true
-                    errorMessage = null
-                    try {
-                        val amount = expenseAmount.toDoubleOrNull()
-                        if (amount == null || selectedCategory == null || endDate.isEmpty() || !isEndDateValid) {
-                            errorMessage = "Please fill in all fields correctly."
-                            return@launch
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Save Recurring Transaction Button
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        isLoading = true
+                        errorMessage = null
+                        try {
+                            val amount = expenseAmount.toDoubleOrNull()
+                            if (amount == null || selectedCategory == null || endDate.isEmpty() || !isEndDateValid) {
+                                errorMessage = "Please fill in all fields correctly."
+                                return@launch
+                            }
+
+                            val recurringTransaction = RecurringTransactionRequest(
+                                start_date = isoFormat.format(
+                                    SimpleDateFormat(
+                                        "yyyy-MM-dd",
+                                        Locale.getDefault()
+                                    ).parse(selectedDate)!!
+                                ),
+                                end_date = isoFormat.format(
+                                    SimpleDateFormat(
+                                        "yyyy-MM-dd",
+                                        Locale.getDefault()
+                                    ).parse(endDate)!!
+                                ),
+                                note = transactionNote,
+                                period = recurrencePeriod,
+                                amount = amount,
+                                category_id = selectedCategory!!.id,
+                                transaction_type = "expense",
+                                vendor = vendorName
+                            )
+
+                            val response = RetrofitInstance.apiService.createRecurringTransaction(
+                                recurringTransaction
+                            )
+                            if (response.isSuccessful) {
+                                Toast.makeText(
+                                    context,
+                                    "Recurring transaction added successfully!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                navController.popBackStack()
+                            } else {
+                                errorMessage = "Failed to add transaction. Please try again."
+                            }
+                        } catch (e: Exception) {
+                            errorMessage = "Error: ${e.message}"
+                        } finally {
+                            isLoading = false
                         }
-
-                        val recurringTransaction = RecurringTransactionRequest(
-                            start_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
-                            end_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(endDate)!!),
-                            note = transactionNote,
-                            period = recurrencePeriod,
-                            amount = amount,
-                            category_id = selectedCategory!!.id,
-                            transaction_type = "expense",
-                            vendor = vendorName
-                        )
-
-                        val response = RetrofitInstance.apiService.createRecurringTransaction(recurringTransaction)
-                        if (response.isSuccessful) {
-                            Toast.makeText(
-                                context,
-                                "Recurring transaction added successfully!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.popBackStack()
-                        } else {
-                            errorMessage = "Failed to add transaction. Please try again."
-                        }
-                    } catch (e: Exception) {
-                        errorMessage = "Error: ${e.message}"
-                    } finally {
-                        isLoading = false
                     }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
+                enabled = !isLoading && endDate.isNotEmpty()
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(text = "Save Recurring Transaction")
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
-            enabled = !isLoading && endDate.isNotEmpty()
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text(text = "Save Recurring Transaction")
             }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Upload CSV Button
-        Button(
-            onClick = { filePickerLauncher.launch("text/*") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            )
-        ) {
-            Text("Upload CSV")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -748,16 +782,6 @@ fun AddExpenseScreen(navController: NavController) {
             )
         }
 
-        // Scan Receipt Button
-        Button(
-            onClick = { receiptPickerLauncher.launch("image/*") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            )
-        ) {
-            Text("Scan Receipt")
-        }
 
         Spacer(modifier = Modifier.height(10.dp))
 
