@@ -2,7 +2,6 @@ package com.cs446.expensetracker.ui
 
 import android.app.DatePickerDialog
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -43,7 +42,6 @@ import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.RecurringTransactionRequest
 import com.cs446.expensetracker.api.models.Transaction
-import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -472,7 +470,7 @@ fun AddExpenseScreen(navController: NavController) {
         ) {
             Icon(Icons.Default.Download, contentDescription = "Download Template")
             Spacer(Modifier.width(8.dp))
-            Text("Download CSV Template")
+            Text("Preview CSV Template")
         }
 
         if (showCsvHelpDialog) {
