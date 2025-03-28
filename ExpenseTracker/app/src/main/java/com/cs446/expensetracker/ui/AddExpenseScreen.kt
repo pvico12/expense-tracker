@@ -210,7 +210,7 @@ fun AddExpenseScreen(navController: NavController) {
             .verticalScroll(scrollState) // Enable scrolling
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Enter Transaction", style = MaterialTheme.typography.headlineMedium)
+            Text(text = "Add Transaction", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.weight(1.0f))
             TextButton(onClick = { navController.popBackStack() },
                 contentPadding = PaddingValues(
@@ -222,6 +222,7 @@ fun AddExpenseScreen(navController: NavController) {
                 Text("X",  style = Typography.titleLarge, color= Color(0xFF4B0C0C))
             }
         }
+
         // Amount Input
         OutlinedTextField(
             value = expenseAmount,
@@ -231,7 +232,7 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Vendor Input
         OutlinedTextField(
@@ -270,7 +271,7 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
 
         // Category Box (Tap to Open Bottom Sheet)
@@ -279,14 +280,14 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .clickable { showBottomSheet = true }
-                .padding(10.dp),
+                .clickable { showBottomSheet = true },
+//                .padding(10.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(text = selectedCategory?.name ?: "Select a Category")
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+//        Spacer(modifier = Modifier.height(8.dp))
 
         // Button to Show Custom Category Dialog
         Button(
@@ -298,8 +299,6 @@ fun AddExpenseScreen(navController: NavController) {
         ) {
             Text("Add Custom Category")
         }
-
-        Spacer(modifier = Modifier.height(10.dp))
 
         // Show Custom Category Popup
         if (showCustomCategoryDialog) {
@@ -313,6 +312,18 @@ fun AddExpenseScreen(navController: NavController) {
                 }
             )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Transaction Note
+        OutlinedTextField(
+            value = transactionNote,
+            onValueChange = { transactionNote = it },
+            label = { Text("Note (optional)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         ElevatedCard(
             modifier = Modifier.fillMaxWidth()
@@ -391,17 +402,10 @@ fun AddExpenseScreen(navController: NavController) {
         }
 
 
-        Spacer(modifier = Modifier.height(10.dp))
 
-        // Transaction Note
-        OutlinedTextField(
-            value = transactionNote,
-            onValueChange = { transactionNote = it },
-            label = { Text("Note (optional)") },
-            modifier = Modifier.fillMaxWidth()
-        )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Scan Receipt Button
@@ -478,7 +482,7 @@ fun AddExpenseScreen(navController: NavController) {
             colors = ButtonDefaults.buttonColors(
                 Color(0xFF4B0C0C),
             ),
-            enabled = !isLoading
+            enabled = !isLoading && selectedCategory != null && expenseAmount.toDoubleOrNull() != null
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
@@ -492,7 +496,7 @@ fun AddExpenseScreen(navController: NavController) {
 
         if (isRecurring) {
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Save Recurring Transaction Button
             Button(
@@ -550,12 +554,12 @@ fun AddExpenseScreen(navController: NavController) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
-                enabled = !isLoading && endDate.isNotEmpty()
+                enabled = !isLoading && endDate.isNotEmpty() && isEndDateValid
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         color = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 } else {
                     Text(text = "Save Recurring Transaction")
@@ -563,7 +567,11 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        // Error Message Display
+        if (errorMessage != null) {
+            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(10.dp))
+        }
 
         // Review Dialog
         if (showReviewDialog && parsedTransactions != null) {
@@ -780,15 +788,6 @@ fun AddExpenseScreen(navController: NavController) {
                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                 textContentColor = MaterialTheme.colorScheme.onSurface
             )
-        }
-
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Error Message Display
-        if (errorMessage != null) {
-            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(10.dp))
         }
 
         // Bottom Sheet Implementation
