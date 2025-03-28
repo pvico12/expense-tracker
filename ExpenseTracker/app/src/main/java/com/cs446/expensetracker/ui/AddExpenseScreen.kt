@@ -2,6 +2,7 @@ package com.cs446.expensetracker.ui
 
 import android.app.DatePickerDialog
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -139,6 +141,15 @@ fun AddExpenseScreen(navController: NavController) {
     // CSV Review State
     var parsedTransactions by remember { mutableStateOf<List<Transaction>?>(null) }
     var showReviewDialog by remember { mutableStateOf(false) }
+
+
+    // CSV Template
+    var csvTemplate by remember { mutableStateOf<List<List<String>>?>(null) }
+    var isTemplateLoading by remember { mutableStateOf(false) }
+
+    var showCsvHelpDialog by remember { mutableStateOf(false) }
+
+
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -429,9 +440,128 @@ fun AddExpenseScreen(navController: NavController) {
                 Spacer(Modifier.width(8.dp))
                 Text("Upload CSV")
             }
+
+
+
         }
 
-        Spacer(Modifier.height(12.dp))
+        // Download CSV Template
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    isTemplateLoading = true
+                    try {
+                        val response = RetrofitInstance.apiService.getCsvTemplate()
+                        if (response.isSuccessful) {
+                            val csvText = response.body()?.string()
+                            csvTemplate = csvText?.let { parseCsvTemplate(it) }
+                        } else {
+                            Toast.makeText(context, "Failed to download CSV template.", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    } finally {
+                        isTemplateLoading = false
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C))
+        ) {
+            Icon(Icons.Default.Download, contentDescription = "Download Template")
+            Spacer(Modifier.width(8.dp))
+            Text("Download CSV Template")
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(onClick = { showCsvHelpDialog = true }) {
+                Text("What does each column mean?")
+            }
+        }
+
+        if (showCsvHelpDialog) {
+            AlertDialog(
+                onDismissRequest = { showCsvHelpDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showCsvHelpDialog = false }) {
+                        Text("Got it")
+                    }
+                },
+                title = {
+                    Text("CSV Column Format Guide")
+                },
+                text = {
+                    Column {
+                        Text("🧾 Here's what each column means:")
+                        Spacer(Modifier.height(8.dp))
+                        val descriptions = listOf(
+                            "amount" to "The numeric value of the expense (e.g., 100.50).",
+                            "category" to "The name of the expense category (must match an existing one).",
+                            "transaction_type" to "Usually 'EXPENSE' or 'INCOME'.",
+                            "note" to "Optional description of the transaction.",
+                            "date" to "The date of the transaction in yyyy-MM-dd format.",
+                            "vendor" to "Where or whom you spent money on."
+                        )
+
+                        descriptions.forEach { (field, explanation) ->
+                            Column(modifier = Modifier.padding(bottom = 6.dp)) {
+                                Text(
+                                    text = field,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = explanation,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+
+
+        if (isTemplateLoading) {
+            CircularProgressIndicator()
+        } else if (csvTemplate != null) {
+            Text(
+                "CSV Format Preview",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+            )
+
+            Column {
+                csvTemplate!!.forEachIndexed { index, row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .background(if (index == 0) Color(0xFFEDEDED) else Color.Transparent)
+                    ) {
+                        row.forEach { cell ->
+                            Text(
+                                text = cell,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(4.dp),
+                                fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
+
+        Spacer(Modifier.height(10.dp))
 
         // Save Expense Button
         Button(
@@ -1056,4 +1186,9 @@ fun isValidHexColor(color: String): Boolean {
     } catch (e: IllegalArgumentException) {
         false
     }
+}
+
+// CSV Parsing Helper
+fun parseCsvTemplate(csv: String): List<List<String>> {
+    return csv.trim().lines().map { it.split(",") }
 }
