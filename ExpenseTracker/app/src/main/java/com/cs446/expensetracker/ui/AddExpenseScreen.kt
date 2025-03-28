@@ -280,8 +280,8 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .clickable { showBottomSheet = true },
-//                .padding(10.dp),
+                .clickable { showBottomSheet = true }
+                .padding(8.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(text = selectedCategory?.name ?: "Select a Category")
@@ -312,16 +312,6 @@ fun AddExpenseScreen(navController: NavController) {
                 }
             )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Transaction Note
-        OutlinedTextField(
-            value = transactionNote,
-            onValueChange = { transactionNote = it },
-            label = { Text("Note (optional)") },
-            modifier = Modifier.fillMaxWidth()
-        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -401,11 +391,17 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
 
-
+        // Transaction Note
+        OutlinedTextField(
+            value = transactionNote,
+            onValueChange = { transactionNote = it },
+            label = { Text("Note (optional)") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
-
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Scan Receipt Button
@@ -435,7 +431,7 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
         // Save Expense Button
         Button(
