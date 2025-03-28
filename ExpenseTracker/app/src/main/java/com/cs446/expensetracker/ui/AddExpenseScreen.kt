@@ -19,13 +19,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.cs446.expensetracker.api.RetrofitInstance
@@ -35,7 +42,6 @@ import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.OcrResponse
 import com.cs446.expensetracker.api.models.RecurringTransactionRequest
 import com.cs446.expensetracker.api.models.Transaction
-import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -73,6 +79,7 @@ fun AddExpenseScreen(navController: NavController) {
     var showBottomSheet by remember { mutableStateOf(false) }
 
     // Recurrence Period
+    var isRecurring by remember { mutableStateOf(false) }
     var recurrencePeriod by remember { mutableStateOf(7) } // Default to weekly (7 days)
     var expanded by remember { mutableStateOf(false) }
 
@@ -132,6 +139,16 @@ fun AddExpenseScreen(navController: NavController) {
     // CSV Review State
     var parsedTransactions by remember { mutableStateOf<List<Transaction>?>(null) }
     var showReviewDialog by remember { mutableStateOf(false) }
+
+
+    // CSV Template
+    var csvTemplate by remember { mutableStateOf<List<List<String>>?>(null) }
+    var isTemplateLoading by remember { mutableStateOf(false) }
+
+    var showTemplatePreviewDialog by remember { mutableStateOf(false) }
+    var showCsvHelpDialog by remember { mutableStateOf(false) }
+
+
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -203,7 +220,7 @@ fun AddExpenseScreen(navController: NavController) {
             .verticalScroll(scrollState) // Enable scrolling
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Enter Transaction", style = MaterialTheme.typography.headlineMedium)
+            Text(text = "Add Transaction", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.weight(1.0f))
             TextButton(onClick = { navController.popBackStack() },
                 contentPadding = PaddingValues(
@@ -215,6 +232,7 @@ fun AddExpenseScreen(navController: NavController) {
                 Text("X",  style = Typography.titleLarge, color= Color(0xFF4B0C0C))
             }
         }
+
         // Amount Input
         OutlinedTextField(
             value = expenseAmount,
@@ -224,47 +242,47 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Vendor Input
         OutlinedTextField(
             value = vendorName,
             onValueChange = { vendorName = it },
-            label = { Text("Item / Vendor Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // AI Category Suggestion Button
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    isAiLoading = true
-                    val response = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(vendorName))
-                    isAiLoading = false
-                    if (response.isSuccessful) {
-                        val aiCategory = response.body()
-                        selectedCategory = categories.find { it.id == aiCategory?.category_id }
+            label = { Text("Item / Vendor Name ") },
+            trailingIcon = {
+                // AI Category Suggestion Button
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            isAiLoading = true
+                            val response = RetrofitInstance.apiService.getCategorySuggestion(SuggestionRequest(vendorName))
+                            isAiLoading = false
+                            if (response.isSuccessful) {
+                                val aiCategory = response.body()
+                                selectedCategory = categories.find { it.id == aiCategory?.category_id }
+                            } else {
+                                errorMessage = "AI could not predict the category."
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        Color(0xFF4B0C0C),
+                    ),
+                    enabled = vendorName.isNotBlank()
+                ) {
+                    if (isAiLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp))
                     } else {
-                        errorMessage = "AI could not predict the category."
+                        Icon(Icons.Default.AutoAwesome, contentDescription = " Run AI")
+                        Text("Run AI")
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            ),
-            enabled = vendorName.isNotBlank()
-        ) {
-            if (isAiLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            } else {
-                Text("Run with AI")
-            }
-        }
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
 
         // Category Box (Tap to Open Bottom Sheet)
         Text(text = "Category", style = MaterialTheme.typography.bodyLarge)
@@ -273,13 +291,13 @@ fun AddExpenseScreen(navController: NavController) {
                 .fillMaxWidth()
                 .height(50.dp)
                 .clickable { showBottomSheet = true }
-                .padding(10.dp),
+                .padding(8.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(text = selectedCategory?.name ?: "Select a Category")
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+//        Spacer(modifier = Modifier.height(8.dp))
 
         // Button to Show Custom Category Dialog
         Button(
@@ -291,8 +309,6 @@ fun AddExpenseScreen(navController: NavController) {
         ) {
             Text("Add Custom Category")
         }
-
-        Spacer(modifier = Modifier.height(10.dp))
 
         // Show Custom Category Popup
         if (showCustomCategoryDialog) {
@@ -307,87 +323,85 @@ fun AddExpenseScreen(navController: NavController) {
             )
         }
 
-        // Date Picker
-        Text(text = "Date", style = MaterialTheme.typography.bodyLarge)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clickable { datePickerDialog.show() }
-                .padding(10.dp),
-            contentAlignment = Alignment.CenterStart
+        Spacer(modifier = Modifier.height(8.dp))
+
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = selectedDate)
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // End Date Picker
-        Text(text = "End Date", style = MaterialTheme.typography.bodyLarge)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clickable { endDatePickerDialog.show() }
-                .padding(10.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(text = if (endDate.isNotEmpty()) endDate else "Select End Date (for Recurring Transaction)")
-        }
-
-        // Show error message if end date is invalid
-        if (!isEndDateValid) {
-            Text(
-                text = "End date must be later than the start date",
-                color = Color.Red,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Recurrence Period
-
-        Text("Recurrence Period")
-        Box (
-            modifier = Modifier.padding(10.dp)
-        ) {
-            Button(
-                onClick = { expanded = true },
-                colors = ButtonDefaults.buttonColors(
-                    Color(0xFF4B0C0C),
-                ),
+            Column(
+                modifier = Modifier.padding(12.dp)
             ) {
-                Text(
-                    text = when (recurrencePeriod) {
-                        1 -> "Daily"
-                        7 -> "Weekly"
-                        30 -> "Monthly"
-                        365 -> "Yearly"
-                        else -> "Custom"
-                    }
-                )
-            }
+                Text("Date & Recurrence", style = MaterialTheme.typography.titleMedium)
 
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                listOf(
-                    "Daily" to 1,
-                    "Weekly" to 7,
-                    "Monthly" to 30,
-                    "Yearly" to 365
-                ).forEach { (label, days) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            recurrencePeriod = days
-                            expanded = false
-                        }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(
+                        onClick = { datePickerDialog.show() }
+                    ) {
+                        Text(text = selectedDate)
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Text("Recurring? ")
+                    Switch(
+                        checked = isRecurring,
+                        onCheckedChange = { isRecurring = it },
+                        colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF4B0C0C),)
                     )
                 }
+
+                if (isRecurring) {
+
+                    // End Date Picker
+                    TextButton(onClick = { endDatePickerDialog.show() }) {
+                        Text(if (endDate.isNotEmpty()) "Until $endDate" else "Pick End Date")
+                    }
+
+                    // Show error message if end date is invalid
+                    if (!isEndDateValid) {
+                        Text(
+                            text = "End date must be later than the start date",
+                            color = Color.Red,
+                        )
+                    }
+
+                    // Recurrence Period
+                    TextButton(
+                        onClick = { expanded = true },
+                    ) {
+                        Text(
+                            text = "Repeats: ${when (recurrencePeriod) {
+                                1 -> "Daily"
+                                7 -> "Weekly"
+                                30 -> "Monthly"
+                                365 -> "Yearly"
+                                else -> "Custom"
+                            }}"
+                        )
+                    }
+
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        listOf(
+                            "Daily" to 1,
+                            "Weekly" to 7,
+                            "Monthly" to 30,
+                            "Yearly" to 365
+                        ).forEach { (label, days) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    recurrencePeriod = days
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Transaction Note
         OutlinedTextField(
@@ -397,7 +411,163 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Scan Receipt Button
+            Button(
+                onClick = { receiptPickerLauncher.launch("image/*") },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFF4B0C0C),
+                )
+            ) {
+                Icon(Icons.Default.CameraAlt, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Scan Receipt")
+            }
+
+            // Upload CSV Button
+            Button(
+                onClick = { filePickerLauncher.launch("text/*") },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    Color(0xFF4B0C0C),
+                )
+            ) {
+                Icon(Icons.Default.UploadFile, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Upload CSV")
+            }
+
+
+
+        }
+
+        // Download CSV Template
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    isTemplateLoading = true
+                    try {
+                        val response = RetrofitInstance.apiService.getCsvTemplate()
+                        if (response.isSuccessful) {
+                            val csvText = response.body()?.string()
+                            csvTemplate = csvText?.let { parseCsvTemplate(it) }
+                            showTemplatePreviewDialog = true
+                        } else {
+                            Toast.makeText(context, "Failed to download CSV template.", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    } finally {
+                        isTemplateLoading = false
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C))
+        ) {
+            Icon(Icons.Default.Download, contentDescription = "Download Template")
+            Spacer(Modifier.width(8.dp))
+            Text("Preview CSV Template")
+        }
+
+        if (showCsvHelpDialog) {
+            AlertDialog(
+                onDismissRequest = { showCsvHelpDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showCsvHelpDialog = false }) {
+                        Text("Got it ✔️")
+                    }
+                },
+                title = {
+                    Text("CSV Column Format Guide", style = MaterialTheme.typography.titleLarge)
+                },
+                text = {
+                    Column() {
+//                        Text("🧾 Here's what each column means:")
+//                        Spacer(Modifier.height(8.dp))
+                        val descriptions = listOf(
+                            "amount 💵" to "The numeric value of the expense (e.g., 100.50).",
+                            "category 📂" to "The name of the expense category (must match an existing one).",
+                            "transaction_type 🔁" to "Usually 'EXPENSE' or 'INCOME'.",
+                            "note 📝" to "Optional description of the transaction.",
+                            "date 📅" to "The date of the transaction in yyyy-MM-dd format.",
+                            "vendor 🏪" to "Where or whom you spent money on."
+                        )
+
+                        descriptions.forEach { (field, explanation) ->
+                            Column(modifier = Modifier.padding(bottom = 6.dp)) {
+                                Text(
+                                    text = field,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = explanation,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+
+        if (showTemplatePreviewDialog && csvTemplate != null) {
+            AlertDialog(
+                onDismissRequest = { showTemplatePreviewDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showTemplatePreviewDialog = false }) {
+                        Text("Close")
+                    }
+                },
+                title = {
+                    Text(
+                        "CSV Format Preview",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    )
+                },
+                text = {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showCsvHelpDialog = true }) {
+                                Text("What does each column mean?")
+                            }
+                        }
+
+                        csvTemplate!!.forEachIndexed { index, row ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .background(if (index == 0) Color(0xFFEFEFEF) else Color.Transparent)
+                            ) {
+                                row.forEach { cell ->
+                                    Text(
+                                        text = cell,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(4.dp),
+                                        fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+
+        Spacer(Modifier.height(10.dp))
 
         // Save Expense Button
         Button(
@@ -444,7 +614,7 @@ fun AddExpenseScreen(navController: NavController) {
             colors = ButtonDefaults.buttonColors(
                 Color(0xFF4B0C0C),
             ),
-            enabled = !isLoading
+            enabled = !isLoading && selectedCategory != null && expenseAmount.toDoubleOrNull() != null
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
@@ -456,115 +626,211 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        if (isRecurring) {
 
-        // Save Recurring Transaction Button
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    isLoading = true
-                    errorMessage = null
-                    try {
-                        val amount = expenseAmount.toDoubleOrNull()
-                        if (amount == null || selectedCategory == null || endDate.isEmpty() || !isEndDateValid) {
-                            errorMessage = "Please fill in all fields correctly."
-                            return@launch
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Save Recurring Transaction Button
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        isLoading = true
+                        errorMessage = null
+                        try {
+                            val amount = expenseAmount.toDoubleOrNull()
+                            if (amount == null || selectedCategory == null || endDate.isEmpty() || !isEndDateValid) {
+                                errorMessage = "Please fill in all fields correctly."
+                                return@launch
+                            }
+
+                            val recurringTransaction = RecurringTransactionRequest(
+                                start_date = isoFormat.format(
+                                    SimpleDateFormat(
+                                        "yyyy-MM-dd",
+                                        Locale.getDefault()
+                                    ).parse(selectedDate)!!
+                                ),
+                                end_date = isoFormat.format(
+                                    SimpleDateFormat(
+                                        "yyyy-MM-dd",
+                                        Locale.getDefault()
+                                    ).parse(endDate)!!
+                                ),
+                                note = transactionNote,
+                                period = recurrencePeriod,
+                                amount = amount,
+                                category_id = selectedCategory!!.id,
+                                transaction_type = "expense",
+                                vendor = vendorName
+                            )
+
+                            val response = RetrofitInstance.apiService.createRecurringTransaction(
+                                recurringTransaction
+                            )
+                            if (response.isSuccessful) {
+                                Toast.makeText(
+                                    context,
+                                    "Recurring transaction added successfully!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                navController.popBackStack()
+                            } else {
+                                errorMessage = "Failed to add transaction. Please try again."
+                            }
+                        } catch (e: Exception) {
+                            errorMessage = "Error: ${e.message}"
+                        } finally {
+                            isLoading = false
                         }
-
-                        val recurringTransaction = RecurringTransactionRequest(
-                            start_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)!!),
-                            end_date = isoFormat.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(endDate)!!),
-                            note = transactionNote,
-                            period = recurrencePeriod,
-                            amount = amount,
-                            category_id = selectedCategory!!.id,
-                            transaction_type = "expense",
-                            vendor = vendorName
-                        )
-
-                        val response = RetrofitInstance.apiService.createRecurringTransaction(recurringTransaction)
-                        if (response.isSuccessful) {
-                            Toast.makeText(
-                                context,
-                                "Recurring transaction added successfully!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.popBackStack()
-                        } else {
-                            errorMessage = "Failed to add transaction. Please try again."
-                        }
-                    } catch (e: Exception) {
-                        errorMessage = "Error: ${e.message}"
-                    } finally {
-                        isLoading = false
                     }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
+                enabled = !isLoading && endDate.isNotEmpty() && isEndDateValid
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text(text = "Save Recurring Transaction")
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(Color(0xFF4B0C0C)),
-            enabled = !isLoading && endDate.isNotEmpty()
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text(text = "Save Recurring Transaction")
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Upload CSV Button
-        Button(
-            onClick = { filePickerLauncher.launch("text/*") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            )
-        ) {
-            Text("Upload CSV")
+        // Error Message Display
+        if (errorMessage != null) {
+            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(10.dp))
         }
-
-        Spacer(modifier = Modifier.height(10.dp))
 
         // Review Dialog
         if (showReviewDialog && parsedTransactions != null) {
             AlertDialog(
                 onDismissRequest = { showReviewDialog = false },
-                title = { Text("Review Transactions", style = MaterialTheme.typography.headlineSmall) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                title = {
+                    Text(
+                        text = "Review Transactions",
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                },
                 text = {
-                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                        items(parsedTransactions!!) { tx ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F8F8))
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text("💰 Amount", style = MaterialTheme.typography.labelMedium)
-                                    Text("$${tx.amount}", style = MaterialTheme.typography.bodyLarge)
+                    Column {
+                        // Summary chip
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        ) {
+                            Text(
+                                text = "${parsedTransactions!!.size} transactions found",
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
 
-                                    Spacer(Modifier.height(4.dp))
-                                    Text("📂 Category", style = MaterialTheme.typography.labelMedium)
-                                    Text(categories.find { it.id == tx.category_id }?.name ?: "Unknown")
+                        // Transactions list
+                        LazyColumn(
+                            modifier = Modifier
+                                .heightIn(max = 400.dp)
+                                .padding(vertical = 4.dp)
+                        ) {
+                            items(parsedTransactions!!) { transaction ->
+                                val categoryName = categories.find { it.id == transaction.category_id }?.name ?: "Unknown"
 
-                                    if (!tx.note.isNullOrBlank()) {
-                                        Spacer(Modifier.height(4.dp))
-                                        Text("📝 Note", style = MaterialTheme.typography.labelMedium)
-                                        Text(tx.note)
-                                    }
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    elevation = CardDefaults.cardElevation(1.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFF8F8F8),
+                                        contentColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        // Amount row
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "💰 Amount",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                            Text(
+                                                text = "$${"%.2f".format(transaction.amount)}",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
 
-                                    Spacer(Modifier.height(4.dp))
-                                    Text("📅 Date", style = MaterialTheme.typography.labelMedium)
-                                    Text(tx.date)
+                                        // Category row
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "📂 Category",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                            Text(
+                                                text = categoryName,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
 
-                                    if (!tx.vendor.isNullOrBlank()) {
-                                        Spacer(Modifier.height(4.dp))
-                                        Text("🏪 Vendor", style = MaterialTheme.typography.labelMedium)
-                                        Text(tx.vendor)
+                                        // Date row
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "📅 Date",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                            Text(
+                                                text = transaction.date,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+
+                                        // Note (if available)
+                                        if (!transaction.note.isNullOrEmpty()) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "📃 Note",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                )
+                                                Text(
+                                                    text = transaction.note,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f, fill = false)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -579,69 +845,81 @@ fun AddExpenseScreen(navController: NavController) {
                                 var successCount = 0
                                 var failureCount = 0
 
-                                parsedTransactions?.forEach { parsedTx ->
+                                parsedTransactions?.forEach { parsedTransaction ->
                                     try {
                                         val transaction = Transaction(
-                                            amount = parsedTx.amount,
-                                            category_id = parsedTx.category_id,
+                                            amount = parsedTransaction.amount,
+                                            category_id = parsedTransaction.category_id,
                                             transaction_type = "expense",
-                                            note = parsedTx.note,
+                                            note = parsedTransaction.note,
                                             date = isoFormat.format(
-                                                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(parsedTx.date)!!
+                                                SimpleDateFormat(
+                                                    "yyyy-MM-dd",
+                                                    Locale.getDefault()
+                                                ).parse(parsedTransaction.date)!!
                                             ),
-                                            vendor = parsedTx.vendor
+                                            vendor = parsedTransaction.vendor
                                         )
                                         val response = RetrofitInstance.apiService.addTransaction(transaction)
-                                        if (response.isSuccessful) successCount++ else failureCount++
-                                    } catch (_: Exception) {
+                                        if (response.isSuccessful) {
+                                            successCount++
+                                        } else {
+                                            failureCount++
+                                        }
+                                    } catch (e: Exception) {
                                         failureCount++
                                     }
                                 }
 
                                 isLoading = false
                                 showReviewDialog = false
+
+                                val message = "Saved $successCount transactions${if (failureCount > 0) ", $failureCount failed" else ""}"
                                 Toast.makeText(
                                     context,
-                                    "Saved $successCount transactions, $failureCount failed.",
+                                    message,
                                     Toast.LENGTH_LONG
                                 ).show()
 
-                                if (successCount > 0) navController.popBackStack()
+                                if (successCount > 0) {
+                                    navController.popBackStack()
+                                }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4B0C0C))
+                        modifier = Modifier.padding(end = 8.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        enabled = !isLoading
                     ) {
-                        Text("✅ Save All")
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("✅Save All", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 },
                 dismissButton = {
                     OutlinedButton(
                         onClick = { showReviewDialog = false },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF4B0C0C))
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
                     ) {
-                        Text("Cancel")
+                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
                     }
-                }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                textContentColor = MaterialTheme.colorScheme.onSurface
             )
-        }
-
-        // Scan Receipt Button
-        Button(
-            onClick = { receiptPickerLauncher.launch("image/*") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                Color(0xFF4B0C0C),
-            )
-        ) {
-            Text("Scan Receipt")
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Error Message Display
-        if (errorMessage != null) {
-            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(10.dp))
         }
 
         // Bottom Sheet Implementation
@@ -914,4 +1192,9 @@ fun isValidHexColor(color: String): Boolean {
     } catch (e: IllegalArgumentException) {
         false
     }
+}
+
+// CSV Parsing Helper
+fun parseCsvTemplate(csv: String): List<List<String>> {
+    return csv.trim().lines().map { it.split(",") }
 }
