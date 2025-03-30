@@ -12,6 +12,7 @@ import com.cs446.expensetracker.api.models.DealCreationRequest
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithLocation
 import com.cs446.expensetracker.api.models.DealRetrievalRequestWithUser
 import com.cs446.expensetracker.api.models.CustomCategoryRequest
+import com.cs446.expensetracker.api.models.DealAddResponse
 import com.cs446.expensetracker.api.models.SuggestionRequest
 import com.cs446.expensetracker.api.models.SuggestionResponse
 import com.cs446.expensetracker.api.models.FcmTokenUploadRequest
@@ -129,10 +130,10 @@ interface BaseAPIService {
 
     // ====================== Deals ===========================
     @POST("/deals/list")
-    suspend fun getDeals(@Body DealRetrievalRequestWithUser: DealRetrievalRequestWithUser): Response<List<DealRetrievalResponse>>
+    suspend fun getDeals(@Body request: DealRetrievalRequestWithUser): Response<List<DealRetrievalResponse>>
 
     @POST("/deals/list")
-    suspend fun getDeals(@Body DealRetrievalRequestWithLocation: DealRetrievalRequestWithLocation): Response<List<DealRetrievalResponse>>
+    suspend fun getDeals(@Body request: DealRetrievalRequestWithLocation): Response<List<DealRetrievalResponse>>
 
     @GET("/deals/{deal_id}")
     suspend fun getSpecificDeal(@Path("deal_id") dealId: String): Response<DealRetrievalResponse>
@@ -141,10 +142,10 @@ interface BaseAPIService {
     suspend fun deleteDeal(@Path("deal_id") dealId: String): Response<String>
 
     @PUT("/deals/{deal_id}")
-    suspend fun updateDeal(@Path("deal_id") dealId: String, @Body DealCreationRequest: DealCreationRequest): Response<String>
+    suspend fun updateDeal(@Path("deal_id") dealId: String, @Body request: DealCreationRequest): Response<String>
 
     @POST("/deals/")
-    suspend fun addDeal(@Body DealCreationRequest: DealCreationRequest): Response<String>
+    suspend fun addDeal(@Body request: DealCreationRequest): Response<DealAddResponse>
 
     @POST("/deals/upvote/{deal_id}")
     suspend fun upvoteDeal(@Path("deal_id") dealId: String): Response<String>
