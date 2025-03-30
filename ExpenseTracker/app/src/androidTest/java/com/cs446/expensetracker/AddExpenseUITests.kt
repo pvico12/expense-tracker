@@ -8,7 +8,18 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 
 class AddExpenseUITests {
@@ -16,27 +27,45 @@ class AddExpenseUITests {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-    @Before
-    fun Setup() {
-        composeTestRule.setContent {
-            AddExpenseScreen(navController = rememberNavController())
-        }
-    }
+//    @Before
+//    fun Setup() {
+//        composeTestRule.setContent {
+//            AddExpenseScreen(navController = rememberNavController())
+//        }
+//    }
 
     @Test
     fun testInitialState() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         // Verify initial UI elements are present
         composeTestRule.onNodeWithText("Add Transaction").assertExists()
         composeTestRule.onNodeWithText("Amount").assertExists()
         composeTestRule.onNodeWithText("Item / Vendor Name ").assertExists()
         composeTestRule.onNodeWithText("Category").assertExists()
+        composeTestRule.onNodeWithText("Add Custom Category").assertExists()
+        composeTestRule.onNodeWithText("Date & Recurrence").assertExists()
+        composeTestRule.onNodeWithText("Note (optional)").assertExists()
+        composeTestRule.onNodeWithText("Scan Receipt").assertExists()
+        composeTestRule.onNodeWithText("Upload CSV").assertExists()
+        composeTestRule.onNodeWithText("Preview CSV Template").assertExists()
         composeTestRule.onNodeWithText("Save Transaction").assertExists()
+
+        composeTestRule.onNodeWithText("Pick End Date").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Repeats: Weekly").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Save Recurring Transaction").assertDoesNotExist()
     }
 
     // Amount Input
 
     @Test
     fun testExpenseAmountInput_showsCorrectValue() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         val inputAmount = "100.00"
         composeTestRule.onNodeWithText("Amount").performTextInput(inputAmount)
         composeTestRule.onNodeWithText(inputAmount).assertExists()
@@ -44,6 +73,10 @@ class AddExpenseUITests {
 
     @Test
     fun testExpenseAmountInput_rejectsInvalidInput() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         composeTestRule.onNodeWithText("Please enter a valid non-negative amount").assertDoesNotExist()
         composeTestRule.onNodeWithText("Amount").performTextInput("abc")
         composeTestRule.onNodeWithText("Please enter a valid non-negative amount").assertExists()
@@ -53,6 +86,10 @@ class AddExpenseUITests {
 
     @Test
     fun testVendorInput() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         composeTestRule.onNodeWithText("Item / Vendor Name ").performTextInput("Test Vendor")
         composeTestRule.onNodeWithText("Test Vendor").assertExists()
     }
@@ -61,12 +98,20 @@ class AddExpenseUITests {
 
     @Test
     fun testRunAIButton_disabledWhenVendorIsEmpty() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         // Should be disabled initially because vendor is empty
         composeTestRule.onNodeWithText("Run AI").assertIsNotEnabled()
     }
 
     @Test
     fun testRunAI_showsErrorMessageWhenFails() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         // Input a vendor name to enable the AI button
         composeTestRule.onNodeWithText("Item / Vendor Name ").performTextInput("UnknownVendor")
 
@@ -85,6 +130,10 @@ class AddExpenseUITests {
     // Category
     @Test
     fun testCategorySelection_bottomSheetOpens() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         // Tap on the category box to open bottom sheet
         composeTestRule.onNodeWithText("Tap to Open Bottom Sheet").performClick()
 
@@ -94,8 +143,14 @@ class AddExpenseUITests {
         }
     }
 
+    // Add Custom Category
+
     @Test
     fun testAddCustomCategory_successfullyAddsCategory() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
         // Open custom category dialog
         composeTestRule.onNodeWithText("Add Custom Category").performClick()
 
@@ -113,7 +168,141 @@ class AddExpenseUITests {
         composeTestRule.onNodeWithText("Test Custom").assertExists()
     }
 
+    // Date & Recurrence
+    @Test
+    fun testInitialDate_isToday() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        composeTestRule.onNodeWithText(today).assertExists()
+    }
+
+    @Test
+    fun testRecurringSwitch_showsEndDateAndRepeatOptions() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
+        // Find the switch (only one toggleable node should exist)
+        composeTestRule
+            .onAllNodes(isToggleable())
+            .onFirst()
+            .performClick()
+
+        // Wait for recomposition
+        composeTestRule.waitForIdle()
+
+        // End date button should appear
+        composeTestRule.onNodeWithText("Pick End Date").assertExists()
+
+        // Repeat period button should appear
+        composeTestRule.onNodeWithText("Repeats: Weekly").assertExists()
+    }
+
+    @Test
+    fun testRepeatDropdown_selectsCorrectOption() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
+        // Enable the recurring switch
+        composeTestRule
+            .onAllNodes(isToggleable())
+            .onFirst()
+            .performClick()
+
+        composeTestRule.waitForIdle()
+
+        // Click the "Repeats:" dropdown button
+        composeTestRule.onNodeWithText("Repeats: Weekly").performClick()
+
+        // Click the "Monthly" option from the dropdown
+        composeTestRule.onNodeWithText("Monthly", useUnmergedTree = true).performClick()
+
+        // Assert that the dropdown now shows "Repeats: Monthly"
+        composeTestRule.onNodeWithText("Repeats: Monthly", useUnmergedTree = true).assertExists()
+    }
 
 
-    // Add more tests for categories, save button state, dialogs etc.
+    @Test
+    fun testSaveRecurringButton_disabledWhenEndDateIsMissing() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
+        // Fill in amount and vendor to simulate user input
+        composeTestRule.onNodeWithText("Amount").performTextInput("100")
+        composeTestRule.onNodeWithText("Item / Vendor Name ").performTextInput("Coffee")
+
+        // Find the switch (only one toggleable node should exist)
+        composeTestRule
+            .onAllNodes(isToggleable())
+            .onFirst()
+            .performClick()
+
+        // Wait for recomposition
+        composeTestRule.waitForIdle()
+
+        // "Save Recurring Transaction" button should be disabled initially
+        composeTestRule.onNodeWithText("Save Recurring Transaction").assertIsNotEnabled()
+    }
+
+    // Note
+
+    @Test
+    fun testTransactionNoteInput_updatesCorrectly() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
+        val note = "This was for lunch 🍔"
+
+        // Input the note
+        composeTestRule.onNodeWithText("Note (optional)").performTextInput(note)
+
+        // Assert the note is now shown
+        composeTestRule.onNodeWithText(note).assertExists()
+    }
+
+    @Test
+    fun testPreviewCsvTemplateButton_showsDialog() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
+        // Simulate clicking the preview template button
+        composeTestRule
+            .onNodeWithText("Preview CSV Template", useUnmergedTree = true)
+            .performClick()
+
+        // Optional: wait if async call populates the template
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule.onAllNodesWithText("CSV Format Preview").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Assert dialog title exists
+        composeTestRule
+            .onNodeWithText("CSV Format Preview", useUnmergedTree = true)
+            .assertExists()
+
+        // Assert close button is visible
+        composeTestRule
+            .onNodeWithText("Close")
+            .assertExists()
+            .assertHasClickAction()
+
+        // Assert the help button is present
+        composeTestRule
+            .onNodeWithText("What does each column mean?", useUnmergedTree = true)
+            .assertExists()
+
+
+    }
+
+
+
+
 }
