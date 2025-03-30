@@ -95,6 +95,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabPosition
 import androidx.compose.material3.TabRow
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -110,27 +111,28 @@ class Deals {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @Composable
     fun DealsHost(dealsNavController: NavController) {
+        val context = LocalContext.current
         val scrollState = rememberScrollState()
         val scope = rememberCoroutineScope()
 
         val atasehir = LatLng(43.452969, -80.495064)
-        var currentAddress = rememberSaveable  { mutableStateOf("")}
-        var currentLatLng = rememberSaveable  { mutableStateOf<LatLng?>(null)}
-        var defaultZoom = rememberSaveable  { mutableStateOf(0f)}
+        val currentAddress = rememberSaveable  { mutableStateOf("")}
+        val currentLatLng = rememberSaveable  { mutableStateOf<LatLng?>(null)}
+        val defaultZoom = rememberSaveable  { mutableFloatStateOf(0f) }
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom((currentLatLng.value ?: atasehir) as LatLng, defaultZoom.value)
+            position = CameraPosition.fromLatLngZoom((currentLatLng.value ?: atasehir) as LatLng, defaultZoom.floatValue)
         }
 
-        var uiSettings = remember {
+        val uiSettings = remember {
             mutableStateOf(MapUiSettings(zoomControlsEnabled = true))
         }
 
-        var listOfSubs by rememberSaveable  { mutableStateOf<List<DealSubRetrievalResponse>>(emptyList()) }
-        var listOfDeals by rememberSaveable  { mutableStateOf<List<DealRetrievalResponse>>(emptyList()) }
+        var listOfSubs by remember  { mutableStateOf<List<DealSubRetrievalResponse>>(emptyList()) }
+        var listOfDeals by remember  { mutableStateOf<List<DealRetrievalResponse>>(emptyList()) }
 
         var viewingUserSubmittedDeals by rememberSaveable { mutableStateOf("See Your Submitted Deals") }
 
-        var errorMessage = ""
+        var errorMessage: String
         var isLoading by remember { mutableStateOf(true) }
 
         var viewLocationPicker by remember { mutableStateOf(false) }
@@ -179,7 +181,6 @@ class Deals {
                 isLoading = true
                 errorMessage = ""
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<List<DealSubRetrievalResponse>> =
                         RetrofitInstance.apiService.getSubs()
                     if (response.isSuccessful) {
@@ -213,7 +214,7 @@ class Deals {
                 scope.launch {
                     isLoading = true
                     errorMessage = ""
-                    val deal_request = DealRetrievalRequestWithLocation(
+                    val dealRequest = DealRetrievalRequestWithLocation(
                         location = DealLocation (
                             longitude = newLatLng.longitude,
                             latitude = newLatLng.latitude,
@@ -221,15 +222,13 @@ class Deals {
                         )
                     )
                     try {
-                        val token = UserSession.access_token ?: ""
                         val response: Response<List<DealRetrievalResponse>> =
-                            RetrofitInstance.apiService.getDeals(deal_request)
+                            RetrofitInstance.apiService.getDeals(dealRequest)
                         Log.d("Response", "Fetch Deals API Request actually called")
                         if (response.isSuccessful) {
                             val responseBody = response.body()
                             Log.d("Response", "Deals Response: $responseBody")
-                            var unsorteddeals: List<DealRetrievalResponse>
-                            unsorteddeals = responseBody?.map { x ->
+                            val unsorteddeals: List<DealRetrievalResponse> = responseBody?.map { x ->
                                 DealRetrievalResponse(
                                     id = x.id,
                                     name = x.name,
@@ -258,6 +257,8 @@ class Deals {
                         isLoading = false
                     }
                 }
+            } else {
+                listOfDeals = emptyList()
             }
         }
         fun apiFetchUserSubmittedDeals() {
@@ -267,19 +268,17 @@ class Deals {
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
                 errorMessage = ""
-                val deal_request = DealRetrievalRequestWithUser(
+                val dealRequest = DealRetrievalRequestWithUser(
                     user_id = UserSession.userId,
                 )
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<List<DealRetrievalResponse>> =
-                        RetrofitInstance.apiService.getDeals(deal_request)
+                        RetrofitInstance.apiService.getDeals(dealRequest)
                     Log.d("Response", "Fetch User Submitted Deals API Request actually called")
                     if (response.isSuccessful) {
                         val responseBody = response.body()
                         Log.d("Response", "User Submitted Deals Response: $responseBody")
-                        var unsorteddeals: List<DealRetrievalResponse>
-                        unsorteddeals = responseBody?.map { x ->
+                        val unsorteddeals: List<DealRetrievalResponse> = responseBody?.map { x ->
                             DealRetrievalResponse(
                                 id = x.id,
                                 name = x.name,
@@ -312,89 +311,21 @@ class Deals {
 
         fun onUpvote(deal_id: Int, index: Int) {
             CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val token = UserSession.access_token ?: ""
-                    val response: Response<String>
-                    if(listOfDeals[index].user_vote == 1) {
-                        response = RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
-                    } else {
-                        response = RetrofitInstance.apiService.upvoteDeal(deal_id.toString())
-                    }
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Upvote Deals Response: $responseBody")
-                        var second_half = emptyList<DealRetrievalResponse>()
-                        if (index != listOfDeals.size-1) {
-                            second_half = listOfDeals.slice(index+1..listOfDeals.size-1)
-                        }
-                        listOfDeals = listOfDeals + listOfDeals[index] // I don't know why this makes the refresh work but please don't remove
-                        var updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
-                        if (listOfDeals[index].user_vote == 1) {
-                            updatedDealDownvote.user_vote = 0
-                            updatedDealDownvote.upvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
-                        } else if (listOfDeals[index].user_vote == 0) {
-                            updatedDealDownvote.user_vote = 1
-                            updatedDealDownvote.upvotes += 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
-                        } else if (listOfDeals[index].user_vote == -1) {
-                            updatedDealDownvote.user_vote = 1
-                            updatedDealDownvote.upvotes += 1
-                            updatedDealDownvote.downvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
-                        }
-                        Log.d("Response", "New Upvoted Deals: $listOfDeals")
-                    } else {
-                        errorMessage = "Failed to Upvote"
-                        Log.d("Error", "Failed to Upvote $errorMessage")
-                    }
-                } catch (e: Exception) {
-                    errorMessage = "Error: ${e.message}"
-                    Log.d("Error", "Failed to Upvote $errorMessage")
+                val updatedDeals = upvote(listOfDeals, deal_id.toString(), index)
+                if (updatedDeals != null) {
+                    listOfDeals = updatedDeals
+                } else {
+                    errorMessage = "Failed to Upvote"
                 }
             }
         }
         fun onDownvote(deal_id: Int, index: Int) {
             CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val token = UserSession.access_token ?: ""
-                    val response: Response<String>
-                    if(listOfDeals[index].user_vote == -1) {
-                        response = RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
-                    } else {
-                        response = RetrofitInstance.apiService.downvoteDeal(deal_id.toString())
-                    }
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Downvote Deals Response: $responseBody")
-                        var second_half = emptyList<DealRetrievalResponse>()
-                        if (index != listOfDeals.size-1) {
-                            second_half = listOfDeals.slice(index+1..listOfDeals.size-1)
-                        }
-                        listOfDeals = listOfDeals + listOfDeals[index] // I don't know why this makes the refresh work but please don't remove
-                        var updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
-                        if (listOfDeals[index].user_vote == -1) {
-                            updatedDealDownvote.user_vote = 0
-                            updatedDealDownvote.downvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
-                        } else if (listOfDeals[index].user_vote == 0) {
-                            updatedDealDownvote.user_vote = -1
-                            updatedDealDownvote.downvotes += 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
-                        } else if (listOfDeals[index].user_vote == 1) {
-                            updatedDealDownvote.user_vote = -1
-                            updatedDealDownvote.downvotes += 1
-                            updatedDealDownvote.upvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
-                        }
-                        Log.d("Response", "New Downvoted Deals: $listOfDeals")
-                    } else {
-                        errorMessage = "Failed to Upvote"
-                        Log.d("Error", "Failed to Downvote $response")
-                    }
-                } catch (e: Exception) {
-                    errorMessage = "Error: ${e.message}"
-                    Log.d("Error", "Failed to Downvote $errorMessage")
+                val updatedDeals = downvote(listOfDeals, deal_id.toString(), index)
+                if (updatedDeals != null) {
+                    listOfDeals = updatedDeals
+                } else {
+                    errorMessage = "Failed to Downvote"
                 }
             }
         }
@@ -403,75 +334,59 @@ class Deals {
             deleteConfirmationDialogue = false
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
-                try {
-                    val token = UserSession.access_token ?: ""
-                    val response: Response<String> =
-                        RetrofitInstance.apiService.deleteDeal(id.toString())
-                    Log.d("Response", "Fetch Deals API Request actually called")
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Deals Response: $responseBody")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Deal Deleted",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } else {
-                        Log.d("Error", "Deals API Response Was Unsuccessful: $response")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Failed to Delete Deal, Please Try Again",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                if (deleteDeal(id.toString())) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Deal Deleted",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                    apiFetchUserSubmittedDeals()
-                } catch (e: Exception) {
-                    Log.d("Error", "Error Calling Deals API: $e")
-                } finally {
-                    isLoading = false
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Failed to Delete Deal, Please Try Again",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
+                isLoading = false
+                apiFetchUserSubmittedDeals()
             }
         }
         fun onConfirmSub(id: Int, context: Context) {
             deleteSubConfirmationDialogue = false
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
-                try {
-                    val token = UserSession.access_token ?: ""
-                    val response: Response<String> =
-                        RetrofitInstance.apiService.deleteSub(id)
-                    Log.d("Response", "Fetch Subs API Request actually called")
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Subs Response: $responseBody")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Address Deleted",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } else {
-                        Log.d("Error", "Subs API Response Was Unsuccessful: $response")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Failed to Delete Address, Please Try Again",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                if (deleteSub(id)) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Address Deleted",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                    apiFetchSubs()
-                } catch (e: Exception) {
-                    Log.d("Error", "Error Calling Subs API: $e")
-                } finally {
-                    isLoading = false
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Failed to Delete Address, Please Try Again",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
+                isLoading = false
+                apiFetchSubs()
             }
+        }
+
+        @Composable
+        fun openGoogleMaps()  {
+            val intentUri = Uri.parse("geo:0,0?q=Waterloo, ON")
+            val mapIntent = Intent(Intent.ACTION_VIEW, intentUri)
+//        mapIntent.setPackage("com.google.android.apps.maps")
+            context.startActivity(mapIntent)
         }
 
         if (deleteConfirmationDialogue) {
@@ -480,7 +395,7 @@ class Deals {
                 title = { Text("Are you sure?") },
                 text = { Text("Do you really want to delete?") },
                 confirmButton = {
-                    val context = LocalContext.current
+//                    val context = LocalContext.current
                     TextButton(onClick = { onConfirm(idToDelete, context) }) {
                         Text("Proceed")
                     }
@@ -499,7 +414,7 @@ class Deals {
                 title = { Text("Are you sure?") },
                 text = { Text("Delete this address?") },
                 confirmButton = {
-                    val context = LocalContext.current
+//                    val context = LocalContext.current
                     TextButton(onClick = { onConfirmSub(subToDelete, context) }) {
                         Text("Proceed")
                     }
@@ -630,7 +545,7 @@ class Deals {
                             }
                             if (googleMapsOpened.value != "") {
                                 googleMapsOpened.value = ""
-                                openGoogleMaps(deal.address)
+                                openGoogleMaps()
                             }
                             Text(
                                 text = formatTransactionDate(deal.date), // format date
@@ -716,14 +631,14 @@ class Deals {
         @Composable
         fun SearchAddressScreen() {
             Row(modifier = Modifier.padding(start = 24.dp, bottom = 6.dp, end = 24.dp)) {
-                AutoComplete("") {
+                AutoComplete("", onSelect = { autoCompleteInfo ->
                     CoroutineScope(Dispatchers.IO).launch {
-                        currentAddress.value = it.address
-                        currentLatLng.value = it.latLng
+                        currentAddress.value = autoCompleteInfo.address
+                        currentLatLng.value = autoCompleteInfo.latLng
                         viewLocationPicker = false
                         defaultZoom.value = 15f
                     }
-                }
+                }, onTextChanged = {} )
             }
         }
 
@@ -966,14 +881,7 @@ class Deals {
                     shape = CircleShape,
                     modifier = Modifier.size(40.dp),
                     contentPadding = PaddingValues(0.dp),
-                    onClick = {
-                        if (currentLatLng.value == null) {
-                            errorMessageForRegion = "Please set a region first"
-                        } else {
-                            errorMessageForRegion = ""
-                            dealsNavController.navigate("addDealScreen/${-1}")
-                        }
-                    },
+                    onClick = { dealsNavController.navigate("addDealScreen/${-1}") },
                 ) {
                     Icon(
                         imageVector = Icons.Filled.AddToPhotos,
@@ -986,14 +894,14 @@ class Deals {
                     modifier = Modifier
                         .padding(0.dp),
                     onClick = {
-                        if (currentLatLng.value == null) {
-                            errorMessageForRegion = "Please set a region first"
+                        if (viewingUserSubmittedDeals == "See User Submitted Deals") {
+                            viewingUserSubmittedDeals = "See All Deals in Area"
                         } else {
-                            if (viewingUserSubmittedDeals == "See All Deals in Area") {
-                                viewingUserSubmittedDeals = "See User Submitted Deals"
+                            if (currentLatLng.value == null) {
+                                errorMessageForRegion = "Please set a region first"
                             } else {
                                 errorMessageForRegion = ""
-                                viewingUserSubmittedDeals = "See All Deals in Area"
+                                viewingUserSubmittedDeals = "See User Submitted Deals"
                             }
                         }
                     },
@@ -1080,45 +988,45 @@ class Deals {
         endDate: Date?,
         onEndDateChange: (Date?) -> Unit
     ) {
-        val context = LocalContext.current
+//        val context = LocalContext.current
 
         // ----- Start Date Picker Implementation -----
-        val startCalendar = Calendar.getInstance()
-        var selectedStartDate by remember {
-            mutableStateOf(
-                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(startCalendar.time)
-            )
-        }
-        val startDatePickerDialog = DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                selectedStartDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                onStartDateChange(sdf.parse(selectedStartDate))
-            },
-            startCalendar.get(Calendar.YEAR),
-            startCalendar.get(Calendar.MONTH),
-            startCalendar.get(Calendar.DAY_OF_MONTH)
-        )
+//        val startCalendar = Calendar.getInstance()
+//        var selectedStartDate by remember {
+//            mutableStateOf(
+//                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(startCalendar.time)
+//            )
+//        }
+//        val startDatePickerDialog = DatePickerDialog(
+//            context,
+//            { _, year, month, dayOfMonth ->
+//                selectedStartDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+//                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+//                onStartDateChange(sdf.parse(selectedStartDate))
+//            },
+//            startCalendar.get(Calendar.YEAR),
+//            startCalendar.get(Calendar.MONTH),
+//            startCalendar.get(Calendar.DAY_OF_MONTH)
+//        )
 
         // ----- End Date Picker Implementation -----
-        val endCalendar = Calendar.getInstance()
-        var selectedEndDate by remember {
-            mutableStateOf(
-                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(endCalendar.time)
-            )
-        }
-        val endDatePickerDialog = DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                selectedEndDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                onEndDateChange(sdf.parse(selectedEndDate))
-            },
-            endCalendar.get(Calendar.YEAR),
-            endCalendar.get(Calendar.MONTH),
-            endCalendar.get(Calendar.DAY_OF_MONTH)
-        )
+//        val endCalendar = Calendar.getInstance()
+//        var selectedEndDate by remember {
+//            mutableStateOf(
+//                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(endCalendar.time)
+//            )
+//        }
+//        val endDatePickerDialog = DatePickerDialog(
+//            context,
+//            { _, year, month, dayOfMonth ->
+//                selectedEndDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+//                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+//                onEndDateChange(sdf.parse(selectedEndDate))
+//            },
+//            endCalendar.get(Calendar.YEAR),
+//            endCalendar.get(Calendar.MONTH),
+//            endCalendar.get(Calendar.DAY_OF_MONTH)
+//        )
 
         Column(modifier = Modifier
             .fillMaxWidth()
@@ -1140,25 +1048,130 @@ class Deals {
         }
     }
 
-    @Composable
-    fun openGoogleMaps(address: String)  {
-        val context = LocalContext.current
-        val intentUri = Uri.parse("geo:0,0?q=${address}")
-        val mapIntent = Intent(Intent.ACTION_VIEW, intentUri)
-        mapIntent.setPackage("com.google.android.apps.maps")
-        context.startActivity(mapIntent)
-    }
-
     // Helper to format date
     private fun formatTransactionDate(isoDate: String): String {
         val splitted = isoDate.split("T")
         return try {
             splitted[0]
         } catch (e: Exception) {
-            Log.d("Error", "Error Parsing Date: $e")
+            Log.d("Error", "Error Parsing Date: ${e.message}")
             "Invalid Date"
         }
     }
 
+}
 
+suspend fun deleteDeal(id: String): Boolean {
+    if (id.isInvalid()) {
+        return false
+    }
+
+    return try {
+        val response: Response<String> = RetrofitInstance.apiService.deleteDeal(id)
+        Log.d("Response", "Delete Deal API Request actually called")
+        if (response.isSuccessful) {
+            Log.d("Response", "Deals Response: ${response.body()}")
+            true
+        } else {
+            Log.d("Error", "Deals API Response Was Unsuccessful: $response")
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when deleting deal: ${e.message}")
+        false
+    }
+}
+
+suspend fun deleteSub(id: Int): Boolean {
+    if (id.isInvalid()) {
+        return false
+    }
+
+    return try {
+        val response: Response<String> = RetrofitInstance.apiService.deleteSub(id)
+        if (response.isSuccessful) {
+            Log.d("Response", "Subs Response: ${response.body()}")
+            true
+        } else {
+            Log.d("Error", "Subs API Response Was Unsuccessful: $response")
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when deleting address: ${e.message}")
+        false
+    }
+}
+
+suspend fun upvote(listOfDeals: List<DealRetrievalResponse>, deal_id: String, index: Int): List<DealRetrievalResponse>? {
+    try {
+        val response: Response<String> = if (listOfDeals[index].user_vote == 1) {
+            RetrofitInstance.apiService.cancelvoteDeal(deal_id)
+        } else {
+            RetrofitInstance.apiService.upvoteDeal(deal_id)
+        }
+        if (response.isSuccessful) {
+            when (listOfDeals[index].user_vote) {
+                1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 0, upvotes = --deal.upvotes)
+                        else deal
+                    }
+                }
+                0 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 1, upvotes = ++deal.upvotes)
+                        else deal
+                    }
+                }
+                -1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 1, upvotes = ++deal.upvotes, downvotes = --deal.downvotes)
+                        else deal
+                    }
+                }
+            }
+        } else {
+            Log.d("Error", "Upvote Failed Response: ${response.body()}")
+        }
+    } catch (e: Exception) {
+        Log.d("Error", "Failed to Upvote: ${e.message}")
+    }
+    return null
+}
+
+suspend fun downvote(listOfDeals: List<DealRetrievalResponse>, deal_id: String, index: Int): List<DealRetrievalResponse>? {
+    try {
+        val response: Response<String> = if (listOfDeals[index].user_vote == -1) {
+            RetrofitInstance.apiService.cancelvoteDeal(deal_id)
+        } else {
+            RetrofitInstance.apiService.downvoteDeal(deal_id)
+        }
+        if (response.isSuccessful) {
+            when (listOfDeals[index].user_vote) {
+                -1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 0, downvotes = --deal.downvotes)
+                        else deal
+                    }
+                }
+                0 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = -1, downvotes = ++deal.downvotes)
+                        else deal
+                    }
+                }
+                1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = -1, downvotes = ++deal.downvotes, upvotes = --deal.upvotes)
+                        else deal
+                    }
+                }
+            }
+        } else {
+            Log.d("Error", "Downvote Failed Response: ${response.body()}")
+        }
+    } catch (e: Exception) {
+        Log.d("Error", "Failed to Downvote: ${e.message}")
+    }
+    return null
 }

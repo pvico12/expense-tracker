@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services")
+    id("com.google.gms.google-services") version "4.3.8"
 }
 
 
@@ -68,11 +68,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
+    }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
     }
 }
 
@@ -90,6 +98,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.5.1")
     implementation(libs.androidx.ui.test.junit4.android)
     implementation(libs.androidx.navigation.testing)
+    implementation(libs.androidx.espresso.contrib)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.junit)
