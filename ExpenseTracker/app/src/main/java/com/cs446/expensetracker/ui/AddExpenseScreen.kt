@@ -233,11 +233,18 @@ fun AddExpenseScreen(navController: NavController) {
             }
         }
 
-        // Amount Input
+        val isAmountValid = isValidAmount(expenseAmount)
+
         OutlinedTextField(
             value = expenseAmount,
             onValueChange = { expenseAmount = it },
             label = { Text("Amount") },
+            isError = !isAmountValid && expenseAmount.isNotBlank(),
+            supportingText = {
+                if (!isAmountValid && expenseAmount.isNotBlank()) {
+                    Text("Please enter a valid non-negative amount")
+                }
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
@@ -280,6 +287,8 @@ fun AddExpenseScreen(navController: NavController) {
             },
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -614,7 +623,7 @@ fun AddExpenseScreen(navController: NavController) {
             colors = ButtonDefaults.buttonColors(
                 Color(0xFF4B0C0C),
             ),
-            enabled = !isLoading && selectedCategory != null && expenseAmount.toDoubleOrNull() != null
+            enabled = !isLoading && selectedCategory != null && isAmountValid
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
@@ -1193,6 +1202,11 @@ fun isValidHexColor(color: String): Boolean {
 //    } catch (e: IllegalArgumentException) {
 //        false
 //    }
+}
+
+// Helper function to validate amount
+fun isValidAmount(input: String): Boolean {
+    return input.toDoubleOrNull()?.let { it >= 0.0 } ?: false
 }
 
 // CSV Parsing Helper
