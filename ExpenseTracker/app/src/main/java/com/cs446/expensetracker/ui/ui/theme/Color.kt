@@ -31,4 +31,7 @@ val positiveGreen = Color(0xFF69A42D)
 val negativeRed = Color(0xFFD5030A)
 val neutralOrange = Color(0xFFCC8658)
 
+val secondaryPositiveGreen = Color(0xFF4A751E)
+val secondaryNegativeRed = Color(0xFF9D0107)
+
 val transparencyColor = Color(0x00F3E3E1)
