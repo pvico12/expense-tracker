@@ -310,11 +310,6 @@ class AddExpenseUITests {
             .onNodeWithText("Preview CSV Template")
             .performClick()
 
-//        // Optional: wait if async call populates the template
-//        composeTestRule.waitUntil(timeoutMillis = 5_000) {
-//            composeTestRule.onAllNodesWithText("CSV Format Preview").fetchSemanticsNodes().isNotEmpty()
-//        }
-
         // Assert dialog title exists
         composeTestRule
             .onNodeWithText("CSV Format Preview")
