@@ -631,14 +631,14 @@ class Deals {
         @Composable
         fun SearchAddressScreen() {
             Row(modifier = Modifier.padding(start = 24.dp, bottom = 6.dp, end = 24.dp)) {
-                AutoComplete("") {
+                AutoComplete("", onSelect = { autoCompleteInfo ->
                     CoroutineScope(Dispatchers.IO).launch {
-                        currentAddress.value = it.address
-                        currentLatLng.value = it.latLng
+                        currentAddress.value = autoCompleteInfo.address
+                        currentLatLng.value = autoCompleteInfo.latLng
                         viewLocationPicker = false
                         defaultZoom.value = 15f
                     }
-                }
+                }, onTextChanged = {} )
             }
         }
 

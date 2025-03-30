@@ -75,8 +75,6 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
                         }
                         isLoading = false
 
-
-
                         address = specificSubToEdit?.address ?: ""
                         if (specificSubToEdit != null) {
                             latlngPrediction = LatLng(specificSubToEdit!!.latitude.toDouble(), specificSubToEdit!!.longitude.toDouble())
@@ -85,17 +83,19 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
                 }
             }
 
-            AutoComplete(address) {
+            AutoComplete(address, onSelect = { autoCompleteInfo ->
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        address = it.address
-                        latlngPrediction = it.latLng
+                        address = autoCompleteInfo.address
+                        latlngPrediction = autoCompleteInfo.latLng
                         Log.d("TAG", "AutoComplete: $address $latlngPrediction")
                     } catch (e: Exception) {
                         Log.d("TAG", "Error getting Location from Autocomplete: $e")
                     }
                 }
-            }
+            }, onTextChanged = { currentText ->
+                if (currentText != address) latlngPrediction = null
+            })
 
             if (errorMessage != null) {
                 Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)

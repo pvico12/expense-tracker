@@ -54,7 +54,7 @@ import kotlin.coroutines.suspendCoroutine
 class AutoCompleteInformation(var latLng: LatLng?, var address: String)
 
 @Composable
-fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Unit) {
+fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Unit, onTextChanged: (String) -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -132,7 +132,7 @@ fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Un
                 locationPredictions = completedTask.result.autocompletePredictions
                 for (thing in locationPredictions) {
                     var temp = thing.getFullText(null).toString()
-                    Log.d("TAG", "Ok we made it here $temp")
+//                    Log.d("TAG", "Ok we made it here $temp")
                 }
             }
         }
@@ -184,6 +184,7 @@ fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Un
                     onValueChange = {
                         category = it
                         expanded = true
+                        onTextChanged(it)
                         coroutineScope.launch {
                             onLocationTextChanged(it, context)
                         }

@@ -78,7 +78,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -95,7 +95,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -112,7 +112,7 @@ class DealsUnitTests {
                 "",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -129,7 +129,7 @@ class DealsUnitTests {
                 "T&T",
                 -0.99,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -146,7 +146,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -163,7 +163,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:88",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -197,7 +197,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -200.0,
                 43.4624441
             )
@@ -214,7 +214,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 100.4624441
             )
@@ -231,7 +231,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -369,7 +369,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -387,7 +387,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -405,7 +405,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -423,7 +423,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -441,7 +441,7 @@ class DealsUnitTests {
                 "",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -459,7 +459,7 @@ class DealsUnitTests {
                 "T&T",
                 -0.99,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -477,7 +477,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -495,7 +495,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:88",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )
@@ -531,7 +531,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -200.0,
                 43.4624441
             )
@@ -549,7 +549,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 100.4624441
             )
@@ -567,7 +567,7 @@ class DealsUnitTests {
                 "T&T",
                 1.0,
                 "2025-03-29T20:16:50",
-                "T\\u0026T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
+                "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada",
                 -80.5380946,
                 43.4624441
             )

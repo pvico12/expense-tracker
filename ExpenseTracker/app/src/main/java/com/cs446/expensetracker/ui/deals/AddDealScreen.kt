@@ -151,17 +151,19 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        AutoComplete(address) {
+        AutoComplete(address, onSelect = { autoCompleteInfo ->
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    address = it.address
-                    latlngPrediction = it.latLng
-                    Log.d("TAG", "AutoComplete: $it")
+                    address = autoCompleteInfo.address
+                    latlngPrediction = autoCompleteInfo.latLng
+                    Log.d("TAG", "AutoComplete: $address $latlngPrediction")
                 } catch (e: Exception) {
                     Log.d("TAG", "Error getting Location from Autocomplete: $e")
                 }
             }
-        }
+        },onTextChanged = { currentText ->
+            if (currentText != address) latlngPrediction = null
+        })
 
         Spacer(modifier = Modifier.height(10.dp))
     }
