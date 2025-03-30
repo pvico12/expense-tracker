@@ -7,11 +7,14 @@ import com.cs446.expensetracker.ui.AddExpenseScreen
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+
 
 class AddExpenseUITests {
 
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     @Before
     fun Setup() {
@@ -26,7 +29,7 @@ class AddExpenseUITests {
         composeTestRule.onNodeWithText("Add Transaction").assertExists()
         composeTestRule.onNodeWithText("Amount").assertExists()
         composeTestRule.onNodeWithText("Item / Vendor Name ").assertExists()
-        composeTestRule.onNodeWithText("Select a Category").assertExists()
+        composeTestRule.onNodeWithText("Category").assertExists()
         composeTestRule.onNodeWithText("Save Transaction").assertExists()
     }
 
@@ -41,17 +44,20 @@ class AddExpenseUITests {
 
     @Test
     fun testExpenseAmountInput_rejectsInvalidInput() {
-        composeTestRule.setContent {
-            AddExpenseScreen(navController = rememberNavController())
-        }
-
-        // Try to enter invalid (non-numeric) input
-        composeTestRule.onNodeWithText("Amount")
-            .performTextInput("abc")
-
-        // Assert that it doesn’t appear in the UI (depending on validation behavior)
-        composeTestRule.onNodeWithText("abc").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Please enter a valid non-negative amount").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Amount").performTextInput("abc")
+        composeTestRule.onNodeWithText("Please enter a valid non-negative amount").assertExists()
     }
+
+    // Vendor Input
+
+    @Test
+    fun testVendorInput() {
+        composeTestRule.onNodeWithText("Item / Vendor Name ").performTextInput("Test Vendor")
+        composeTestRule.onNodeWithText("Test Vendor").assertExists()
+    }
+
+    // Run AI Button
 
     @Test
     fun testRunAIButton_disabledWhenVendorIsEmpty() {
@@ -74,6 +80,37 @@ class AddExpenseUITests {
 
         // Assert the error is shown
         composeTestRule.onNodeWithText("❌ AI flopped. Time for manual mode! ").assertExists()
+    }
+
+    // Category
+    @Test
+    fun testCategorySelection_bottomSheetOpens() {
+        // Tap on the category box to open bottom sheet
+        composeTestRule.onNodeWithText("Tap to Open Bottom Sheet").performClick()
+
+        // Wait for sheet to appear
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("Select a Category").fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun testAddCustomCategory_successfullyAddsCategory() {
+        // Open custom category dialog
+        composeTestRule.onNodeWithText("Add Custom Category").performClick()
+
+        // Type category name
+        composeTestRule.onNodeWithText("Category Name").performTextInput("Test Custom")
+
+        // Input a valid color
+        composeTestRule.onNodeWithText("Custom Color (Hex Code)").performTextClearance()
+        composeTestRule.onNodeWithText("Custom Color (Hex Code)").performTextInput("#123ABC")
+
+        // Click Save
+        composeTestRule.onNodeWithText("Save").performClick()
+
+        // Check that the new category is selected and shown
+        composeTestRule.onNodeWithText("Test Custom").assertExists()
     }
 
 

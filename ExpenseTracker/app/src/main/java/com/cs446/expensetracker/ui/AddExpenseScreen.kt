@@ -318,7 +318,7 @@ fun AddExpenseScreen(navController: NavController) {
                 .padding(8.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(text = selectedCategory?.name ?: "Select a Category")
+            Text(text = selectedCategory?.name ?: "Tap to Open Bottom Sheet")
         }
 
 //        Spacer(modifier = Modifier.height(8.dp))
