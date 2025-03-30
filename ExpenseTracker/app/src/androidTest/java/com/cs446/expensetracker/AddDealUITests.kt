@@ -41,16 +41,17 @@ import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class EditDealsUITests {
-    private var lastDeal : DealRetrievalResponse? = null
-
+class AddDealUITests {
     private var dealScreenReturned = false
+    private val calendar: Calendar = Calendar.getInstance()
+    private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+    private var currentDate = isoFormat.format(calendar.time).substringBeforeLast(("T"))
 
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private fun clickEdit() {
-        composeTestRule.onNodeWithText("Update").performClick()
+    private fun clickAdd() {
+        composeTestRule.onNodeWithText("Add").performClick()
     }
 
     @Before
@@ -94,7 +95,6 @@ class EditDealsUITests {
                         maps_link = x.maps_link
                     )
                 } ?: emptyList()
-                lastDeal = listOfDeals.last()
             }
         }
 
@@ -103,13 +103,13 @@ class EditDealsUITests {
                 modifier = Modifier.fillMaxSize(),
                 color = Pink40
             ) {
-                AddDealScreen(rememberNavController(), lastDeal!!.id) { dealScreenReturned = true }
+                AddDealScreen(rememberNavController(), -1) { dealScreenReturned = true }
             }
         }
     }
 
     private fun testDatePickerSelection(year: Int, month: Int, day: Int) {
-        composeTestRule.onNodeWithText(lastDeal!!.date.substringBeforeLast(("T"))).performClick()
+        composeTestRule.onNodeWithText(currentDate).performClick()
 
         onView(withClassName(equalTo(DatePicker::class.java.name)))
             .perform(PickerActions.setDate(year, month, day))
@@ -140,7 +140,7 @@ class EditDealsUITests {
         }
     }
 
-    private fun performEdit(name: String, description: String, vendor: String, price: String, year: Int, month: Int, day: Int, address: String) {
+    private fun performAdd(name: String, description: String, vendor: String, price: String, year: Int, month: Int, day: Int, address: String) {
         composeTestRule.onNodeWithText("Item Name").performTextReplacement(name)
         composeTestRule.onNodeWithText("Vendor").performTextReplacement(vendor)
         composeTestRule.onNodeWithText("Description").performTextReplacement(description)
@@ -148,15 +148,15 @@ class EditDealsUITests {
         testDatePickerSelection(year, month, day)
         testAutoCompleteSelection(address)
 
-        clickEdit()
+        clickAdd()
 
         val latch = CountDownLatch(1)
         latch.await(2, TimeUnit.SECONDS)
     }
 
     @Test
-    fun testEditDeal_noName() {
-        performEdit("",
+    fun testAddDeal_noName() {
+        performAdd("",
             "1 box",
             "T&T",
             "1",
@@ -171,8 +171,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_noDescription() {
-        performEdit("Grapes",
+    fun testAddDeal_noDescription() {
+        performAdd("Grapes",
             "",
             "T&T",
             "1",
@@ -187,8 +187,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_noVendor() {
-        performEdit("Grapes",
+    fun testAddDeal_noVendor() {
+        performAdd("Grapes",
             "1 box",
             "",
             "1",
@@ -203,8 +203,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_negPrice() {
-        performEdit("Grapes",
+    fun testAddDeal_negPrice() {
+        performAdd("Grapes",
             "1 box",
             "T&T",
             "-1",
@@ -219,8 +219,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_noPrice() {
-        performEdit("Grapes",
+    fun testAddDeal_noPrice() {
+        performAdd("Grapes",
             "1 box",
             "T&T",
             "",
@@ -235,8 +235,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_wrongPriceFormat() {
-        performEdit("Grapes",
+    fun testAddDeal_wrongPriceFormat() {
+        performAdd("Grapes",
             "1 box",
             "T&T",
             "s10",
@@ -251,8 +251,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_noAddress() {
-        performEdit("Grapes",
+    fun testAddDeal_noAddress() {
+        performAdd("Grapes",
             "1 box",
             "T&T",
             "1.99",
@@ -267,8 +267,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_invalidAddress() {
-        performEdit("Grapes",
+    fun testAddDeal_invalidAddress() {
+        performAdd("Grapes",
             "1 box",
             "T&T",
             "1.99",
@@ -283,8 +283,8 @@ class EditDealsUITests {
     }
 
     @Test
-    fun testEditDeal_valid() {
-        performEdit("Grapes",
+    fun testAddDeal_valid() {
+        performAdd("Grapes",
             "1 box",
             "T&T",
             "1",
@@ -292,6 +292,10 @@ class EditDealsUITests {
             3,
             29,
             "T&T Supermarket Waterloo Store, Westmount Road North, Waterloo, ON, Canada")
+
+        // wait 2s
+        val latch = CountDownLatch(1)
+        latch.await(2, TimeUnit.SECONDS)
 
         assert(dealScreenReturned)
     }
