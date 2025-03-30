@@ -95,6 +95,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabPosition
 import androidx.compose.material3.TabRow
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -110,27 +111,28 @@ class Deals {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @Composable
     fun DealsHost(dealsNavController: NavController) {
+        val context = LocalContext.current
         val scrollState = rememberScrollState()
         val scope = rememberCoroutineScope()
 
         val atasehir = LatLng(43.452969, -80.495064)
-        var currentAddress = rememberSaveable  { mutableStateOf("")}
-        var currentLatLng = rememberSaveable  { mutableStateOf<LatLng?>(null)}
-        var defaultZoom = rememberSaveable  { mutableStateOf(0f)}
+        val currentAddress = rememberSaveable  { mutableStateOf("")}
+        val currentLatLng = rememberSaveable  { mutableStateOf<LatLng?>(null)}
+        val defaultZoom = rememberSaveable  { mutableFloatStateOf(0f) }
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom((currentLatLng.value ?: atasehir) as LatLng, defaultZoom.value)
+            position = CameraPosition.fromLatLngZoom((currentLatLng.value ?: atasehir) as LatLng, defaultZoom.floatValue)
         }
 
-        var uiSettings = remember {
+        val uiSettings = remember {
             mutableStateOf(MapUiSettings(zoomControlsEnabled = true))
         }
 
-        var listOfSubs by rememberSaveable  { mutableStateOf<List<DealSubRetrievalResponse>>(emptyList()) }
-        var listOfDeals by rememberSaveable  { mutableStateOf<List<DealRetrievalResponse>>(emptyList()) }
+        var listOfSubs by remember  { mutableStateOf<List<DealSubRetrievalResponse>>(emptyList()) }
+        var listOfDeals by remember  { mutableStateOf<List<DealRetrievalResponse>>(emptyList()) }
 
         var viewingUserSubmittedDeals by rememberSaveable { mutableStateOf("See Your Submitted Deals") }
 
-        var errorMessage = ""
+        var errorMessage: String
         var isLoading by remember { mutableStateOf(true) }
 
         var viewLocationPicker by remember { mutableStateOf(false) }
@@ -212,7 +214,7 @@ class Deals {
                 scope.launch {
                     isLoading = true
                     errorMessage = ""
-                    val deal_request = DealRetrievalRequestWithLocation(
+                    val dealRequest = DealRetrievalRequestWithLocation(
                         location = DealLocation (
                             longitude = newLatLng.longitude,
                             latitude = newLatLng.latitude,
@@ -221,13 +223,12 @@ class Deals {
                     )
                     try {
                         val response: Response<List<DealRetrievalResponse>> =
-                            RetrofitInstance.apiService.getDeals(deal_request)
+                            RetrofitInstance.apiService.getDeals(dealRequest)
                         Log.d("Response", "Fetch Deals API Request actually called")
                         if (response.isSuccessful) {
                             val responseBody = response.body()
                             Log.d("Response", "Deals Response: $responseBody")
-                            var unsorteddeals: List<DealRetrievalResponse>
-                            unsorteddeals = responseBody?.map { x ->
+                            val unsorteddeals: List<DealRetrievalResponse> = responseBody?.map { x ->
                                 DealRetrievalResponse(
                                     id = x.id,
                                     name = x.name,
@@ -267,18 +268,17 @@ class Deals {
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
                 errorMessage = ""
-                val deal_request = DealRetrievalRequestWithUser(
+                val dealRequest = DealRetrievalRequestWithUser(
                     user_id = UserSession.userId,
                 )
                 try {
                     val response: Response<List<DealRetrievalResponse>> =
-                        RetrofitInstance.apiService.getDeals(deal_request)
+                        RetrofitInstance.apiService.getDeals(dealRequest)
                     Log.d("Response", "Fetch User Submitted Deals API Request actually called")
                     if (response.isSuccessful) {
                         val responseBody = response.body()
                         Log.d("Response", "User Submitted Deals Response: $responseBody")
-                        var unsorteddeals: List<DealRetrievalResponse>
-                        unsorteddeals = responseBody?.map { x ->
+                        val unsorteddeals: List<DealRetrievalResponse> = responseBody?.map { x ->
                             DealRetrievalResponse(
                                 id = x.id,
                                 name = x.name,
@@ -312,34 +312,33 @@ class Deals {
         fun onUpvote(deal_id: Int, index: Int) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val response: Response<String>
-                    if(listOfDeals[index].user_vote == 1) {
-                        response = RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
+                    val response: Response<String> = if (listOfDeals[index].user_vote == 1) {
+                        RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
                     } else {
-                        response = RetrofitInstance.apiService.upvoteDeal(deal_id.toString())
+                        RetrofitInstance.apiService.upvoteDeal(deal_id.toString())
                     }
                     if (response.isSuccessful) {
                         val responseBody = response.body()
                         Log.d("Response", "Upvote Deals Response: $responseBody")
-                        var second_half = emptyList<DealRetrievalResponse>()
+                        var secondHalf = emptyList<DealRetrievalResponse>()
                         if (index != listOfDeals.size-1) {
-                            second_half = listOfDeals.slice(index+1..listOfDeals.size-1)
+                            secondHalf = listOfDeals.slice(index+1..<listOfDeals.size)
                         }
                         listOfDeals = listOfDeals + listOfDeals[index] // I don't know why this makes the refresh work but please don't remove
-                        var updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
+                        val updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
                         if (listOfDeals[index].user_vote == 1) {
                             updatedDealDownvote.user_vote = 0
                             updatedDealDownvote.upvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
+                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
                         } else if (listOfDeals[index].user_vote == 0) {
                             updatedDealDownvote.user_vote = 1
                             updatedDealDownvote.upvotes += 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
+                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
                         } else if (listOfDeals[index].user_vote == -1) {
                             updatedDealDownvote.user_vote = 1
                             updatedDealDownvote.upvotes += 1
                             updatedDealDownvote.downvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
+                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
                         }
                         Log.d("Response", "New Upvoted Deals: $listOfDeals")
                     } else {
@@ -364,25 +363,25 @@ class Deals {
                     if (response.isSuccessful) {
                         val responseBody = response.body()
                         Log.d("Response", "Downvote Deals Response: $responseBody")
-                        var second_half = emptyList<DealRetrievalResponse>()
+                        var secondHalf = emptyList<DealRetrievalResponse>()
                         if (index != listOfDeals.size-1) {
-                            second_half = listOfDeals.slice(index+1..listOfDeals.size-1)
+                            secondHalf = listOfDeals.slice(index+1..listOfDeals.size-1)
                         }
                         listOfDeals = listOfDeals + listOfDeals[index] // I don't know why this makes the refresh work but please don't remove
-                        var updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
+                        val updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
                         if (listOfDeals[index].user_vote == -1) {
                             updatedDealDownvote.user_vote = 0
                             updatedDealDownvote.downvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
+                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
                         } else if (listOfDeals[index].user_vote == 0) {
                             updatedDealDownvote.user_vote = -1
                             updatedDealDownvote.downvotes += 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
+                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
                         } else if (listOfDeals[index].user_vote == 1) {
                             updatedDealDownvote.user_vote = -1
                             updatedDealDownvote.downvotes += 1
                             updatedDealDownvote.upvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + second_half
+                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
                         }
                         Log.d("Response", "New Downvoted Deals: $listOfDeals")
                     } else {
@@ -469,13 +468,21 @@ class Deals {
             }
         }
 
+        @Composable
+        fun openGoogleMaps()  {
+            val intentUri = Uri.parse("geo:0,0?q=Waterloo, ON")
+            val mapIntent = Intent(Intent.ACTION_VIEW, intentUri)
+//        mapIntent.setPackage("com.google.android.apps.maps")
+            context.startActivity(mapIntent)
+        }
+
         if (deleteConfirmationDialogue) {
             AlertDialog(
                 onDismissRequest = { deleteConfirmationDialogue = false },
                 title = { Text("Are you sure?") },
                 text = { Text("Do you really want to delete?") },
                 confirmButton = {
-                    val context = LocalContext.current
+//                    val context = LocalContext.current
                     TextButton(onClick = { onConfirm(idToDelete, context) }) {
                         Text("Proceed")
                     }
@@ -494,7 +501,7 @@ class Deals {
                 title = { Text("Are you sure?") },
                 text = { Text("Delete this address?") },
                 confirmButton = {
-                    val context = LocalContext.current
+//                    val context = LocalContext.current
                     TextButton(onClick = { onConfirmSub(subToDelete, context) }) {
                         Text("Proceed")
                     }
@@ -625,7 +632,7 @@ class Deals {
                             }
                             if (googleMapsOpened.value != "") {
                                 googleMapsOpened.value = ""
-                                openGoogleMaps(deal.address)
+                                openGoogleMaps()
                             }
                             Text(
                                 text = formatTransactionDate(deal.date), // format date
@@ -961,14 +968,7 @@ class Deals {
                     shape = CircleShape,
                     modifier = Modifier.size(40.dp),
                     contentPadding = PaddingValues(0.dp),
-                    onClick = {
-                        if (currentLatLng.value == null) {
-                            errorMessageForRegion = "Please set a region first"
-                        } else {
-                            errorMessageForRegion = ""
-                            dealsNavController.navigate("addDealScreen/${-1}")
-                        }
-                    },
+                    onClick = { dealsNavController.navigate("addDealScreen/${-1}") },
                 ) {
                     Icon(
                         imageVector = Icons.Filled.AddToPhotos,
@@ -1075,45 +1075,45 @@ class Deals {
         endDate: Date?,
         onEndDateChange: (Date?) -> Unit
     ) {
-        val context = LocalContext.current
+//        val context = LocalContext.current
 
         // ----- Start Date Picker Implementation -----
-        val startCalendar = Calendar.getInstance()
-        var selectedStartDate by remember {
-            mutableStateOf(
-                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(startCalendar.time)
-            )
-        }
-        val startDatePickerDialog = DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                selectedStartDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                onStartDateChange(sdf.parse(selectedStartDate))
-            },
-            startCalendar.get(Calendar.YEAR),
-            startCalendar.get(Calendar.MONTH),
-            startCalendar.get(Calendar.DAY_OF_MONTH)
-        )
+//        val startCalendar = Calendar.getInstance()
+//        var selectedStartDate by remember {
+//            mutableStateOf(
+//                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(startCalendar.time)
+//            )
+//        }
+//        val startDatePickerDialog = DatePickerDialog(
+//            context,
+//            { _, year, month, dayOfMonth ->
+//                selectedStartDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+//                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+//                onStartDateChange(sdf.parse(selectedStartDate))
+//            },
+//            startCalendar.get(Calendar.YEAR),
+//            startCalendar.get(Calendar.MONTH),
+//            startCalendar.get(Calendar.DAY_OF_MONTH)
+//        )
 
         // ----- End Date Picker Implementation -----
-        val endCalendar = Calendar.getInstance()
-        var selectedEndDate by remember {
-            mutableStateOf(
-                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(endCalendar.time)
-            )
-        }
-        val endDatePickerDialog = DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                selectedEndDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                onEndDateChange(sdf.parse(selectedEndDate))
-            },
-            endCalendar.get(Calendar.YEAR),
-            endCalendar.get(Calendar.MONTH),
-            endCalendar.get(Calendar.DAY_OF_MONTH)
-        )
+//        val endCalendar = Calendar.getInstance()
+//        var selectedEndDate by remember {
+//            mutableStateOf(
+//                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(endCalendar.time)
+//            )
+//        }
+//        val endDatePickerDialog = DatePickerDialog(
+//            context,
+//            { _, year, month, dayOfMonth ->
+//                selectedEndDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+//                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+//                onEndDateChange(sdf.parse(selectedEndDate))
+//            },
+//            endCalendar.get(Calendar.YEAR),
+//            endCalendar.get(Calendar.MONTH),
+//            endCalendar.get(Calendar.DAY_OF_MONTH)
+//        )
 
         Column(modifier = Modifier
             .fillMaxWidth()
@@ -1135,14 +1135,7 @@ class Deals {
         }
     }
 
-    @Composable
-    fun openGoogleMaps(address: String)  {
-        val context = LocalContext.current
-        val intentUri = Uri.parse("geo:0,0?q=${address}")
-        val mapIntent = Intent(Intent.ACTION_VIEW, intentUri)
-        mapIntent.setPackage("com.google.android.apps.maps")
-        context.startActivity(mapIntent)
-    }
+
 
     // Helper to format date
     private fun formatTransactionDate(isoDate: String): String {

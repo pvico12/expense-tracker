@@ -259,7 +259,7 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                     val amount = price.toDoubleOrNull()
                     if (amount == null) {
                         errorMessage = errorMessage ?: ""
-                        errorMessage += "Please add a numerical price\n"
+                        errorMessage += "Please set a numerical price\n"
                     }
                     if (amount != null && amount < 0.0) {
                         errorMessage = errorMessage ?: ""
@@ -320,14 +320,23 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                Text(text = "Save Deal")
+                var btnText = "Add"
+                if (editVersion != -1) {
+                    btnText = "Update"
+                }
+                Text(text = btnText)
             }
         }
         if (goBack) {
             goBack = false
+
+            var toastText = "Deal added successfully!"
+            if (editVersion != -1) {
+                toastText = "Deal updated successfully!"
+            }
             Toast.makeText(
                 context,
-                "Deal added successfully!",
+                toastText,
                 Toast.LENGTH_SHORT
             ).show()
             navController.popBackStack()
