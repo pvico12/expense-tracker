@@ -8,18 +8,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cs446.expensetracker.ui.deals.Deals
 import com.cs446.expensetracker.ui.deals.AddDealScreen
-
-//
-//fun Context.getActivity(): AppCompatActivity? {
-//    var currentContext = this
-//    while (currentContext is ContextWrapper) {
-//        if (currentContext is AppCompatActivity) {
-//            return currentContext
-//        }
-//        currentContext = currentContext.baseContext
-//    }
-//    return null
-//}
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class DealsContainer {
 
@@ -34,7 +25,13 @@ class DealsContainer {
                 dealsPage.DealsHost(dealsNavController)
             }
             composable("addDealScreen/{editVersion}") { backStackEntry ->
-                AddDealScreen(navController = dealsNavController, editVersion=backStackEntry.arguments?.getString("editVersion")?.toInt() ?: -1)
+                AddDealScreen(
+                    navController = dealsNavController,
+                    editVersion=backStackEntry.arguments?.getString("editVersion")?.toInt() ?: -1
+                ) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                    dealsNavController.popBackStack()
+                } }
             }
         }
     }

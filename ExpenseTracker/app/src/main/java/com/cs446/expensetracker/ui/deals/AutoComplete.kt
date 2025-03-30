@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -54,7 +55,7 @@ import kotlin.coroutines.suspendCoroutine
 class AutoCompleteInformation(var latLng: LatLng?, var address: String)
 
 @Composable
-fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Unit) {
+fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Unit, onTextChanged: (String) -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -132,7 +133,7 @@ fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Un
                 locationPredictions = completedTask.result.autocompletePredictions
                 for (thing in locationPredictions) {
                     var temp = thing.getFullText(null).toString()
-                    Log.d("TAG", "Ok we made it here $temp")
+//                    Log.d("TAG", "Ok we made it here $temp")
                 }
             }
         }
@@ -179,11 +180,13 @@ fun AutoComplete(defaultValue: String, onSelect: (AutoCompleteInformation) -> Un
                         )
                         .onGloballyPositioned { coordinates ->
                             textFieldSize = coordinates.size.toSize()
-                        },
+                        }
+                        .testTag("AutoCompleteField"),
                     value = category,
                     onValueChange = {
                         category = it
                         expanded = true
+                        onTextChanged(it)
                         coroutineScope.launch {
                             onLocationTextChanged(it, context)
                         }
@@ -285,7 +288,6 @@ fun CategoryItems(
     title: String,
     onSelect: (String) -> Unit
 ) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -293,6 +295,7 @@ fun CategoryItems(
                 onSelect(title)
             }
             .padding(10.dp)
+            .testTag("AutoCompleteItem")
     ) {
         Text(text = title, fontSize = 16.sp)
     }

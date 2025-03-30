@@ -25,6 +25,10 @@ jobs:
       run: |
         cd backend
         docker compose -f docker-compose.test.yml up -d
+    
+    - name: Create google-services.json (for Firebase)
+      run: |
+        echo "${{ secrets.BACKEND_FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > backend/expense-tracker-firebase.json
 
     - name: Run Tests
       run: |

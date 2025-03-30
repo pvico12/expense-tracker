@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.DealSubCreationRequest
 import com.cs446.expensetracker.api.models.DealSubRetrievalResponse
-import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.ui.theme.Typography
 import com.cs446.expensetracker.ui.ui.theme.mainTextColor
 import com.google.android.gms.maps.model.LatLng
@@ -24,7 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Response
+import kotlin.math.abs
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,38 +40,6 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
     var latlngPrediction by remember { mutableStateOf<LatLng?>(null) }
 
     var specificSubToEdit: DealSubRetrievalResponse? by remember { mutableStateOf(null) }
-
-    fun apiFetchSpecificSub() {
-        Log.d("Response", "Api fetch was called, but request not necessarily sent")
-        CoroutineScope(Dispatchers.IO).launch {
-            isLoading = true
-            errorMessage = ""
-            try {
-                val token = UserSession.access_token ?: ""
-                val response: Response<DealSubRetrievalResponse> =
-                    RetrofitInstance.apiService.getSpecificSub(editVersion)
-                Log.d("Response", "Fetch Subs API Request actually called")
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    Log.d("Response", "Subs Response: $responseBody")
-                    specificSubToEdit = responseBody
-                } else {
-                    errorMessage = "Failed to load data."
-                    Log.d("Error", "Subs API Response Was Unsuccessful: $response")
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
-                Log.d("Error", "Error Calling Subs API: $errorMessage")
-            } finally {
-                isLoading = false
-            }
-            address = specificSubToEdit?.address ?: ""
-            if (specificSubToEdit != null) {
-                latlngPrediction = LatLng(specificSubToEdit!!.latitude.toDouble(), specificSubToEdit!!.longitude.toDouble())
-            }
-        }
-
-    }
 
     ModalBottomSheet( onDismissRequest ) {
         Column(
@@ -95,21 +62,40 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
             }
             LaunchedEffect(Unit) {
                 if (editVersion != -1) {
-                    apiFetchSpecificSub()
+                    Log.d("Response", "Api fetch was called, but request not necessarily sent")
+                    CoroutineScope(Dispatchers.IO).launch {
+                        isLoading = true
+                        errorMessage = ""
+
+                        val specificSub = getSub(editVersion)
+                        if (specificSub != null) {
+                            specificSubToEdit = specificSub
+                        } else {
+                            errorMessage = "Failed to load data."
+                        }
+                        isLoading = false
+
+                        address = specificSubToEdit?.address ?: ""
+                        if (specificSubToEdit != null) {
+                            latlngPrediction = LatLng(specificSubToEdit!!.latitude.toDouble(), specificSubToEdit!!.longitude.toDouble())
+                        }
+                    }
                 }
             }
 
-            AutoComplete(address) {
+            AutoComplete(address, onSelect = { autoCompleteInfo ->
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        address = it.address
-                        latlngPrediction = it.latLng
+                        address = autoCompleteInfo.address
+                        latlngPrediction = autoCompleteInfo.latLng
                         Log.d("TAG", "AutoComplete: $address $latlngPrediction")
                     } catch (e: Exception) {
                         Log.d("TAG", "Error getting Location from Autocomplete: $e")
                     }
                 }
-            }
+            }, onTextChanged = { currentText ->
+                if (currentText != address) latlngPrediction = null
+            })
 
             if (errorMessage != null) {
                 Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
@@ -122,85 +108,53 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
                     CoroutineScope(Dispatchers.IO).launch {
                         isLoading = true
                         errorMessage = null
-                        try {
-                            if (address == "" || latlngPrediction == null) {
-                                errorMessage = errorMessage ?: ""
-                                errorMessage += "Please pick an address from the autocomplete dropdown\n"
-                            }
+                        if (address == "" || latlngPrediction == null) {
+                            errorMessage = "Please pick an address from the autocomplete dropdown\n"
+                        }
 
-                            if (errorMessage == null) {
-                                val sub = DealSubCreationRequest(
-                                    address = address,
-                                    longitude = latlngPrediction?.longitude ?: -80.495064,
-                                    latitude = latlngPrediction?.latitude ?: 43.452969
-                                )
-
-                                if (editVersion != -1) {
-                                    val token = UserSession.access_token ?: ""
-                                    val response =
-                                        RetrofitInstance.apiService.updateSub(editVersion, sub)
-                                    if (response.isSuccessful) {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(
-                                                context,
-                                                "Edit successful!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                        Log.d(
-                                            "Response",
-                                            "Edit Sub Response: ${response.body()}"
-                                        )
-                                        onDismissRequest()
-                                    } else {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(
-                                                context,
-                                                "Failed to edit sub. Please try again",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                        Log.d(
-                                            "Response",
-                                            "Api request to edit sub failed: ${response.body()}"
-                                        )
-                                    }
+                        if (errorMessage == null) {
+                            if (editVersion != -1) {
+                                if (updateSub(
+                                        editVersion,
+                                        address,
+                                        latlngPrediction?.longitude,
+                                        latlngPrediction?.latitude)) {
+                                    onDismissRequest()
                                 } else {
-                                    val token = UserSession.access_token ?: ""
-                                    val response = RetrofitInstance.apiService.addSub(sub)
-                                    if (response.isSuccessful) {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(
-                                                context,
-                                                "Address added!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                        Log.d(
-                                            "Response",
-                                            "Add Sub Response: ${response.body()}"
-                                        )
-                                        onDismissRequest()
-                                    } else {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(
-                                                context,
-                                                "Failed to add sub. Please try again",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                        Log.d(
-                                            "Response",
-                                            "Api request to add sub failed: ${response.body()}"
-                                        )
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(
+                                            context,
+                                            "Failed to edit sub. Please try again",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            } else {
+                                if (createSub(
+                                        address,
+                                        latlngPrediction?.longitude,
+                                        latlngPrediction?.latitude)) {
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(
+                                            context,
+                                            "Address added!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    onDismissRequest()
+                                } else {
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(
+                                            context,
+                                            "Failed to add sub. Please try again",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 }
                             }
-                        } catch (e: Exception) {
-                            Log.d("Response", "Exception when adding/editing sub: ${e.message}")
-                        } finally {
-                            isLoading = false
                         }
+
+                        isLoading = false
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -222,5 +176,89 @@ fun AddSubScreen(editVersion: Int, onDismissRequest: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+suspend fun createSub(address : String,
+                      longitude : Double?,
+                      latitude : Double?
+) : Boolean {
+    if (address.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
+        return false
+    }
+    if (!longitude.isInvalid() && !latitude.isInvalid()) {
+        if (abs(longitude!!) > 180 || abs(latitude!!) > 90)
+            return false
+    }
+    return try {
+        val sub = DealSubCreationRequest(
+            address = address,
+            longitude = longitude!!,
+            latitude = latitude!!
+        )
+
+        val response = RetrofitInstance.apiService.addSub(sub)
+        if (response.isSuccessful) {
+            Log.d("Response","Add Sub Response: ${response.body()}")
+            true
+        } else {
+            Log.d("Response","Api request to add sub failed: ${response.body()}")
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when adding sub: ${e.message}")
+        false
+    }
+}
+
+suspend fun updateSub(id: Int,
+                      address : String,
+                      longitude : Double?,
+                      latitude : Double?
+) : Boolean {
+    if (address.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
+        return false
+    }
+    if (!longitude.isInvalid() && !latitude.isInvalid()) {
+        if (abs(longitude!!) > 180 || abs(latitude!!) > 90)
+            return false
+    }
+    return try {
+        val sub = DealSubCreationRequest(
+            address = address,
+            longitude = longitude!!,
+            latitude = latitude!!
+        )
+
+        val response =
+            RetrofitInstance.apiService.updateSub(id, sub)
+        if (response.isSuccessful) {
+            Log.d("Response","Edit Sub Response: ${response.body()}")
+            true
+        } else {
+            Log.d("Response", "Api request to edit sub failed: ${response.body()}")
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when updating sub: ${e.message}")
+        false
+    }
+}
+
+suspend fun getSub(id: Int) : DealSubRetrievalResponse? {
+    return try {
+        val response = RetrofitInstance.apiService.getSpecificSub(id)
+        Log.d("Response", "Fetch Subs API Request actually called")
+        if (response.isSuccessful) {
+            response.body().also {
+                Log.d("Response", "Subs Response: $it")
+            }
+        } else {
+            Log.d("Error", "Subs API Response Was Unsuccessful: $response")
+            null
+        }
+    } catch (e: Exception) {
+        Log.d("Error", "Error Calling Subs API: $e")
+        null
     }
 }
