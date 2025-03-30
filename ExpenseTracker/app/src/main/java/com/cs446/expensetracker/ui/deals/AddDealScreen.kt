@@ -1,6 +1,7 @@
 package com.cs446.expensetracker.ui.deals
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -30,6 +31,7 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
@@ -52,7 +54,7 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var goBack by remember { mutableStateOf(false) }
 
-    var latlngPrediction: LatLng? = null
+    var latlngPrediction by remember {mutableStateOf<LatLng?>(null)}
 
     // Date Picker State
     val calendar = Calendar.getInstance()
@@ -84,7 +86,6 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
             isLoading = true
             errorMessage = ""
             try {
-                val token = UserSession.access_token ?: ""
                 val response: Response<DealRetrievalResponse> =
                     RetrofitInstance.apiService.getSpecificDeal(editVersion.toString())
                 Log.d("Response", "Fetch Deals API Request actually called")
@@ -146,7 +147,7 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description (optional)") },
+            label = { Text("Description") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
@@ -244,93 +245,65 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                 CoroutineScope(Dispatchers.IO).launch {
                     isLoading = true
                     errorMessage = null
-                    try {
-                        if (itemName == "") {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add an item name\n"
-                        }
-                        if (vendor == "") {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add a vendor name\n"
-                        }
-                        val amount = price.toDoubleOrNull()
-                        if (amount == null) {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add a numerical price\n"
-                        }
-                        if (amount != null && amount < 0.0) {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please have price be above 0\n"
-                        }
-                        if (selectedDate == "") {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please add a date\n"
-                        }
-                        if (address == "" || latlngPrediction == null)  {
-                            errorMessage = errorMessage ?: ""
-                            errorMessage += "Please pick an address from the autocomplete dropdown\n"
-                        }
+                    if (itemName == "") {
+                        errorMessage = "Please add an item name\n"
+                    }
+                    if (vendor == "") {
+                        errorMessage = errorMessage ?: ""
+                        errorMessage += "Please add a vendor name\n"
+                    }
+                    if (description == "") {
+                        errorMessage = errorMessage ?: ""
+                        errorMessage += "Please add a description\n"
+                    }
+                    val amount = price.toDoubleOrNull()
+                    if (amount == null) {
+                        errorMessage = errorMessage ?: ""
+                        errorMessage += "Please add a numerical price\n"
+                    }
+                    if (amount != null && amount < 0.0) {
+                        errorMessage = errorMessage ?: ""
+                        errorMessage += "Please have price be above 0\n"
+                    }
+                    if (selectedDate == "") {
+                        errorMessage = errorMessage ?: ""
+                        errorMessage += "Please add a date\n"
+                    }
+                    if (address == "" || latlngPrediction == null)  {
+                        errorMessage = errorMessage ?: ""
+                        errorMessage += "Please pick an address from the autocomplete dropdown\n"
+                    }
 
-                        if(errorMessage == null) {
-                            val deal = DealCreationRequest (
-                                name = itemName,
-                                description = description,
-                                vendor = vendor,
-                                price = price.toDouble(),
-                                date = selectedDate, // ISO 8601 format
-                                address = address,
-                                longitude = latlngPrediction?.longitude ?: -80.495064,
-                                latitude = latlngPrediction?.latitude ?: 43.452969
-                            )
-
-                            if(editVersion != -1) {
-                                Log.d("Response", "Edit Deal Request: ${deal}")
-
-                                val token = UserSession.access_token ?: ""
-                                val response =
-                                    RetrofitInstance.apiService.updateDeal(editVersion.toString(), deal)
-                                if (response.isSuccessful) {
-                                    goBack = true
-                                    Log.d("Response", "Edit Deal Response: ${response}")
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Failed to edit deal. Please try again",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    Log.d("Response", "Api request to edit deal failed: ${response.body()}")
-                                }
-                            } else {
-                                val deal = DealCreationRequest (
-                                    name = itemName,
-                                    description = description,
-                                    vendor = vendor,
-                                    price = price.toDouble(),
-                                    date = selectedDate, // ISO 8601 format
-                                    address = address,
-                                    longitude = latlngPrediction?.longitude ?: -80.495064,
-                                    latitude = latlngPrediction?.latitude ?: 43.452969
-                                )
-
-                                val token = UserSession.access_token ?: ""
-                                val response =
-                                    RetrofitInstance.apiService.addDeal(deal)
-                                if (response.isSuccessful) {
-                                    goBack = true
-                                    Log.d("Response", "Add Deal Response: ${response}")
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Failed to add deal. Please try again",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    Log.d("Response", "Api request to add deal failed: ${response.body()}")
-                                }
-                            }
+                    if(errorMessage == null) {
+                        if(editVersion != -1) {
+                            updateDeal(
+                                editVersion.toString(),
+                                itemName,
+                                description,
+                                vendor,
+                                price.toDouble(),
+                                selectedDate,
+                                address,
+                                latlngPrediction?.longitude,
+                                latlngPrediction?.latitude,
+                                goBack = {newState -> goBack = newState},
+                                context,
+                                isLoading = {newState -> isLoading = newState})
+                        } else {
+                            createDeal(
+                                itemName,
+                                description,
+                                vendor,
+                                price.toDouble(),
+                                selectedDate,
+                                address,
+                                latlngPrediction?.longitude,
+                                latlngPrediction?.latitude,
+                                goBack = {newState -> goBack = newState},
+                                context,
+                                isLoading = {newState -> isLoading = newState})
                         }
-                    } catch (e: Exception) {
-                        Log.d("Response", "Exception when adding deal: ${e.message}")
-                    } finally {
+                    } else {
                         isLoading = false
                     }
                 }
@@ -360,5 +333,115 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
             navController.popBackStack()
         }
     }
+}
 
+fun String?.isInvalid() = this.isNullOrBlank()
+fun Double?.isInvalid() = this == null
+
+suspend fun createDeal(name : String,
+                       description : String,
+                       vendor : String,
+                       price : Double,
+                       date : String, // ISO 8601 format
+                       address : String,
+                       longitude : Double?,
+                       latitude : Double?,
+                       goBack: (Boolean) -> Unit,
+                       context: Context,
+                       isLoading: (Boolean) -> Unit,
+) : Boolean {
+    if (listOf(name, description, vendor, date, address).any { it.isInvalid() }
+        || price.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
+        isLoading(false)
+        return false
+    }
+    return try {
+        val deal = DealCreationRequest (
+            name = name,
+            description = description,
+            vendor = vendor,
+            price = price,
+            date = date, // ISO 8601 format
+            address = address,
+            longitude = longitude!!,
+            latitude = latitude!!
+        )
+
+        val response = RetrofitInstance.apiService.addDeal(deal)
+        if (response.isSuccessful) {
+            goBack(true)
+            Log.d("Response", "Add Deal Response: ${response.body()}")
+            true
+        } else {
+            Log.d("Response", "Api request to add deal failed: ${response.body()}")
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    "Failed to add deal. Please try again",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when adding deal: ${e.message}")
+        false
+    } finally {
+        isLoading(false)
+    }
+}
+
+suspend fun updateDeal(id: String,
+                       name : String,
+                       description : String,
+                       vendor : String,
+                       price : Double,
+                       date : String, // ISO 8601 format
+                       address : String,
+                       longitude : Double?,
+                       latitude : Double?,
+                       goBack: (Boolean) -> Unit,
+                       context: Context,
+                       isLoading: (Boolean) -> Unit,
+) : Boolean {
+    if (listOf(name, description, vendor, date, address).any { it.isInvalid() }
+        || price.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
+        isLoading(false)
+        return false
+    }
+
+    return try {
+        val deal = DealCreationRequest (
+            name = name,
+            description = description,
+            vendor = vendor,
+            price = price,
+            date = date,
+            address = address,
+            longitude = longitude!!,
+            latitude = latitude!!
+        )
+        val response =
+            RetrofitInstance.apiService.updateDeal(id, deal)
+        if (response.isSuccessful) {
+            goBack(true)
+            Log.d("Response", "Edit Deal Response: $response")
+            true
+        } else {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    "Failed to edit deal. Please try again",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            Log.d("Response", "Api request to edit deal failed: ${response.body()}")
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when updating deal: ${e.message}")
+        false
+    } finally {
+        isLoading(false)
+    }
 }

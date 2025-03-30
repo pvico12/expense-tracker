@@ -179,7 +179,6 @@ class Deals {
                 isLoading = true
                 errorMessage = ""
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<List<DealSubRetrievalResponse>> =
                         RetrofitInstance.apiService.getSubs()
                     if (response.isSuccessful) {
@@ -221,7 +220,6 @@ class Deals {
                         )
                     )
                     try {
-                        val token = UserSession.access_token ?: ""
                         val response: Response<List<DealRetrievalResponse>> =
                             RetrofitInstance.apiService.getDeals(deal_request)
                         Log.d("Response", "Fetch Deals API Request actually called")
@@ -258,6 +256,8 @@ class Deals {
                         isLoading = false
                     }
                 }
+            } else {
+                listOfDeals = emptyList()
             }
         }
         fun apiFetchUserSubmittedDeals() {
@@ -271,7 +271,6 @@ class Deals {
                     user_id = UserSession.userId,
                 )
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<List<DealRetrievalResponse>> =
                         RetrofitInstance.apiService.getDeals(deal_request)
                     Log.d("Response", "Fetch User Submitted Deals API Request actually called")
@@ -313,7 +312,6 @@ class Deals {
         fun onUpvote(deal_id: Int, index: Int) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<String>
                     if(listOfDeals[index].user_vote == 1) {
                         response = RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
@@ -357,7 +355,6 @@ class Deals {
         fun onDownvote(deal_id: Int, index: Int) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<String>
                     if(listOfDeals[index].user_vote == -1) {
                         response = RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
@@ -404,7 +401,6 @@ class Deals {
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<String> =
                         RetrofitInstance.apiService.deleteDeal(id.toString())
                     Log.d("Response", "Fetch Deals API Request actually called")
@@ -441,7 +437,6 @@ class Deals {
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
                 try {
-                    val token = UserSession.access_token ?: ""
                     val response: Response<String> =
                         RetrofitInstance.apiService.deleteSub(id)
                     Log.d("Response", "Fetch Subs API Request actually called")
@@ -986,14 +981,14 @@ class Deals {
                     modifier = Modifier
                         .padding(0.dp),
                     onClick = {
-                        if (currentLatLng.value == null) {
-                            errorMessageForRegion = "Please set a region first"
+                        if (viewingUserSubmittedDeals == "See User Submitted Deals") {
+                            viewingUserSubmittedDeals = "See All Deals in Area"
                         } else {
-                            if (viewingUserSubmittedDeals == "See All Deals in Area") {
-                                viewingUserSubmittedDeals = "See User Submitted Deals"
+                            if (currentLatLng.value == null) {
+                                errorMessageForRegion = "Please set a region first"
                             } else {
                                 errorMessageForRegion = ""
-                                viewingUserSubmittedDeals = "See All Deals in Area"
+                                viewingUserSubmittedDeals = "See User Submitted Deals"
                             }
                         }
                     },
