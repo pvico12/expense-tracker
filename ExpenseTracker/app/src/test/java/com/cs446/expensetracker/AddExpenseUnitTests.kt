@@ -2,7 +2,9 @@ package com.cs446.expensetracker
 
 import com.cs446.expensetracker.ui.isValidHexColor
 import com.cs446.expensetracker.ui.parseCsvTemplate
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AddExpenseUnitTests {
@@ -10,8 +12,18 @@ class AddExpenseUnitTests {
     @Test
     fun testIsValidHexColor_validColors_returnTrue() {
         val validColors = listOf(
-            "#FFFFFF", "#ffffff", "#123456", "#000000", "#FF5733",
-            "#FF0000", "#00FF00", "#0000FF", "#123456", "#ABCDEF", "#abcdef", "#123abc"
+            "#FFFFFF",
+            "#ffffff",
+            "#123456",
+            "#000000",
+            "#FF5733",
+            "#FF0000",
+            "#00FF00",
+            "#0000FF",
+            "#123456",
+            "#ABCDEF",
+            "#abcdef",
+            "#123abc"
         )
 
         validColors.forEach {
@@ -22,8 +34,17 @@ class AddExpenseUnitTests {
     @Test
     fun testIsValidHexColor_invalidColors_returnFalse() {
         val invalidColors = listOf(
-            "FFFFFF", "#FFF", "#ZZZZZZ", "blue", "#12345G",
-            "", "#12345", "#1234567", "123456", "#GHIJKL", "#gggggg"
+            "FFFFFF",
+            "#FFF",
+            "#ZZZZZZ",
+            "blue",
+            "#12345G",
+            "",
+            "#12345",
+            "#1234567",
+            "123456",
+            "#GHIJKL",
+            "#gggggg"
         )
 
         invalidColors.forEach {
