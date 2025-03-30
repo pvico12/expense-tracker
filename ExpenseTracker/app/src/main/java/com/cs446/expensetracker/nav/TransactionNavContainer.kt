@@ -2,6 +2,8 @@ package com.cs446.expensetracker.nav
 
 import android.app.DatePickerDialog
 import android.util.Log
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,13 +12,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -288,41 +293,66 @@ class TransactionNavContainer {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Advanced Filter (Date Range)",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.clickable { showAdvancedFilter = !showAdvancedFilter }
-            )
+            // Animated arrow toggle for advanced filter
+            val rotationAngle by animateFloatAsState(targetValue = if (showAdvancedFilter) 90f else 0f)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showAdvancedFilter = !showAdvancedFilter },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Advanced Filter (Date Range)",
+                    style = MaterialTheme.typography.bodyLarge,
+//                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Toggle Advanced Filter",
+                    modifier = Modifier.rotate(rotationAngle)
+                )
+            }
 
             if (showAdvancedFilter) {
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(text = "Start Date", style = MaterialTheme.typography.bodyLarge)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .clickable { startDatePickerDialog.show() }
-                        .padding(10.dp),
-                    contentAlignment = Alignment.CenterStart
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(text = selectedStartDate)
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(text = "End Date", style = MaterialTheme.typography.bodyLarge)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .clickable { endDatePickerDialog.show() }
-                        .padding(10.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(text = if (selectedEndDate.isNotEmpty()) selectedEndDate else "Select End Date")
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "Start Date", style = MaterialTheme.typography.bodyLarge)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(4.dp))
+                                .clickable { startDatePickerDialog.show() }
+                                .padding(10.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(text = selectedStartDate)
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "End Date", style = MaterialTheme.typography.bodyLarge)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(4.dp))
+                                .clickable { endDatePickerDialog.show() }
+                                .padding(10.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(text = if (selectedEndDate.isNotEmpty()) selectedEndDate else "Select End Date")
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            when {
+
+        when {
                 isLoading -> CircularProgressIndicator()
                 errorMessage != null -> Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
                 else -> {
@@ -577,17 +607,7 @@ class TransactionNavContainer {
         }
     }
 
-    // Helper to parse an ISO date string.
-    private fun parseIsoDate(isoDate: String): Date? {
-        return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-            inputFormat.parse(isoDate)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun formatDate(dateString: String): String {
+    private fun formatDate(dateString: String): String {
         return try {
             val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
             val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

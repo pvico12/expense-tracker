@@ -19,6 +19,14 @@ if (keystorePropertiesFile.exists()) {
     throw GradleException("Missing key.properties file")
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("androidx.test.ext:junit:1.1.5")
+        force("androidx.test.espresso:espresso-core:3.5.0")
+    }
+}
+
+
 android {
     namespace = "com.cs446.expensetracker"
     compileSdk = 35
@@ -80,13 +88,25 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.runtime.livedata)
     implementation("androidx.compose.material:material-icons-extended:1.5.1")
+    implementation(libs.androidx.ui.test.junit4.android)
+    implementation(libs.androidx.navigation.testing)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    // Instrumented test dependencies for Compose UI tests
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+    // These versions are forced by the Compose UI testing library:
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+
+    // Optional: if you need the UI test manifest dependency:
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 
