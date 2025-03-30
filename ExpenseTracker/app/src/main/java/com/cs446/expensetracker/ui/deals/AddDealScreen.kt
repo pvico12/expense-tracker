@@ -41,7 +41,7 @@ import kotlin.math.abs
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddDealScreen(navController: NavController, editVersion: Int) {
+fun AddDealScreen(navController: NavController, editVersion: Int, onChangeSuccess: () -> Unit ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -276,13 +276,22 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                                     address,
                                     latlngPrediction?.longitude,
                                     latlngPrediction?.latitude)) {
-                                goBack = true
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Deal updated successfully!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                onChangeSuccess()
                             } else {
-                                Toast.makeText(
-                                    context,
-                                    "Failed to edit deal. Please try again",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to edit deal. Please try again",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         } else {
                             if (createDeal(
@@ -294,13 +303,22 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                                     address,
                                     latlngPrediction?.longitude,
                                     latlngPrediction?.latitude)) {
-                                goBack = true
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Deal added successfully!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                onChangeSuccess()
                             } else {
-                                Toast.makeText(
-                                    context,
-                                    "Failed to add deal. Please try again",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to add deal. Please try again",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         }
                     }
@@ -325,20 +343,6 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
                 }
                 Text(text = btnText)
             }
-        }
-        if (goBack) {
-            goBack = false
-
-            var toastText = "Deal added successfully!"
-            if (editVersion != -1) {
-                toastText = "Deal updated successfully!"
-            }
-            Toast.makeText(
-                context,
-                toastText,
-                Toast.LENGTH_SHORT
-            ).show()
-            navController.popBackStack()
         }
     }
 }
