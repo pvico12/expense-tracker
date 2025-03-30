@@ -62,7 +62,9 @@ fun AddExpenseScreen(navController: NavController) {
     var transactionNote by remember { mutableStateOf("") }
     var vendorName by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
 
     // Category List State
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
@@ -73,6 +75,7 @@ fun AddExpenseScreen(navController: NavController) {
 
     // AI Suggestion Loading State
     var isAiLoading by remember { mutableStateOf(false) }
+    var aiFeedbackMessage by remember { mutableStateOf<String?>(null) }
 
     // Bottom Sheet State
     val sheetState = rememberModalBottomSheetState()
@@ -243,18 +246,22 @@ fun AddExpenseScreen(navController: NavController) {
             supportingText = {
                 if (!isAmountValid && expenseAmount.isNotBlank()) {
                     Text("Please enter a valid non-negative amount")
+
                 }
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+//        Spacer(modifier = Modifier.height(8.dp))
 
         // Vendor Input
         OutlinedTextField(
             value = vendorName,
-            onValueChange = { vendorName = it },
+            onValueChange = {
+                vendorName = it
+                aiFeedbackMessage = null
+                            },
             label = { Text("Item / Vendor Name ") },
             trailingIcon = {
                 // AI Category Suggestion Button
@@ -267,8 +274,9 @@ fun AddExpenseScreen(navController: NavController) {
                             if (response.isSuccessful) {
                                 val aiCategory = response.body()
                                 selectedCategory = categories.find { it.id == aiCategory?.category_id }
+                                aiFeedbackMessage = "✅ AI picked ${selectedCategory?.name}"
                             } else {
-                                errorMessage = "AI could not predict the category."
+                                aiFeedbackMessage = "❌ AI flopped. Time for manual mode! "
                             }
                         }
                     },
@@ -288,10 +296,17 @@ fun AddExpenseScreen(navController: NavController) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(8.dp))
-
+        aiFeedbackMessage?.let {
+            Text(
+                text = it,
+                color = if (it.contains("✅")) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
+//                style = MaterialTheme.typography.bodySmall,
+//                modifier = Modifier.padding(top = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         // Category Box (Tap to Open Bottom Sheet)
         Text(text = "Category", style = MaterialTheme.typography.bodyLarge)

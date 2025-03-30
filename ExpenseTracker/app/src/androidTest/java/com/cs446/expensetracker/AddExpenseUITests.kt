@@ -30,6 +30,8 @@ class AddExpenseUITests {
         composeTestRule.onNodeWithText("Save Transaction").assertExists()
     }
 
+    // Amount Input
+
     @Test
     fun testExpenseAmountInput_showsCorrectValue() {
         val inputAmount = "100.00"
@@ -38,10 +40,43 @@ class AddExpenseUITests {
     }
 
     @Test
+    fun testExpenseAmountInput_rejectsInvalidInput() {
+        composeTestRule.setContent {
+            AddExpenseScreen(navController = rememberNavController())
+        }
+
+        // Try to enter invalid (non-numeric) input
+        composeTestRule.onNodeWithText("Amount")
+            .performTextInput("abc")
+
+        // Assert that it doesn’t appear in the UI (depending on validation behavior)
+        composeTestRule.onNodeWithText("abc").assertDoesNotExist()
+    }
+
+    @Test
     fun testRunAIButton_disabledWhenVendorIsEmpty() {
         // Should be disabled initially because vendor is empty
         composeTestRule.onNodeWithText("Run AI").assertIsNotEnabled()
     }
+
+    @Test
+    fun testRunAI_showsErrorMessageWhenFails() {
+        // Input a vendor name to enable the AI button
+        composeTestRule.onNodeWithText("Item / Vendor Name ").performTextInput("UnknownVendor")
+
+        // Click Run AI
+        composeTestRule.onNodeWithText("Run AI").performClick()
+
+        // Wait for error message to appear
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule.onAllNodesWithText("❌ AI flopped. Time for manual mode! ").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Assert the error is shown
+        composeTestRule.onNodeWithText("❌ AI flopped. Time for manual mode! ").assertExists()
+    }
+
+
 
     // Add more tests for categories, save button state, dialogs etc.
 }
