@@ -311,86 +311,21 @@ class Deals {
 
         fun onUpvote(deal_id: Int, index: Int) {
             CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val response: Response<String> = if (listOfDeals[index].user_vote == 1) {
-                        RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
-                    } else {
-                        RetrofitInstance.apiService.upvoteDeal(deal_id.toString())
-                    }
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Upvote Deals Response: $responseBody")
-                        var secondHalf = emptyList<DealRetrievalResponse>()
-                        if (index != listOfDeals.size-1) {
-                            secondHalf = listOfDeals.slice(index+1..<listOfDeals.size)
-                        }
-                        listOfDeals = listOfDeals + listOfDeals[index] // I don't know why this makes the refresh work but please don't remove
-                        val updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
-                        if (listOfDeals[index].user_vote == 1) {
-                            updatedDealDownvote.user_vote = 0
-                            updatedDealDownvote.upvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
-                        } else if (listOfDeals[index].user_vote == 0) {
-                            updatedDealDownvote.user_vote = 1
-                            updatedDealDownvote.upvotes += 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
-                        } else if (listOfDeals[index].user_vote == -1) {
-                            updatedDealDownvote.user_vote = 1
-                            updatedDealDownvote.upvotes += 1
-                            updatedDealDownvote.downvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
-                        }
-                        Log.d("Response", "New Upvoted Deals: $listOfDeals")
-                    } else {
-                        errorMessage = "Failed to Upvote"
-                        Log.d("Error", "Failed to Upvote $errorMessage")
-                    }
-                } catch (e: Exception) {
-                    errorMessage = "Error: ${e.message}"
-                    Log.d("Error", "Failed to Upvote $errorMessage")
+                val updatedDeals = upvote(listOfDeals, deal_id.toString(), index)
+                if (updatedDeals != null) {
+                    listOfDeals = updatedDeals
+                } else {
+                    errorMessage = "Failed to Upvote"
                 }
             }
         }
         fun onDownvote(deal_id: Int, index: Int) {
             CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val response: Response<String>
-                    if(listOfDeals[index].user_vote == -1) {
-                        response = RetrofitInstance.apiService.cancelvoteDeal(deal_id.toString())
-                    } else {
-                        response = RetrofitInstance.apiService.downvoteDeal(deal_id.toString())
-                    }
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Downvote Deals Response: $responseBody")
-                        var secondHalf = emptyList<DealRetrievalResponse>()
-                        if (index != listOfDeals.size-1) {
-                            secondHalf = listOfDeals.slice(index+1..listOfDeals.size-1)
-                        }
-                        listOfDeals = listOfDeals + listOfDeals[index] // I don't know why this makes the refresh work but please don't remove
-                        val updatedDealDownvote: DealRetrievalResponse = listOfDeals[index]
-                        if (listOfDeals[index].user_vote == -1) {
-                            updatedDealDownvote.user_vote = 0
-                            updatedDealDownvote.downvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
-                        } else if (listOfDeals[index].user_vote == 0) {
-                            updatedDealDownvote.user_vote = -1
-                            updatedDealDownvote.downvotes += 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
-                        } else if (listOfDeals[index].user_vote == 1) {
-                            updatedDealDownvote.user_vote = -1
-                            updatedDealDownvote.downvotes += 1
-                            updatedDealDownvote.upvotes -= 1
-                            listOfDeals = listOfDeals.slice(0..<index) + updatedDealDownvote + secondHalf
-                        }
-                        Log.d("Response", "New Downvoted Deals: $listOfDeals")
-                    } else {
-                        errorMessage = "Failed to Upvote"
-                        Log.d("Error", "Failed to Downvote $response")
-                    }
-                } catch (e: Exception) {
-                    errorMessage = "Error: ${e.message}"
-                    Log.d("Error", "Failed to Downvote $errorMessage")
+                val updatedDeals = downvote(listOfDeals, deal_id.toString(), index)
+                if (updatedDeals != null) {
+                    listOfDeals = updatedDeals
+                } else {
+                    errorMessage = "Failed to Downvote"
                 }
             }
         }
@@ -399,36 +334,25 @@ class Deals {
             deleteConfirmationDialogue = false
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
-                try {
-                    val response: Response<String> =
-                        RetrofitInstance.apiService.deleteDeal(id.toString())
-                    Log.d("Response", "Fetch Deals API Request actually called")
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Deals Response: $responseBody")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Deal Deleted",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } else {
-                        Log.d("Error", "Deals API Response Was Unsuccessful: $response")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Failed to Delete Deal, Please Try Again",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                if (deleteDeal(id.toString())) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Deal Deleted",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                    apiFetchUserSubmittedDeals()
-                } catch (e: Exception) {
-                    Log.d("Error", "Error Calling Deals API: $e")
-                } finally {
-                    isLoading = false
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Failed to Delete Deal, Please Try Again",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
+                isLoading = false
+                apiFetchUserSubmittedDeals()
             }
         }
         fun onConfirmSub(id: Int, context: Context) {
@@ -461,7 +385,7 @@ class Deals {
                     }
                     apiFetchSubs()
                 } catch (e: Exception) {
-                    Log.d("Error", "Error Calling Subs API: $e")
+                    Log.d("Error", "Error Calling Subs API: ${e.message}")
                 } finally {
                     isLoading = false
                 }
@@ -1135,18 +1059,110 @@ class Deals {
         }
     }
 
-
-
     // Helper to format date
     private fun formatTransactionDate(isoDate: String): String {
         val splitted = isoDate.split("T")
         return try {
             splitted[0]
         } catch (e: Exception) {
-            Log.d("Error", "Error Parsing Date: $e")
+            Log.d("Error", "Error Parsing Date: ${e.message}")
             "Invalid Date"
         }
     }
 
+}
 
+suspend fun deleteDeal(id: String): Boolean {
+    if (id.isInvalid()) {
+        return false
+    }
+
+    return try {
+        val response: Response<String> = RetrofitInstance.apiService.deleteDeal(id)
+        Log.d("Response", "Delete Deal API Request actually called")
+        if (response.isSuccessful) {
+            Log.d("Response", "Deals Response: ${response.body()}")
+            true
+        } else {
+            Log.d("Error", "Deals API Response Was Unsuccessful: $response")
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when deleting deal: ${e.message}")
+        false
+    }
+}
+
+suspend fun upvote(listOfDeals: List<DealRetrievalResponse>, deal_id: String, index: Int): List<DealRetrievalResponse>? {
+    try {
+        val response: Response<String> = if (listOfDeals[index].user_vote == 1) {
+            RetrofitInstance.apiService.cancelvoteDeal(deal_id)
+        } else {
+            RetrofitInstance.apiService.upvoteDeal(deal_id)
+        }
+        if (response.isSuccessful) {
+            when (listOfDeals[index].user_vote) {
+                1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 0, upvotes = --deal.upvotes)
+                        else deal
+                    }
+                }
+                0 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 1, upvotes = ++deal.upvotes)
+                        else deal
+                    }
+                }
+                -1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 1, upvotes = ++deal.upvotes, downvotes = --deal.downvotes)
+                        else deal
+                    }
+                }
+            }
+        } else {
+            Log.d("Error", "Upvote Failed Response: ${response.body()}")
+        }
+    } catch (e: Exception) {
+        Log.d("Error", "Failed to Upvote: ${e.message}")
+    }
+    return null
+}
+
+suspend fun downvote(listOfDeals: List<DealRetrievalResponse>, deal_id: String, index: Int): List<DealRetrievalResponse>? {
+    try {
+        val response: Response<String> = if (listOfDeals[index].user_vote == -1) {
+            RetrofitInstance.apiService.cancelvoteDeal(deal_id)
+        } else {
+            RetrofitInstance.apiService.downvoteDeal(deal_id)
+        }
+        if (response.isSuccessful) {
+            when (listOfDeals[index].user_vote) {
+                -1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = 0, downvotes = --deal.downvotes)
+                        else deal
+                    }
+                }
+                0 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = -1, downvotes = ++deal.downvotes)
+                        else deal
+                    }
+                }
+                1 -> {
+                    return listOfDeals.mapIndexed { i, deal ->
+                        if (i == index) deal.copy(user_vote = -1, downvotes = ++deal.downvotes, upvotes = --deal.upvotes)
+                        else deal
+                    }
+                }
+            }
+        } else {
+            Log.d("Error", "Downvote Failed Response: ${response.body()}")
+        }
+    } catch (e: Exception) {
+        Log.d("Error", "Failed to Downvote: ${e.message}")
+    }
+    return null
 }

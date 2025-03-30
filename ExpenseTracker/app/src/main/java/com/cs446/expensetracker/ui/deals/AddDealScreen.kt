@@ -79,42 +79,7 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
 
     var specificDealToEdit: DealRetrievalResponse? by remember { mutableStateOf(null) }
 
-    fun apiFetchSpecificDeal() {
-        // Load deals via API
-        Log.d("Response", "Api fetch was called, but request not necessarily sent")
-        CoroutineScope(Dispatchers.IO).launch {
-            isLoading = true
-            errorMessage = ""
-            try {
-                val response: Response<DealRetrievalResponse> =
-                    RetrofitInstance.apiService.getSpecificDeal(editVersion.toString())
-                Log.d("Response", "Fetch Deals API Request actually called")
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    Log.d("Response", "Deals Response: $responseBody")
-                    specificDealToEdit = responseBody
-                } else {
-                    errorMessage = "Failed to load data."
-                    Log.d("Error", "Deals API Response Was Unsuccessful: $response")
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
-                Log.d("Error", "Error Calling Deals API: $errorMessage")
-            } finally {
-                isLoading = false
-            }
-            itemName = specificDealToEdit?.name ?: ""
-            vendor = specificDealToEdit?.vendor ?: ""
-            description = specificDealToEdit?.description ?: ""
-            price = specificDealToEdit?.price.toString()
-            selectedDate = specificDealToEdit?.date ?: ""
-            address = specificDealToEdit?.address ?: ""
-            if (specificDealToEdit != null) {
-                latlngPrediction = LatLng(specificDealToEdit!!.latitude.toDouble(), specificDealToEdit!!.longitude.toDouble())
-            }
-        }
 
-    }
 
     @Composable
     fun allFieldInputs() {
@@ -229,7 +194,29 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
         }
         LaunchedEffect(Unit) {
             if (editVersion != -1) {
-                apiFetchSpecificDeal()
+                Log.d("Response", "Api fetch was called, but request not necessarily sent")
+                CoroutineScope(Dispatchers.IO).launch {
+                    isLoading = true
+                    errorMessage = ""
+
+                    val specificDeal = getDeal(editVersion.toString())
+                    if (specificDeal != null) {
+                        specificDealToEdit = specificDeal
+                    } else {
+                        errorMessage = "Failed to load data."
+                    }
+                    isLoading = false
+
+                    itemName = specificDealToEdit?.name ?: ""
+                    vendor = specificDealToEdit?.vendor ?: ""
+                    description = specificDealToEdit?.description ?: ""
+                    price = specificDealToEdit?.price.toString()
+                    selectedDate = specificDealToEdit?.date ?: ""
+                    address = specificDealToEdit?.address ?: ""
+                    if (specificDealToEdit != null) {
+                        latlngPrediction = LatLng(specificDealToEdit!!.latitude.toDouble(), specificDealToEdit!!.longitude.toDouble())
+                    }
+                }
             }
         }
         allFieldInputs()
@@ -276,36 +263,45 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
 
                     if(errorMessage == null) {
                         if(editVersion != -1) {
-                            updateDeal(
-                                editVersion.toString(),
-                                itemName,
-                                description,
-                                vendor,
-                                price.toDouble(),
-                                selectedDate,
-                                address,
-                                latlngPrediction?.longitude,
-                                latlngPrediction?.latitude,
-                                goBack = {newState -> goBack = newState},
-                                context,
-                                isLoading = {newState -> isLoading = newState})
+                            if (updateDeal(
+                                    editVersion.toString(),
+                                    itemName,
+                                    description,
+                                    vendor,
+                                    price.toDouble(),
+                                    selectedDate,
+                                    address,
+                                    latlngPrediction?.longitude,
+                                    latlngPrediction?.latitude)) {
+                                goBack = true
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to edit deal. Please try again",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         } else {
-                            createDeal(
-                                itemName,
-                                description,
-                                vendor,
-                                price.toDouble(),
-                                selectedDate,
-                                address,
-                                latlngPrediction?.longitude,
-                                latlngPrediction?.latitude,
-                                goBack = {newState -> goBack = newState},
-                                context,
-                                isLoading = {newState -> isLoading = newState})
+                            if (createDeal(
+                                    itemName,
+                                    description,
+                                    vendor,
+                                    price.toDouble(),
+                                    selectedDate,
+                                    address,
+                                    latlngPrediction?.longitude,
+                                    latlngPrediction?.latitude)) {
+                                goBack = true
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to add deal. Please try again",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
-                    } else {
-                        isLoading = false
                     }
+                    isLoading = false
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -354,14 +350,10 @@ suspend fun createDeal(name : String,
                        date : String, // ISO 8601 format
                        address : String,
                        longitude : Double?,
-                       latitude : Double?,
-                       goBack: (Boolean) -> Unit,
-                       context: Context,
-                       isLoading: (Boolean) -> Unit,
+                       latitude : Double?
 ) : Boolean {
     if (listOf(name, description, vendor, date, address).any { it.isInvalid() }
         || price.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
-        isLoading(false)
         return false
     }
     return try {
@@ -378,25 +370,15 @@ suspend fun createDeal(name : String,
 
         val response = RetrofitInstance.apiService.addDeal(deal)
         if (response.isSuccessful) {
-            goBack(true)
             Log.d("Response", "Add Deal Response: ${response.body()}")
             true
         } else {
             Log.d("Response", "Api request to add deal failed: ${response.body()}")
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    context,
-                    "Failed to add deal. Please try again",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
             false
         }
     } catch (e: Exception) {
         Log.d("Response", "Exception when adding deal: ${e.message}")
         false
-    } finally {
-        isLoading(false)
     }
 }
 
@@ -408,14 +390,10 @@ suspend fun updateDeal(id: String,
                        date : String, // ISO 8601 format
                        address : String,
                        longitude : Double?,
-                       latitude : Double?,
-                       goBack: (Boolean) -> Unit,
-                       context: Context,
-                       isLoading: (Boolean) -> Unit,
+                       latitude : Double?
 ) : Boolean {
     if (listOf(name, description, vendor, date, address).any { it.isInvalid() }
         || price.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
-        isLoading(false)
         return false
     }
 
@@ -433,24 +411,32 @@ suspend fun updateDeal(id: String,
         val response =
             RetrofitInstance.apiService.updateDeal(id, deal)
         if (response.isSuccessful) {
-            goBack(true)
             Log.d("Response", "Edit Deal Response: $response")
             true
         } else {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    context,
-                    "Failed to edit deal. Please try again",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
             Log.d("Response", "Api request to edit deal failed: ${response.body()}")
             false
         }
     } catch (e: Exception) {
         Log.d("Response", "Exception when updating deal: ${e.message}")
         false
-    } finally {
-        isLoading(false)
+    }
+}
+
+suspend fun getDeal(id: String) : DealRetrievalResponse? {
+    return try {
+        val response = RetrofitInstance.apiService.getSpecificDeal(id)
+        Log.d("Response", "Fetch Deal API Request actually called")
+        if (response.isSuccessful) {
+            response.body().also {
+                Log.d("Response", "Deals Response: $it")
+            }
+        } else {
+            Log.d("Error", "Deals API Response Was Unsuccessful: $response")
+            null
+        }
+    } catch (e: Exception) {
+        Log.d("Error", "Error Calling Deals API: $e")
+        null
     }
 }
