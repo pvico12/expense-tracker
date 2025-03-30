@@ -1,8 +1,11 @@
 package com.cs446.expensetracker
 
-import com.cs446.expensetracker.ui.isValidHexColor
-import com.cs446.expensetracker.ui.parseCsvTemplate
-import org.junit.Assert.*
+import com.cs446.expensetracker.ui.*
+//import com.cs446.expensetracker.ui.isValidHexColor
+//import com.cs446.expensetracker.ui.parseCsvTemplate
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AddExpenseUnitTests {
@@ -10,8 +13,18 @@ class AddExpenseUnitTests {
     @Test
     fun testIsValidHexColor_validColors_returnTrue() {
         val validColors = listOf(
-            "#FFFFFF", "#ffffff", "#123456", "#000000", "#FF5733",
-            "#FF0000", "#00FF00", "#0000FF", "#123456", "#ABCDEF", "#abcdef", "#123abc"
+            "#FFFFFF",
+            "#ffffff",
+            "#123456",
+            "#000000",
+            "#FF5733",
+            "#FF0000",
+            "#00FF00",
+            "#0000FF",
+            "#123456",
+            "#ABCDEF",
+            "#abcdef",
+            "#123abc"
         )
 
         validColors.forEach {
@@ -22,12 +35,39 @@ class AddExpenseUnitTests {
     @Test
     fun testIsValidHexColor_invalidColors_returnFalse() {
         val invalidColors = listOf(
-            "FFFFFF", "#FFF", "#ZZZZZZ", "blue", "#12345G",
-            "", "#12345", "#1234567", "123456", "#GHIJKL", "#gggggg"
+            "FFFFFF",
+            "#FFF",
+            "#ZZZZZZ",
+            "blue",
+            "#12345G",
+            "",
+            "#12345",
+            "#1234567",
+            "123456",
+            "#GHIJKL",
+            "#gggggg"
         )
 
         invalidColors.forEach {
             assertFalse("Expected $it to be invalid", isValidHexColor(it))
+        }
+    }
+
+    @Test
+    fun testIsValidAmount_validValues_returnTrue() {
+        val validInputs = listOf("0", "0.00", "10", "100.5", "999999", "12.34")
+
+        validInputs.forEach {
+            assertTrue("Expected $it to be valid", isValidAmount(it))
+        }
+    }
+
+    @Test
+    fun testIsValidAmount_invalidValues_returnFalse() {
+        val invalidInputs = listOf("-1", "-0.01", "abc", "", " ", ".", "10.10.10")
+
+        invalidInputs.forEach {
+            assertFalse("Expected $it to be invalid", isValidAmount(it))
         }
     }
 
