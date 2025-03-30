@@ -35,6 +35,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.abs
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -342,6 +343,7 @@ fun AddDealScreen(navController: NavController, editVersion: Int) {
 
 fun String?.isInvalid() = this.isNullOrBlank()
 fun Double?.isInvalid() = this == null
+fun Int?.isInvalid() = this == null
 
 suspend fun createDeal(name : String,
                        description : String,
@@ -355,6 +357,10 @@ suspend fun createDeal(name : String,
     if (listOf(name, description, vendor, date, address).any { it.isInvalid() }
         || price.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
         return false
+    }
+    if (!longitude.isInvalid() && !latitude.isInvalid()) {
+        if (abs(longitude!!) > 180 || abs(latitude!!) > 90)
+            return false
     }
     return try {
         val deal = DealCreationRequest (
@@ -396,7 +402,10 @@ suspend fun updateDeal(id: String,
         || price.isInvalid() || longitude.isInvalid() || latitude.isInvalid()) {
         return false
     }
-
+    if (!longitude.isInvalid() && !latitude.isInvalid()) {
+        if (abs(longitude!!) > 180 || abs(latitude!!) > 90)
+            return false
+    }
     return try {
         val deal = DealCreationRequest (
             name = name,

@@ -359,36 +359,25 @@ class Deals {
             deleteSubConfirmationDialogue = false
             CoroutineScope(Dispatchers.IO).launch {
                 isLoading = true
-                try {
-                    val response: Response<String> =
-                        RetrofitInstance.apiService.deleteSub(id)
-                    Log.d("Response", "Fetch Subs API Request actually called")
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Subs Response: $responseBody")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Address Deleted",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } else {
-                        Log.d("Error", "Subs API Response Was Unsuccessful: $response")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Failed to Delete Address, Please Try Again",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                if (deleteSub(id)) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Address Deleted",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                    apiFetchSubs()
-                } catch (e: Exception) {
-                    Log.d("Error", "Error Calling Subs API: ${e.message}")
-                } finally {
-                    isLoading = false
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Failed to Delete Address, Please Try Again",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
+                isLoading = false
+                apiFetchSubs()
             }
         }
 
@@ -1089,6 +1078,26 @@ suspend fun deleteDeal(id: String): Boolean {
         }
     } catch (e: Exception) {
         Log.d("Response", "Exception when deleting deal: ${e.message}")
+        false
+    }
+}
+
+suspend fun deleteSub(id: Int): Boolean {
+    if (id.isInvalid()) {
+        return false
+    }
+
+    return try {
+        val response: Response<String> = RetrofitInstance.apiService.deleteSub(id)
+        if (response.isSuccessful) {
+            Log.d("Response", "Subs Response: ${response.body()}")
+            true
+        } else {
+            Log.d("Error", "Subs API Response Was Unsuccessful: $response")
+            false
+        }
+    } catch (e: Exception) {
+        Log.d("Response", "Exception when deleting address: ${e.message}")
         false
     }
 }
