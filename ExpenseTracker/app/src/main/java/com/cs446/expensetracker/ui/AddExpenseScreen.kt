@@ -1186,15 +1186,19 @@ fun CustomCategoryDialog(
 
 // Helper function to validate hex color codes
 fun isValidHexColor(color: String): Boolean {
-    return try {
-        android.graphics.Color.parseColor(color)
-        true
-    } catch (e: IllegalArgumentException) {
-        false
-    }
+    return Regex("^#[0-9a-fA-F]{6}\$").matches(color)
+//    return try {
+//        android.graphics.Color.parseColor(color)
+//        true
+//    } catch (e: IllegalArgumentException) {
+//        false
+//    }
 }
 
 // CSV Parsing Helper
 fun parseCsvTemplate(csv: String): List<List<String>> {
-    return csv.trim().lines().map { it.split(",") }
+    return csv.trim()
+        .lines()
+        .filter { it.isNotBlank() }
+        .map { it.split(",") }
 }
