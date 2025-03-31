@@ -2,6 +2,7 @@ package com.cs446.expensetracker.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.cs446.expensetracker.api.RetrofitInstance
@@ -140,7 +142,9 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
             label = { Text(numberLabel) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             isError = isExceeding,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("NumberOfPeopleField")
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -171,7 +175,9 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
                     },
                     label = { Text("Email ${index + 1}") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("EmailField_$index")
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 if (isSplitEqually) {
@@ -294,10 +300,10 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
                                     try {
                                         val updateResponse = RetrofitInstance.apiService.updateTransaction(id, updatedTransaction)
                                         if (!updateResponse.isSuccessful) {
-                                            // TODO: Handle unsuccessful update
+                                            Log.d("UpdateTransaction", "Unsuccessful")
                                         }
                                     } catch (e: Exception) {
-                                        // TODO: Handle exception
+                                        Log.d("UpdateTransaction", e.toString())
                                     }
                                 }
                             }
@@ -319,7 +325,9 @@ fun SplitTransactionScreen(transaction: Transaction? = null) {
                     }
                 },
                 enabled = allAmountsEntered && isAmountsValid && (count > 0) && !isExceeding,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("SendEmailButton"),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF228B22))
             ) {
                 Text("Send Email")
