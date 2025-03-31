@@ -15,6 +15,7 @@ import coil.decode.ImageDecoderDecoder
 import coil.size.Size
 import com.cs446.expensetracker.R
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -33,25 +34,22 @@ fun GifPlayer(
             }
         }
         .build()
+    var data = R.drawable.catgif
+    var contentDescription = "neutral"
     if (playPetAnimation) {
-        Image(
-            painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(context).data(data = R.drawable.catsmilegif).apply(block = {
-                    size(Size.ORIGINAL)
-                }).build(), imageLoader = imageLoader
-            ),
-            contentDescription = null,
-            modifier = Modifier.size(160.dp),
-        )
+        data = R.drawable.catsmilegif
+        contentDescription = "on pet"
     } else {
-        Image(
-            painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(context).data(data = R.drawable.catgif).apply(block = {
-                    size(Size.ORIGINAL)
-                }).build(), imageLoader = imageLoader
-            ),
-            contentDescription = null,
-            modifier = Modifier.size(160.dp),
-        )
+        data = R.drawable.catgif
+        contentDescription = "neutral"
     }
+    Image(
+        painter = rememberAsyncImagePainter(
+            ImageRequest.Builder(context).data(data = data).apply(block = {
+                size(Size.ORIGINAL)
+            }).build(), imageLoader = imageLoader
+        ),
+        contentDescription = contentDescription,
+        modifier = Modifier.size(160.dp).testTag("CatGifImage"),
+    )
 }
