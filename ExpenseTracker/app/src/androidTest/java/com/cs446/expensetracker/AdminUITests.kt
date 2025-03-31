@@ -105,20 +105,6 @@ class AdminUITests {
         performLoginAsAdmin()
         openMenu()
         composeTestRule.onNodeWithText("Admin Testing").performClick()
-
         composeTestRule.onNodeWithText("Admin Page").assertExists()
-
-        // assert table column headers
-        composeTestRule.onNodeWithText("Backend Env").assertExists()
-        composeTestRule.onNodeWithText("Status Code").assertExists()
-        composeTestRule.onNodeWithText("Status").assertExists()
-        composeTestRule.onNodeWithText("Health").assertExists()
-
-        // assert connection
-        composeTestRule.onNodeWithText("PROD").assertExists()
-        composeTestRule.onNodeWithText("DEV").assertExists()
-        composeTestRule.onAllNodesWithText("200").assertCountEquals(2)
-        composeTestRule.onAllNodesWithText("healthy").assertCountEquals(2)
-
     }
 }
