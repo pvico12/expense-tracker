@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.cs446.expensetracker.api.models.CategoryBreakdown
@@ -26,7 +27,8 @@ fun Piechart(spendingSummary: List<CategoryBreakdown>) {
         modifier = Modifier
             .fillMaxWidth()
             .height(340.dp)
-            .padding(start=5.dp, end=5.dp),
+            .padding(start=5.dp, end=5.dp)
+            .testTag("Piechart"),
         factory = { context ->
             PieChart(context).apply {
                 // Customize the PieChart here

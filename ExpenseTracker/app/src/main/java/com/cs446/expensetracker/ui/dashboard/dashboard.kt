@@ -103,7 +103,7 @@ class Dashboard {
     fun DashboardScreen(
         drawerState: DrawerState,
         dashboardNavController: NavController,
-        testMode: Boolean = false,
+        useMockApi: String = "false",
         createMockApiRequests: Array<Response<out Any>>? = null
     ) {
         // variable definitions
@@ -130,17 +130,11 @@ class Dashboard {
         var searchQuery by remember { mutableStateOf("") }
         var filteredSearchlistOfGoals by remember { mutableStateOf<List<GoalRetrievalGoals>>(emptyList())}
         // for Scaffold
-        val currentDate = LocalDateTime.now()
-        val monthName = currentDate.format(DateTimeFormatter.ofPattern("MMMM"))
+        var currentDate by remember { mutableStateOf(LocalDateTime.now()) }
+        val monthName by remember { mutableStateOf(currentDate.format(DateTimeFormatter.ofPattern("MMMM"))) }
         // for api calls
-        val firstDayOfMonth = currentDate.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0).format(DateTimeFormatter.ISO_DATE_TIME)
-        val lastDayOfMonth = currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).format(DateTimeFormatter.ISO_DATE_TIME)
-
-//        val currentDate by remember { mutableStateOf(LocalDateTime.now()) }
-//        val monthName by remember { mutableStateOf(currentDate.format(DateTimeFormatter.ofPattern("MMMM"))) }
-//        // for api calls
-//        val firstDayOfMonth by remember { mutableStateOf(currentDate.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0).format(DateTimeFormatter.ISO_DATE_TIME)) }
-//        val lastDayOfMonth by remember { mutableStateOf(currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).format(DateTimeFormatter.ISO_DATE_TIME)) }
+        val firstDayOfMonth by remember { mutableStateOf(currentDate.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0).format(DateTimeFormatter.ISO_DATE_TIME)) }
+        val lastDayOfMonth by remember { mutableStateOf(currentDate.withDayOfMonth(currentDate.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).format(DateTimeFormatter.ISO_DATE_TIME)) }
 
         fun assignSpendingResponse(responseBody: SpendingSummaryResponse) {
             totalSpending = responseBody.total_spend
@@ -189,23 +183,26 @@ class Dashboard {
 
         fun asyncFetchGoals() {
             coroutineScope.launch {
-                try {
+                if (useMockApi == "false") {
+                    errorMessage = ""
+                    try {
 //                    val token = UserSession.access_token ?: ""
-                    val response: Response<GoalRetrievalResponse> =
-                        RetrofitInstance.apiService.getGoals(firstDayOfMonth, lastDayOfMonth)
-                    Log.d("Response", "Fetch Goals API Request actually called")
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        if (responseBody != null) {
-                            assignGoalResponse(responseBody)
+                        val response: Response<GoalRetrievalResponse> =
+                            RetrofitInstance.apiService.getGoals(firstDayOfMonth, lastDayOfMonth)
+                        Log.d("Response", "Fetch Goals API Request actually called")
+                        if (response.isSuccessful) {
+                            val responseBody = response.body()
+                            if (responseBody != null) {
+                                assignGoalResponse(responseBody)
+                            }
+                        } else {
+                            errorMessage += "Failed to load data."
+                            Log.d("Error", "Goals API Response Was Unsuccessful: $response")
                         }
-                    } else {
-                        errorMessage = "Failed to load data."
-                        Log.d("Error", "Goals API Response Was Unsuccessful: $response")
+                    } catch (e: Exception) {
+                        errorMessage += "Error: ${e.message}"
+                        Log.d("Error", "Error Calling Goals API: $errorMessage")
                     }
-                } catch (e: Exception) {
-                    errorMessage = "Error: ${e.message}"
-                    Log.d("Error", "Error Calling Goals API: $errorMessage")
                 }
             }
         }
@@ -217,30 +214,32 @@ class Dashboard {
             coroutineScope.launch {
                 isLoading = true
                 try {
-                    val response: Response<String> =
-                        RetrofitInstance.apiService.deleteGoal(id.toString())
-                    Log.d("Response", "Fetch Goals API Request actually called")
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        Log.d("Response", "Goals Response: $responseBody")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Goal Deleted",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                    if(useMockApi == "false") {
+                        val response: Response<String> =
+                            RetrofitInstance.apiService.deleteGoal(id.toString())
+                        Log.d("Response", "Fetch Goals API Request actually called")
+                        if (response.isSuccessful) {
+                            val responseBody = response.body()
+                            Log.d("Response", "Goals Response: $responseBody")
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "Goal Deleted",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        } else {
+                            Log.d("Error", "Goals API Response Was Unsuccessful: $response")
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to Delete Goal, Please Try Again",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
-                    } else {
-                        Log.d("Error", "Goals API Response Was Unsuccessful: $response")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "Failed to Delete Goal, Please Try Again",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        asyncFetchGoals()
                     }
-                    asyncFetchGoals()
                 } catch (e: Exception) {
                     Log.d("Error", "Error Calling Goals API: $e")
                 } finally {
@@ -263,7 +262,9 @@ class Dashboard {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 8.dp),
+                    .padding(vertical = 8.dp, horizontal = 8.dp)
+                    .testTag("GoalCard")
+                ,
                 colors = CardDefaults.cardColors(
                     containerColor = tileColor,
                 ),
@@ -277,7 +278,7 @@ class Dashboard {
                     TextButton(
                         onClick = { onDeleteButtonClick(goal.id) },
                         shape = CircleShape,
-                        modifier = Modifier.size(30.dp),
+                        modifier = Modifier.size(30.dp).testTag("DeleteButton"),
                         contentPadding = PaddingValues(0.dp)
                     ) {
                         Icon(
@@ -290,7 +291,7 @@ class Dashboard {
                     TextButton(
                         onClick = { onEditButtonClick(goal.id) },
                         shape = CircleShape,
-                        modifier = Modifier.size(30.dp),
+                        modifier = Modifier.size(30.dp).testTag("EditButton"),
                         contentPadding = PaddingValues(0.dp)
                     ) {
                         Icon(
@@ -353,7 +354,7 @@ class Dashboard {
                                 .fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = mainGoalText, fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall)
+                            Text(text = mainGoalText, fontWeight = FontWeight.Bold, color= mainTextColor, style = Typography.titleSmall, modifier = Modifier.testTag("MainGoalCardText"))
                         }
                         Row(
                             modifier = Modifier
@@ -389,7 +390,7 @@ class Dashboard {
                                     style = MaterialTheme.typography.titleMedium,
                                     color = secondaryGoalTextColor,
                                     textAlign = TextAlign.Left,
-                                    modifier = Modifier.padding(top=2.dp)
+                                    modifier = Modifier.padding(top=2.dp).testTag("SecondaryGoalCardText")
                                 )
                                 Row(
                                     modifier = Modifier
@@ -427,7 +428,9 @@ class Dashboard {
         @Composable
         fun goalHeader() {
             Row(modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .testTag("GoalHeader")
+                ,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     text = "Goals:",
@@ -440,7 +443,9 @@ class Dashboard {
                     shape = CircleShape,
                     modifier = Modifier
                         .size(50.dp)
-                        .padding(end = 12.dp, top = 12.dp),
+                        .padding(end = 12.dp, top = 12.dp)
+                        .testTag("AddGoalButton")
+                    ,
                     contentPadding = PaddingValues(0.dp),
                     onClick = {
                         dashboardNavController.navigate("addGoalScreen/${(-1)}")
@@ -522,7 +527,7 @@ class Dashboard {
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
                     label = { Text("Search...") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("GoalSearchBar"),
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = secondTextColor,
                         unfocusedIndicatorColor = mainTextColor
@@ -535,12 +540,16 @@ class Dashboard {
         @Suppress("UNCHECKED_CAST")
         fun preloadData() {
             coroutineScope.launch {
+                errorMessage = ""
                 var spendingResponse: Response<SpendingSummaryResponse>? = null
                 var levelResponse: Response<LevelRequest>? = null
                 var categoriesResponse: Response<List<Category>>? = null
                 var goalsResponse: Response<GoalRetrievalResponse>? = null
                 var responses: List<Response<out Any>>
-                if (testMode) {
+                if (useMockApi != "false") {
+                    if (useMockApi == "slowdown") {
+                        delay(2000)
+                    }
                     try {
                         if (createMockApiRequests != null) {
                             if (createMockApiRequests.size == 4) {
@@ -548,12 +557,14 @@ class Dashboard {
                                 levelResponse = createMockApiRequests[1] as Response<LevelRequest>
                                 categoriesResponse = createMockApiRequests[2] as Response<List<Category>>
                                 goalsResponse = createMockApiRequests[3] as Response<GoalRetrievalResponse>
+
+                                currentDate = LocalDateTime.now().withYear(2025).withMonth(3).withDayOfMonth(28)
                             } else {
                                 throw NullRequestDataException()
                             }
                         }
                     } catch (e: Exception) {
-                        errorMessage += "Error Fetching Mock User Data"
+                        errorMessage += "Error Fetching Mock User Data.\n"
                         Log.d("Dashboard Error", "Error Calling Mock API: ${e}")
                         isLoading = false
                     }
@@ -591,7 +602,7 @@ class Dashboard {
                         categoriesResponse = responses[2] as Response<List<Category>>
                         goalsResponse = responses[3] as Response<GoalRetrievalResponse>
                     } catch (e: Exception) {
-                        errorMessage += "Error Fetching User Data"
+                        errorMessage += "Failed to load user data.\n"
                         Log.d("Dashboard Error", "Error Calling API: ${e.message}")
                         isLoading = false
                     }
@@ -602,7 +613,7 @@ class Dashboard {
                             val responseBody = spendingResponse.body() as SpendingSummaryResponse
                             assignSpendingResponse(responseBody)
                         } else {
-                            errorMessage += "Failed to load expense data."
+                            errorMessage += "Failed to load expense data.\n"
                             Log.d("Dashboard Error", "Summary Spend API Response Was Unsuccessful: $spendingResponse")
                         }
                     }
@@ -611,7 +622,7 @@ class Dashboard {
                         if (levelResponse.isSuccessful) {
                             levelStats = levelResponse.body() as LevelRequest
                         } else {
-                            errorMessage += "Failed to load levels."
+                            errorMessage += "Failed to load levels.\n"
                             Log.d("Dashboard Error", "Levels API Response Was Unsuccessful: $levelResponse")
                         }
                     }
@@ -620,7 +631,7 @@ class Dashboard {
                         if (categoriesResponse.isSuccessful) {
                             categories = categoriesResponse.body() as List<Category>
                         } else {
-                            errorMessage += "Failed to load categories."
+                            errorMessage += "Failed to load categories.\n"
                             Log.d("Dashboard Error", "Categories API Response Was Unsuccessful: $categories")
                         }
                     }
@@ -630,13 +641,13 @@ class Dashboard {
                             val responseBody = goalsResponse.body() as GoalRetrievalResponse
                             assignGoalResponse(responseBody)
                         } else {
-                            errorMessage = "Failed to load goals."
+                            errorMessage += "Failed to load goals.\n"
                             Log.d("Dashboard Error", "Goals API Response Was Unsuccessful: $goalsResponse")
                         }
                     }
 
                 } catch (e: Exception) {
-                    errorMessage += "Error Assigning User Data"
+                    errorMessage += "Error Assigning User Data.\n"
                     Log.d("Dashboard Error", "Error Assigning API results: ${e.message}")
                     isLoading = false
                 }
@@ -697,6 +708,8 @@ class Dashboard {
 
             else -> {
                 Scaffold(
+                    modifier = Modifier
+                        .testTag("Scaffold"),
                     topBar = {
                         CenterAlignedTopAppBar(
                             navigationIcon = {
@@ -724,13 +737,14 @@ class Dashboard {
                             .fillMaxSize()
                             .background(mainBackgroundColor)
                             .verticalScroll(scrollState)
-                            .padding(padding),
+                            .padding(padding)
+                            .testTag("Scrollbar"),
                         verticalArrangement = Arrangement.Top
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
-                                .padding(start = 16.dp, top = 8.dp).testTag("totalSpending")
+                                .padding(start = 16.dp, top = 8.dp).testTag("TotalSpending")
                         ) {
                             Text(
                                 text = "$",
@@ -764,7 +778,8 @@ class Dashboard {
                         ) {
                             Column(
                                 modifier = Modifier
-                                    .height(340.dp),
+                                    .height(340.dp)
+                                    .testTag("CatGif"),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             )
@@ -790,7 +805,9 @@ class Dashboard {
                                 }
                                 Button(
                                     modifier = Modifier
-                                        .height(150.dp),
+                                        .height(150.dp)
+                                        .testTag("CatGifButton")
+                                    ,
                                     onClick = {
                                         playPetAnimation = true
                                               },
@@ -810,7 +827,9 @@ class Dashboard {
                         ) {
                             Button(
                                 modifier = Modifier
-                                    .padding(0.dp),
+                                    .padding(0.dp)
+                                    .testTag("ToggleSpendingGoalsButton")
+                                ,
                                 onClick = {
                                     viewSpendingOrGoals = if(viewSpendingOrGoals == "View Goals") {
                                         "View Spending"
@@ -837,7 +856,7 @@ class Dashboard {
                                     text = { Text("Do you really want to delete?") },
                                     confirmButton = {
                                         val context = LocalContext.current
-                                        TextButton(onClick = { onConfirm(idToDelete, context) }, colors = ButtonDefaults.buttonColors(containerColor = mainTextColor)) {
+                                        TextButton(onClick = { onConfirm(idToDelete, context) }, colors = ButtonDefaults.buttonColors(containerColor = mainTextColor),  modifier = Modifier.testTag("ConfirmDeleteDialog")) {
                                             Text("Proceed")
                                         }
                                     },
@@ -867,7 +886,7 @@ class Dashboard {
                                 }
                             }
                         }
-                        Spacer(Modifier.height(85.dp))
+                        Spacer(Modifier.height(85.dp).testTag("BottomDashboard"))
                     }
                 }
             }

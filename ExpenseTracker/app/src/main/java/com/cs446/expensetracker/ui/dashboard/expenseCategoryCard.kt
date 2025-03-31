@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.cs446.expensetracker.utils.formatCurrency
 import com.cs446.expensetracker.ui.ui.theme.PurpleGrey40
@@ -34,6 +35,7 @@ fun ExpenseCategoryCard(expense: CategoryBreakdownDecorator) {
         modifier = Modifier
             .padding(4.dp)
             .fillMaxSize()
+            .testTag("ExpenseCategoryCard")
         ,
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         colors = CardDefaults.cardColors(containerColor = tileColor)
@@ -50,7 +52,7 @@ fun ExpenseCategoryCard(expense: CategoryBreakdownDecorator) {
                 Icon(
                     imageVector = Icons.Filled.Circle,
                     contentDescription = "Favorite",
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(28.dp).testTag("ExpenseCategoryCardColour"),
                     tint = Color(android.graphics.Color.parseColor((expense.color)))
                 )
                 Text(
@@ -58,7 +60,7 @@ fun ExpenseCategoryCard(expense: CategoryBreakdownDecorator) {
                     color = mainTextColor,
                     style = Typography.labelSmall,
                     modifier = Modifier
-                        .padding(start=8.dp, top=8.dp,bottom=8.dp,end=8.dp)
+                        .padding(start=8.dp, top=8.dp,bottom=8.dp,end=8.dp).testTag("ExpenseCategoryCardName")
                 )
             }
             Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.width(180.dp))
@@ -68,6 +70,7 @@ fun ExpenseCategoryCard(expense: CategoryBreakdownDecorator) {
                         text = "${round(expense.percentage)}%",
                         color = PurpleGrey40,
                         style = Typography.labelSmall,
+                        modifier = Modifier.testTag("ExpenseCategoryCardPercentage")
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -76,6 +79,7 @@ fun ExpenseCategoryCard(expense: CategoryBreakdownDecorator) {
                         text = "$${formatCurrency(expense.total_amount)}",
                         color = PurpleGrey40,
                         style = Typography.labelSmall,
+                        modifier = Modifier.testTag("ExpenseCategoryCardTotalAmount")
                     )
                 }
             }

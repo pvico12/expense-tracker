@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.cs446.expensetracker.api.models.LevelRequest
 import com.cs446.expensetracker.ui.ui.theme.Typography
@@ -29,7 +30,9 @@ import com.cs446.expensetracker.ui.ui.theme.pieChartColor2
 fun LevelBar(levelStats: LevelRequest?) {
     Column(
     modifier = Modifier
-    .height(410.dp),
+    .height(410.dp)
+    .testTag("LevelBar")
+        ,
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Bottom
     )
@@ -69,7 +72,7 @@ fun LevelBar(levelStats: LevelRequest?) {
                         imageVector = Icons.Filled.Star,
                         contentDescription = "Level",
                         modifier = Modifier.size(100.dp)
-                            .padding(bottom = 10.dp),
+                            .padding(bottom = 10.dp).testTag("LevelIcon"),
                         tint = Color(0xFFEE8B38)
                     )
                     Text(
