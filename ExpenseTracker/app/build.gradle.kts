@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services")
+    id("com.google.gms.google-services") version "4.3.8"
 }
 
 
@@ -18,6 +18,7 @@ if (keystorePropertiesFile.exists()) {
 } else {
     throw GradleException("Missing key.properties file")
 }
+
 
 android {
     namespace = "com.cs446.expensetracker"
@@ -77,7 +78,7 @@ android {
 }
 
 dependencies {
-
+    // Core & Compose dependencies
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -88,9 +89,19 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.runtime.livedata)
     implementation("androidx.compose.material:material-icons-extended:1.5.1")
+    implementation(libs.androidx.navigation.testing.android)
+    implementation(libs.androidx.espresso.contrib)
+
+    // Testing dependencies for unit tests.
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+
+    // Android instrumented tests:
+    androidTestImplementation("androidx.test:core:1.5.0")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    // Compose UI testing dependencies (using the Compose BOM)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
@@ -98,9 +109,11 @@ dependencies {
     androidTestImplementation("org.mockito:mockito-core:4.5.1")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
 
+    // Additional dependencies
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
-
     val nav_version = "2.8.5"
     implementation("androidx.navigation:navigation-compose:$nav_version")
 
@@ -112,14 +125,12 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     implementation("com.auth0:java-jwt:4.0.0")
-
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.maps.android:maps-compose:2.13.0")
     implementation("com.google.android.libraries.places:places:4.1.0")
-    implementation ("com.google.maps.android:places-ktx:3.1.1")
-    implementation ("com.google.android.material:material:1.11.0")
+    implementation("com.google.maps.android:places-ktx:3.1.1")
+    implementation("com.google.android.material:material:1.11.0")
 
     implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
     implementation("com.google.firebase:firebase-messaging")

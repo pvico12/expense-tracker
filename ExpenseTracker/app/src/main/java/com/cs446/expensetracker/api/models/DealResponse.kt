@@ -40,3 +40,7 @@ data class DealCreationRequest (
     val longitude: Double,
     val latitude: Double
 )
+
+data class DealAddResponse (
+    val id: Int
+)
