@@ -9,6 +9,7 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-01-15,1,0,0,0,0,0,Set up backend database connection
 2025-01-15,3,0,0,0,0,0,Set up automated deployments for both dev and prod backend
 2025-01-15,1,0,0,0,0,0,Documentation for general use case and backend stuff
+2025-01-15,0,0,0,0,3,0,Revise the Flask backend to fastAPI framework
 2025-01-22,0.5,0.5,0.5,0.5,0,0,Meet and discuss app requirements and specifications 
 2025-01-23,0.5,0.5,1,1,0.5,0.5,Revise and finalize the team contract 
 2025-01-24,5,0,0,0,0,0,init Android App with backend connection healthcheck admin page
@@ -39,6 +40,11 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-13,0,2,0,0,0,0, Hooked up dashboard and some of deals to backend
 2025-03-13,0.5,0,0,0,0,0, Add votes to general deal GET request
 2025-03-13,0.5,0,0,0,0,0, Add more sample transactions on DB init
+2025-03-13,0,0,0,0,1,0,Statistics Route Added
+2025-03-13,0,0,0,0,1,0,Category Route Added
+2025-03-13,0,0,0,0,1,0,Goals Route Added
+2025-03-13,0,0,0,0,1,0,Transaction Route Added
+2025-03-13,0,0,0,0,1,0,Integration Route Added
 2025-03-14,2,0,0,0,0,0, Add vendor to deals + create more deals on db init + add specific deal request
 2025-03-14,0,2,0,0,0,0, Hooked up most of deals to backend
 2025-03-15,0,2,0,0,0,0, Trying to get google maps integrated to deals
@@ -71,6 +77,11 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-25,0.5,0,0,0,0,0, Restructure backend testing and add tools tests
 2025-03-25,1,0,0,0,0,0, User Backend Unit Tests
 2025-03-25,1,0,0,0,0,0, Deals Backend Unit Tests
+2025-03-25,0,0,0,0,1,0,Statistics Backend Unit Tests
+2025-03-25,0,0,0,0,1,0,Category Backend Unit Tests
+2025-03-25,0,0,0,0,1,0,Goals Backend Unit Tests
+2025-03-25,0,0,0,0,1,0,Transaction Backend Unit Tests
+2025-03-25,0,0,0,0,1,0,Integration Backend Unit Tests
 2025-03-26,1,0,0,0,0,0, More Deals Backend Unit Tests
 2025-03-26,1,0,0,0,0,0, Implement Factory Pattern for Database Connection From Frontend
 2025-03-26,0,4,0,0,0,0,"Dashboard Visualization, Goals, and Mock API tests"
