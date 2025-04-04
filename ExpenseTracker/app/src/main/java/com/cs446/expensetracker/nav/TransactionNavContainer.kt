@@ -312,7 +312,7 @@ class TransactionNavContainer {
 
         val filteredTransactions = transactions.filter { txn ->
             if (searchQuery.isNotBlank())
-                txn.note.contains(searchQuery, ignoreCase = true)
+                txn.note.contains(searchQuery, ignoreCase = true) || txn.vendor?.contains(searchQuery, ignoreCase = true) ?: false
             else true
         }
 
