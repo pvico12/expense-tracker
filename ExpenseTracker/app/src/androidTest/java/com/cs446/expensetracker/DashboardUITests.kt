@@ -80,7 +80,7 @@ class DashboardUITests {
             }
 
             // runs synchronously, ensures completion
-            val responses: Array<Response<out Any>>? = if (useMockApi != "false") runBlocking { createDashboardMockAPIRequests() } else null
+            val responses: Array<Response<out Any>>? = if (useMockApi != "false") runBlocking { if (useMockApi != "empty API") createDashboardMockAPIRequests() else createEmptyDashboardMockAPIRequests() } else null
             val dashboard = Dashboard()
 
             composeTestRule.setContent {
@@ -101,7 +101,7 @@ class DashboardUITests {
     }
 
     // runblocking halts main thread, don't do that in dashboard
-    private suspend fun createDashboardMockAPIRequests(): Array<Response<out Any>> {
+    private suspend fun createEmptyDashboardMockAPIRequests(): Array<Response<out Any>> {
             val mockWebServer = MockWebServer()
             mockWebServer.start()
 
@@ -117,44 +117,11 @@ class DashboardUITests {
                 .setBody(
                     """
             {
-              "total_spend": 2500.00,
+              "total_spend": 0.0,
               "category_breakdown": [
-                {
-                  "category_name": "Test Housing",
-                  "total_amount": 1200,
-                  "percentage": ${if (useMockApi == "incorrect API") "wrong string" else 46.85466377440347},
-                  "color": "#FFDBAD8C"
-                },
-                {
-                  "category_name": "Test Savings",
-                  "total_amount": 800,
-                  "percentage": 27.765726681127983,
-                  "color": "#FFFFDADA"
-                },
-                {
-                  "category_name": "Test Entertainment",
-                  "total_amount": 280,
-                  "percentage": 9.718004338394794,
-                  "color": "#FF9A3B3B"
-                },
-                {
-                  "category_name": "Test Transportation",
-                  "total_amount": 220,
-                  "percentage": 7.809110629067245,
-                  "color": "#FFD6CBAF"
-                }
+               
             ],
             "transaction_history": [
-                    {
-                      "id": 3,
-                      "user_id": 1,
-                      "amount": 50.75,
-                      "category_id": 2,
-                      "transaction_type": "expense",
-                      "note": "Dinner at Italian Restaurant",
-                      "date": "2025-03-15T00:00:00",
-                      "vendor": "Italian Bistro"
-                    }
                 ]
             }
             """.trimIndent()
@@ -172,8 +139,8 @@ class DashboardUITests {
                     """
             {
                 "level": 1,
-                "current_xp": 1,
-                "remaining_xp_until_next_level": 4,
+                "current_xp": 0,
+                "remaining_xp_until_next_level": 5,
                 "total_xp_for_next_level": 5
             }
             """.trimIndent()
@@ -189,6 +156,115 @@ class DashboardUITests {
                 .setResponseCode(mockApiResponseCode)
                 .setBody(
                     """
+            [
+            ]
+            """.trimIndent()
+                )
+            mockWebServer.enqueue(mockCategoriesResponse)
+
+            val ReturnedCategoriesResponse = withContext(Dispatchers.IO) {
+                apiService.getCategories()
+            }
+            SavedCategoriesResponse = ReturnedCategoriesResponse
+
+            val mockGoalsResponse = MockResponse()
+                .setResponseCode(mockApiResponseCode)
+                .setBody(
+                    """
+            {
+                "goals": [
+                ],
+                "stats": {
+                    "completed": 0,
+                    "incompleted": 0,
+                    "failed": 0
+                }
+            }
+            """.trimIndent()
+                )
+            mockWebServer.enqueue(mockGoalsResponse)
+
+            val ReturnedGoalsResponse = withContext(Dispatchers.IO) {
+                apiService.getGoals("2025-03-01T00:00:00", "2025-03-31T23:59:59")
+            }
+            SavedGoalsResponse = ReturnedGoalsResponse
+
+            mockWebServer.shutdown()
+
+            return arrayOf(
+                ReturnedSpendingSummaryResponse,
+                ReturnedLevelResponse,
+                ReturnedCategoriesResponse,
+                ReturnedGoalsResponse
+            )
+
+    }
+
+    // runblocking halts main thread, don't do that in dashboard
+    private suspend fun createDashboardMockAPIRequests(): Array<Response<out Any>> {
+        val mockWebServer = MockWebServer()
+        mockWebServer.start()
+
+        val apiService = Retrofit.Builder()
+            .baseUrl(mockWebServer.url("/"))  // Use the mock server's URL
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(BaseAPIService::class.java)
+        // mock for spending summary
+
+        val mockSpendingSummaryResponse = MockResponse()
+            .setResponseCode(if (useMockApi == "fail one API Request") 403 else mockApiResponseCode)
+            .setBody(
+                """
+            {
+              "total_spend": 2500.00,
+              "category_breakdown": [
+            ],
+            "transaction_history": [
+                    {
+                      "id": 3,
+                      "user_id": 1,
+                      "amount": 50.75,
+                      "category_id": 2,
+                      "transaction_type": "expense",
+                      "note": "Dinner at Italian Restaurant",
+                      "date": "2025-03-15T00:00:00",
+                      "vendor": "Italian Bistro"
+                    }
+                ]
+            }
+            """.trimIndent()
+            )
+        mockWebServer.enqueue(mockSpendingSummaryResponse)
+
+        val ReturnedSpendingSummaryResponse = withContext(Dispatchers.IO) {
+            apiService.getSpendingSummary("2025-03-01T00:00:00", "2025-03-31T23:59:59")
+        }
+        SavedSpendingSummaryResponse = ReturnedSpendingSummaryResponse
+
+        val mockLevelResponse = MockResponse()
+            .setResponseCode(mockApiResponseCode)
+            .setBody(
+                """
+            {
+                "level": 1,
+                "current_xp": 1,
+                "remaining_xp_until_next_level": 4,
+                "total_xp_for_next_level": 5
+            }
+            """.trimIndent()
+            )
+        mockWebServer.enqueue(mockLevelResponse)
+
+        val ReturnedLevelResponse = withContext(Dispatchers.IO) {
+            apiService.getLevel()
+        }
+        SavedLevelResponse = ReturnedLevelResponse
+
+        val mockCategoriesResponse = MockResponse()
+            .setResponseCode(mockApiResponseCode)
+            .setBody(
+                """
             [
               {
                 "id": 1,
@@ -212,18 +288,18 @@ class DashboardUITests {
               }
             ]
             """.trimIndent()
-                )
-            mockWebServer.enqueue(mockCategoriesResponse)
+            )
+        mockWebServer.enqueue(mockCategoriesResponse)
 
-            val ReturnedCategoriesResponse = withContext(Dispatchers.IO) {
-                apiService.getCategories()
-            }
-            SavedCategoriesResponse = ReturnedCategoriesResponse
+        val ReturnedCategoriesResponse = withContext(Dispatchers.IO) {
+            apiService.getCategories()
+        }
+        SavedCategoriesResponse = ReturnedCategoriesResponse
 
-            val mockGoalsResponse = MockResponse()
-                .setResponseCode(mockApiResponseCode)
-                .setBody(
-                    """
+        val mockGoalsResponse = MockResponse()
+            .setResponseCode(mockApiResponseCode)
+            .setBody(
+                """
             {
                 "goals": [
                     {
@@ -282,22 +358,22 @@ class DashboardUITests {
                 }
             }
             """.trimIndent()
-                )
-            mockWebServer.enqueue(mockGoalsResponse)
-
-            val ReturnedGoalsResponse = withContext(Dispatchers.IO) {
-                apiService.getGoals("2025-03-01T00:00:00", "2025-03-31T23:59:59")
-            }
-            SavedGoalsResponse = ReturnedGoalsResponse
-
-            mockWebServer.shutdown()
-
-            return arrayOf(
-                ReturnedSpendingSummaryResponse,
-                ReturnedLevelResponse,
-                ReturnedCategoriesResponse,
-                ReturnedGoalsResponse
             )
+        mockWebServer.enqueue(mockGoalsResponse)
+
+        val ReturnedGoalsResponse = withContext(Dispatchers.IO) {
+            apiService.getGoals("2025-03-01T00:00:00", "2025-03-31T23:59:59")
+        }
+        SavedGoalsResponse = ReturnedGoalsResponse
+
+        mockWebServer.shutdown()
+
+        return arrayOf(
+            ReturnedSpendingSummaryResponse,
+            ReturnedLevelResponse,
+            ReturnedCategoriesResponse,
+            ReturnedGoalsResponse
+        )
 
     }
 
@@ -615,6 +691,13 @@ class DashboardUITests {
             composeTestRule.onNodeWithTag("LoadingSpinner").assertDoesNotExist()
         }
 
+    }
+
+    @Test
+    fun emptyAPIResponses() {
+        useMockApi = "empty API"
+        setUp()
+        composeTestRule.waitForIdle()
     }
 
 }

@@ -1,7 +1,9 @@
 package com.cs446.expensetracker.nav
 
 import android.app.DatePickerDialog
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -33,17 +35,21 @@ import com.cs446.expensetracker.api.RetrofitInstance
 import com.cs446.expensetracker.api.models.Category
 import com.cs446.expensetracker.api.models.TransactionResponse
 import com.cs446.expensetracker.api.models.Transaction
+import com.cs446.expensetracker.session.UserSession
 import com.cs446.expensetracker.ui.SplitTransactionScreen
 import com.cs446.expensetracker.ui.ui.theme.mainBackgroundColor
 import com.cs446.expensetracker.ui.ui.theme.tileColor
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.Locale
 
 class TransactionNavContainer {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun TransactionNavHost() {
         val navController = rememberNavController()
@@ -91,6 +97,7 @@ class TransactionNavContainer {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun TransactionHistoryScreen(
         navController: NavController,
@@ -209,6 +216,45 @@ class TransactionNavContainer {
                     isLoading = false
                 }
             }
+        }
+
+        LaunchedEffect(Unit) {
+            isLoading = true
+            Log.d("Token", "Token: $UserSession.access_token")
+                val apiStartDateTime = isoFormat.format(inputDateFormat.parse(selectedStartDate)!!)
+                val apiEndDateTime = isoFormat.format(inputDateFormat.parse(selectedEndDate)!!)
+                isLoading = true
+                errorMessage = null
+                try {
+                    val response: Response<List<TransactionResponse>> =
+                        RetrofitInstance.apiService.getTransactions(
+                            skip = 0,
+                            limit = 100,
+                            startDate = apiStartDateTime,
+                            endDate = apiEndDateTime
+                        )
+                    if (response.isSuccessful) {
+                        val transactionResponses = response.body() ?: emptyList()
+                        transactions = transactionResponses.map { tr ->
+                            Transaction(
+                                id = tr.id,
+                                amount = tr.amount.toDouble(),
+                                category_id = tr.categoryId,
+                                transaction_type = tr.transactionType ?: "expense",
+                                note = if (tr.note.toString().isEmpty()) "Transaction" else tr.note.toString(),
+                                date = tr.date ?: "",
+                                vendor = tr.vendor ?: "N/A"
+                            )
+                        }
+                    } else {
+                        errorMessage = "Failed to load transactions."
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "Error: ${e.message}"
+                } finally {
+                    isLoading = false
+                }
+
         }
 
         LaunchedEffect(advancedFilterChanged, selectedStartDate, selectedEndDate) {
