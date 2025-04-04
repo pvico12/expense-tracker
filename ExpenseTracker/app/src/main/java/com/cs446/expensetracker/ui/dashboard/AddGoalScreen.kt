@@ -90,7 +90,7 @@ fun AddGoalScreen(navController: NavController, useMockApi: String = "false", cr
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
-            calendar.set(year, month, dayOfMonth, 12, 12, 12)
+            calendar.set(year, month, dayOfMonth, 0, 0, 0)
             selectedDate = isoFormat.format(calendar.time)
         },
         calendar.get(Calendar.YEAR),
