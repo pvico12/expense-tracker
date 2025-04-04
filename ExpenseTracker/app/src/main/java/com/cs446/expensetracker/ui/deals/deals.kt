@@ -382,8 +382,8 @@ class Deals {
         }
 
         @Composable
-        fun openGoogleMaps()  {
-            val intentUri = Uri.parse("geo:0,0?q=Waterloo, ON")
+        fun openGoogleMaps(address: String)  {
+            val intentUri = Uri.parse("geo:0,0?q=${address}")
             val mapIntent = Intent(Intent.ACTION_VIEW, intentUri)
 //        mapIntent.setPackage("com.google.android.apps.maps")
             context.startActivity(mapIntent)
@@ -544,8 +544,8 @@ class Deals {
                                 Text(text = "Open Google Maps", color = pieChartColor1, textDecoration = TextDecoration.Underline, style = MaterialTheme.typography.titleMedium)
                             }
                             if (googleMapsOpened.value != "") {
+                                openGoogleMaps(googleMapsOpened.value)
                                 googleMapsOpened.value = ""
-                                openGoogleMaps()
                             }
                             Text(
                                 text = formatTransactionDate(deal.date), // format date
@@ -847,6 +847,7 @@ class Deals {
                                     columnScrollingEnabled = false
                                     false
                                 }
+
                                 else -> {
                                     true
                                 }
