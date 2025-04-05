@@ -46,6 +46,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import retrofit2.Response
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 
@@ -474,11 +478,23 @@ fun AddGoalScreen(navController: NavController, useMockApi: String = "false", cr
 
                                 if(errorMessage == null) {
                                     if(editVersion != -1) {
+                                        var endDate = LocalDateTime.parse(selectedDate.substringBeforeLast(("Z")))
+                                        if(period == "Week") {
+                                            endDate = endDate.plusWeeks(1).withHour(23).withMinute(59).withSecond(59).withNano(59)
+                                        } else {
+                                            endDate = endDate.plusMonths(1).withHour(23).withMinute(59).withSecond(59).withNano(59)
+                                        }
+
+                                        var endDateString = endDate.format(DateTimeFormatter.ISO_DATE_TIME).substring(0, 19)
+                                        if (selectedDate.contains("Z")) {
+                                            endDateString += "Z"
+                                        }
+                                        
                                         val updateGoalRequest = GoalUpdateRequest (
                                             category_id=selectedCategory?.id ?: 0,
                                             limit=limit.toDouble(),
                                             start_date=selectedDate,
-                                            end_date=selectedDate,
+                                            end_date=endDateString,
                                             goal_type= goal_type,
                                         )
 
@@ -498,7 +514,12 @@ fun AddGoalScreen(navController: NavController, useMockApi: String = "false", cr
                                                 "Failed to edit goal. Please try again",
                                                 Toast.LENGTH_SHORT
                                             ).show()
-                                            Log.d("Response", "Api request to edit goal failed: ${response?.body()}")
+                                            var errorResponse = ""
+                                            if (response != null) {
+                                                errorResponse = response.errorBody()?.string() ?: ""
+
+                                            }
+                                            Log.d("Response", "Api request to edit goal failed: ${errorResponse}")
                                             errorMessage = errorMessage ?: ""
                                             errorMessage += "Editing goal failed. Please try again.\n"
                                             isSaveButtonLoading = false
@@ -527,7 +548,12 @@ fun AddGoalScreen(navController: NavController, useMockApi: String = "false", cr
                                                 "Failed to add goal. Please try again",
                                                 Toast.LENGTH_SHORT
                                             ).show()
-                                            Log.d("Response", "Api request to add goal failed: ${response?.body()}")
+                                            var errorResponse = ""
+                                            if (response != null) {
+                                                errorResponse = response.errorBody()?.string() ?: ""
+
+                                            }
+                                            Log.d("Response", "Api request to add goal failed: ${errorResponse}")
                                             errorMessage = errorMessage ?: ""
                                             errorMessage += "Adding goal failed. Please try again.\n"
                                             isSaveButtonLoading = false
