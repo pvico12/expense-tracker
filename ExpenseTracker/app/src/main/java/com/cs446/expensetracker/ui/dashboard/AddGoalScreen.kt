@@ -486,14 +486,11 @@ fun AddGoalScreen(navController: NavController, useMockApi: String = "false", cr
                                         }
 
                                         var endDateString = endDate.format(DateTimeFormatter.ISO_DATE_TIME).substring(0, 19)
-                                        if (selectedDate.contains("Z")) {
-                                            endDateString += "Z"
-                                        }
-                                        
+
                                         val updateGoalRequest = GoalUpdateRequest (
                                             category_id=selectedCategory?.id ?: 0,
                                             limit=limit.toDouble(),
-                                            start_date=selectedDate,
+                                            start_date=selectedDate.substring(0, 19),
                                             end_date=endDateString,
                                             goal_type= goal_type,
                                         )
@@ -529,7 +526,7 @@ fun AddGoalScreen(navController: NavController, useMockApi: String = "false", cr
                                             category_id=selectedCategory?.id ?: 0,
                                             goal_type= goal_type,
                                             limit=limit.toDouble(),
-                                            start_date=selectedDate,
+                                            start_date=selectedDate.substring(0, 19),
                                             period= if(period == "Week") 7.0 else 31.0,
                                         )
                                         Log.d("Response", "Create Goal Request: ${goal}")
