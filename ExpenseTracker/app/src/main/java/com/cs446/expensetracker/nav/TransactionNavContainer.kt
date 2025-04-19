@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -130,7 +131,7 @@ class TransactionNavContainer {
                 )
             )
         }
-        var showAdvancedFilter by rememberSaveable { mutableStateOf(false) }
+        var showAdvancedFilter by rememberSaveable { mutableStateOf(true) }
 
         // These Date? values are updated via the advanced filter pickers.
         var startDate by remember { mutableStateOf<Date?>(null) }
