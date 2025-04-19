@@ -1,30 +1,32 @@
 date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
-2025-01-12,1,1,1,1,1,1,meet and discuss general project requirements
-2025-01-13,1,1,1,1,1,1,meet and discuss general project requirements again
-2025-01-14,1,0,0,0,0,0,setup GitHub repo
-2025-01-14,2,0,0,0,0,0,init Flask backend project
-2025-01-14,2,0,0,0,0,0,set up Kubernetes system for dev/prod deployment environments
-2025-01-14,3,0,0,0,0,0,Set up automated deployments for backend to K8S infrastructure
-2025-01-15,1,0,0,0,0,0,Set up dev/prod Postgres database
-2025-01-15,1,0,0,0,0,0,Set up backend database connection
-2025-01-15,3,0,0,0,0,0,Set up automated deployments for both dev and prod backend
-2025-01-15,1,0,0,0,0,0,Documentation for general use case and backend stuff
-2025-01-15,0,0,0,0,3,0,Revise the Flask backend to fastAPI framework
-2025-01-22,0.5,0.5,0.5,0.5,0,0,Meet and discuss app requirements and specifications 
-2025-01-23,0.5,0.5,1,1,0.5,0.5,Revise and finalize the team contract 
-2025-01-24,5,0,0,0,0,0,init Android App with backend connection healthcheck admin page
-2025-01-25,5,0,0,0,0,0,set up automated deployments to Play Store with fastlane + firebase
-2025-01-31,0,3,0,0,0,0,Figma designs and cleaned up project proposal
-2025-02-07,5,0,0,0,0,0,Setup authentication - backend - pt.1
-2025-02-07,5,0,0,0,0,0,Setup Authentication In App
+2025-01-12,1,1,1,1,1,1, meet and discuss general project requirements
+2025-01-13,1,1,1,1,1,1, meet and discuss general project requirements again
+2025-01-14,1,0,0,0,0,0, setup GitHub repo
+2025-01-14,2,0,0,0,0,0, init Flask backend project
+2025-01-14,2,0,0,0,0,0, set up Kubernetes system for dev/prod deployment environments
+2025-01-14,3,0,0,0,0,0, Set up automated deployments for backend to K8S infrastructure
+2025-01-15,1,0,0,0,0,0, Set up dev/prod Postgres database
+2025-01-15,1,0,0,0,0,0, Set up backend database connection
+2025-01-15,3,0,0,0,0,0, Set up automated deployments for both dev and prod backend
+2025-01-15,1,0,0,0,0,0, Documentation for general use case and backend stuff
+2025-01-15,0,0,0,0,3,0, Revise the Flask backend to fastAPI framework
+2025-01-22,0.5,0.5,0.5,0.5,0,0, Meet and discuss app requirements and specifications 
+2025-01-23,0.5,0.5,1,1,0.5,0.5, Revise and finalize the team contract 
+2025-01-24,5,0,0,0,0,0, init Android App with backend connection healthcheck admin page
+2025-01-25,5,0,0,0,0,0, set up automated deployments to Play Store with fastlane + firebase
+2025-01-31,0,0,0,4,0,0, project proposal
+2025-01-31,0,3,0,0,0,0, Figma designs and cleaned up project proposal
+2025-02-07,5,0,0,0,0,0, Setup authentication - backend - pt.1
+2025-02-07,5,0,0,0,0,0, Setup Authentication In App
 2025-02-10,0,0,0,5,0,0, Add Floating Action Button for Adding Transactions
-2025-02-10,0,0.5,0.5,0.5,0,0.5,Meet and assign frontend tasks for i1
-2025-02-11,0,6,0,0,0,0,Added home/dashboard pie chart + expenses list
+2025-02-10,0,0.5,0.5,0.5,0,0.5, Meet and assign frontend tasks for i1
+2025-02-11,0,6,0,0,0,0, Added home/dashboard pie chart + expenses list
 2025-02-11,0,0,0,0,0,4, Added Transaction History and Transaction Details screen
-2025-02-11,0,0,3,0,0,0,UML and proposal clarification document for i1
-2025-02-11,0,0.5,0.5,0.5,0.5,0.5,Meet and finalize for i1
-2025-02-12,0.5,0.5,0.5,0.5,0.5,0.5,Meet and briefly discuss features
-2025-02-18,0,0,2.5,0,0,0,Compiling a features list draft for i2
+2025-02-11,0,0,3,0,0,0, UML and proposal clarification document for i1
+2025-02-11,0,0.5,0.5,0.5,0.5,0.5, Meet and finalize for i1
+2025-02-12,0.5,0.5,0.5,0.5,0.5,0.5, Meet and briefly discuss features
+2025-02-12,0,0,0,5,0,0, Add Floating Action Button for Adding Transactions 
+2025-02-18,0,0,2.5,0,0,0, Compiling a features list draft for i2
 2025-02-20,2,2,2,2,2,2, Meet and discuss Iteration 2 goals/requirements/tasks and general planning
 2025-03-01,3,0,0,0,0,0, Add AI assisted category recommendations
 2025-03-01,4,0,0,0,0,0, Add CSV file upload for transactions (scan + create transactions + get template)
@@ -32,6 +34,7 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-02,4,0,0,0,0,0, Deals Backend Feature
 2025-03-04,0,0,4,0,0,0, Revamp Login page visuals
 2025-03-04,0,0,2,0,0,0, Update UML diagram
+2025-03-04,0,0,0,5,0,0, Add AI Categorization and Buttons for Upload CSV & Scan Receipt
 2025-03-07,1,1,1,1,1,1, Meet and discuss Iteration 3 goals/requirements/tasks and general planning
 2025-03-09,5,0,0,0,0,0, Push Notifications Firebase Backend Setup
 2025-03-09,4,0,0,0,0,0, Push Notifications Frontend App Setup
@@ -45,9 +48,12 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-13,0,0,0,0,1,0,Goals Route Added
 2025-03-13,0,0,0,0,1,0,Transaction Route Added
 2025-03-13,0,0,0,0,1,0,Integration Route Added
+2025-03-14,0,0,0,5,0,0, Hook up OCR and CSV
 2025-03-14,2,0,0,0,0,0, Add vendor to deals + create more deals on db init + add specific deal request
 2025-03-14,0,2,0,0,0,0, Hooked up most of deals to backend
 2025-03-15,0,2,0,0,0,0, Trying to get google maps integrated to deals
+2025-03-16,0,0,0,5,0,0, custom categories page
+2025-03-16,0,0,0,5,0,0, recurring transactions
 2025-03-16,3,0,0,0,0,0, Deals Backend Enhancements
 2025-03-16,0,6,0,0,0,0, Trying to get google maps integrated to deals
 2025-03-16,0,8,0,0,0,0, Finally finished google autocomplete + added seachbar + edit/delete + final cosmetic changes
@@ -72,7 +78,8 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-21,1,0,0,0,0,0, Profile Unit Tests + UI Tests
 2025-03-21,0,1,0,0,0,0, Gamification
 2025-03-22,0,4,0,0,0,0, dashboard/goals readability cleanup + fixed loading screens + optimized calling apis
-2025-03-24,0,3,0,0,0,0,Meet to discuss goals cleanup plus fixed a loading dashboard bug
+2025-03-24,0,3,0,0,0,0, Meet to discuss goals cleanup plus fixed a loading dashboard bug
+2025-03-25,0,0,0,3,0,0, polished review dialog for csv upload
 2025-03-25,0.5,0,0,0,0,0, Backend duplicate user registration handling + Authentication Tests
 2025-03-25,0.5,0,0,0,0,0, Restructure backend testing and add tools tests
 2025-03-25,1,0,0,0,0,0, User Backend Unit Tests
@@ -86,7 +93,12 @@ date,Petar,Nicole,Jennifer,Jia,PuYuan,Ariful,task
 2025-03-26,1,0,0,0,0,0, Implement Factory Pattern for Database Connection From Frontend
 2025-03-26,0,4,0,0,0,0,"Dashboard Visualization, Goals, and Mock API tests"
 2025-03-26,1,0,0,0,0,0, Implement Decorator Pattern for Category Expense Cards on Dashboard
+2025-03-27,0,0,0,5,0,0, Improve Add Expense UI
+2025-03-28,0,0,0,5,0,0, Get CSV template
 2025-03-28,3,0,0,0,0,0, Final Report
 2025-03-29,0,0,5,0,0,0, Code refactoring + fixes and tests for Deals
 2025-03-29,5,0,0,0,0,0, Final Report
+2025-03-30,0,0,0,5,0,0, add unit tests for helpers
+2025-03-30,0,0,0,5,0,0, add ui tests for add expense screen
+2025-04-01,0,0,0,1,0,0, Final Report
 ,,,,,,,
