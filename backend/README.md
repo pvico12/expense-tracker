@@ -30,14 +30,7 @@ DATABASE_URI=postgresql://<username>:<password>@<database-ip-address>:5432/<data
 
 ### Database
 
-For the database, we are using Postgres. Here you have 2 options:
-
-1. Connect to a local Postgres instance on your machine
-2. Connect to our remote development database hosted in the cloud using UW CSC infrastructure
-
-#### Local
-
-In this section, we will be setting up a local Postgres instance. Using this instance, we will create a connection from the Flask backend to our local instance.
+For the database, we are using Postgres. 
 
 ##### Installation
 
@@ -83,33 +76,5 @@ postgresql://expense_tracker_admin:<your-newly-created-password>@localhost:5432/
 
 ```
 postgresql://expense_tracker_admin:<your-newly-created-password>@localhost:5432/expense-tracker
-```
+``
 
-
-#### Remote
-
-In this section, we will be connecting to a remote Postgres instance which is hosted on the UW CSC infrastructure associated with Petar Vico's instances.
-
-Since this database server is hosted within the UW network, you need to be connected to the UW network.
-
-If you are on campus, perfect, you don't need to do anything special.
-
-Otherwise, you need to use the UW Campus VPN to remote into the UW networks.
-
-##### On-Campus
-
-You're good, move onto the Database Connection section below.
-
-##### Off-Campus
-
-Refer to the following instructions to set up the Campus VPN [here](https://uwaterloo.atlassian.net/wiki/spaces/ISTKB/pages/262012980/Virtual+Private+Network+VPN).
-More specifically:
-
-- [MacOS Install Guide](https://uwaterloo.atlassian.net/wiki/spaces/ISTKB/pages/262012942/How+to+install+and+connect+to+the+VPN+-+Mac+OS)
-- [Windows Install Guide](https://uwaterloo.atlassian.net/wiki/spaces/ISTKB/pages/262012949/How+to+Install+AnyConnect+and+Connect+to+the+VPN+-+Windows+OS)
-- [Linux Install Guide](https://uwaterloo.atlassian.net/wiki/spaces/ISTKB/pages/262012938/How+to+install+and+connect+to+the+VPN+-Linux+Ubuntu)
-  **Tip**: If you are confused what 2nd password is, its basically your preffered 2FA method. If you write "push" it will use Duo mobile as a 2nd factor authentication to log you in. The video tutorials are also good if you get stuck.
-
-##### Database Connection
-
-Now that you are within UW networks, contact Petar for the database connection string, and replace your DATABASE_URL variable in the .env file you created with the one Petar provides you.
