@@ -1,45 +1,7 @@
 # Expense Tracker
-https://youtu.be/dfk_-6fy-4o
----
 
-## Team Information
-
-### Team Name: The Debuggers  
-### Team Number: 10  
-
-### Team Members
-
-1. **Name:** Petar Vico  
-   **Quest ID:** pvico  
-   **Student ID:** 20883442  
-   **GitHub Username:** pvico12  
-
-2. **Name:** Nicole Planeta  
-   **Quest ID:** nplaneta  
-   **Student ID:** 20887785  
-   **GitHub Username:** Eternalon03  
-
-3. **Name:** Jennifer Wu  
-   **Quest ID:** jw8wu  
-   **Student ID:** 20949150  
-   **GitHub Username:** wjeni  
-
-4. **Name:** Jia Hu  
-   **Quest ID:** j349hu  
-   **Student ID:** 20882990  
-   **GitHub Username:** jiahujiahu  
-
-5. **Name:** PuYuan Li  
-   **Quest ID:** p259li  
-   **Student ID:** 20890562  
-   **GitHub Username:** Jack727L  
-
-6. **Name:** Ariful Islam  
-   **Quest ID:** a46islam  
-   **Student ID:** 20900179  
-   **GitHub Username:** islamariful  
-
----
+Frontend: Kotlin (Jetpack Compose)
+Backend: Python (FastAPI)
 
 ## Project Description
 
@@ -85,13 +47,3 @@ This application aims to provide a user-friendly interface and powerful features
     2. Remote Development Database  
 
   - Refer to the [backend README](backend/README.md) for setup details for both options.
-
----
-
-## Future Updates
-
-As the project progresses, this file will be updated to include additional details, such as:
-
-- Feature roadmap and updates.
-- Installation and setup instructions.
-- Links to project documentation and notes.
